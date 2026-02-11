@@ -1,42 +1,42 @@
-# Contributing to pi
+# 为 pi 做贡献
 
-Thanks for wanting to contribute! This guide exists to save both of us time.
+感谢您想要做出贡献！本指南旨在节省我们双方的时间。
 
-## The One Rule
+## 唯一规则
 
-**You must understand your code.** If you can't explain what your changes do and how they interact with the rest of the system, your PR will be closed.
+**你必须理解你的代码。** 如果你不能解释你的更改是做什么的，以及它们如何与系统的其余部分交互，你的 PR 将被关闭。
 
-Using AI to write code is fine. You can gain understanding by interrogating an agent with access to the codebase until you grasp all edge cases and effects of your changes. What's not fine is submitting agent-generated slop without that understanding.
+使用 AI 编写代码是可以的。你可以通过询问可以访问代码库的 Agent 来获得理解，直到你掌握所有边缘情况和更改的影响。不可以的是在没有这种理解的情况下提交 Agent 生成的垃圾代码。
 
-If you use an agent, run it from the `pi-mono` root directory so it picks up `AGENTS.md` automatically. Your agent must follow the rules and guidelines in that file.
+如果你使用 Agent，请从 `pi-mono` 根目录运行它，以便它自动获取 `AGENTS.md`。你的 Agent 必须遵守该文件中的规则和指南。
 
-## First-Time Contributors
+## 首次贡献者
 
-We use an approval gate for new contributors:
+我们对新贡献者使用批准门槛：
 
-1. Open an issue describing what you want to change and why
-2. Keep it concise (if it doesn't fit on one screen, it's too long)
-3. Write in your own voice, at least for the intro
-4. A maintainer will comment `lgtm` if approved
-5. Once approved, you can submit PRs
+1. 开启一个 issue，描述你想要更改的内容以及原因
+2. 保持简洁（如果一屏装不下，那就太长了）
+3. 用你自己的语气写，至少在介绍部分
+4. 如果获得批准，维护者将评论 `lgtm`
+5. 一旦获得批准，你就可以提交 PR
 
-This exists because AI makes it trivial to generate plausible-looking but low-quality contributions. The issue step lets us filter early.
+之所以存在这个规定，是因为 AI 使得生成看起来合理但质量低下的贡献变得微不足道。Issue 步骤让我们能够尽早过滤。
 
-## Before Submitting a PR
+## 提交 PR 之前
 
 ```bash
-npm run check  # must pass with no errors
-./test.sh      # must pass
+npm run check  # 必须通过且无错误
+./test.sh      # 必须通过
 ```
 
-Do not edit `CHANGELOG.md`. Changelog entries are added by maintainers.
+不要编辑 `CHANGELOG.md`。变更日志条目由维护者添加。
 
-If you're adding a new provider to `packages/ai`, see `AGENTS.md` for required tests.
+如果你要在 `packages/ai` 中添加新的提供商，请参阅 `AGENTS.md` 了解所需的测试。
 
-## Philosophy
+## 哲学
 
-pi's core is minimal. If your feature doesn't belong in the core, it should be an extension. PRs that bloat the core will likely be rejected.
+pi 的核心是极简的。如果你的功能不属于核心，它应该是一个扩展。使核心膨胀的 PR 可能会被拒绝。
 
-## Questions?
+## 有问题？
 
-Open an issue or ask on [Discord](https://discord.com/invite/nKXTsAcmbT).
+开启一个 issue 或在 [Discord](https://discord.com/invite/nKXTsAcmbT) 上提问。
