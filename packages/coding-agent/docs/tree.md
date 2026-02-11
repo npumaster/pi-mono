@@ -1,21 +1,21 @@
-# Session Tree Navigation
+# 会话树导航
 
-The `/tree` command provides tree-based navigation of the session history.
+`/tree` 命令提供基于树的会话历史导航。
 
-## Overview
+## 概述
 
-Sessions are stored as trees where each entry has an `id` and `parentId`. The "leaf" pointer tracks the current position. `/tree` lets you navigate to any point and optionally summarize the branch you're leaving.
+会话存储为树结构，其中每个条目都有一个 `id` 和 `parentId`。"leaf" 指针跟踪当前位置。`/tree` 允许你导航到任何点，并可选择摘要你离开的分支。
 
-### Comparison with `/fork`
+### 与 `/fork` 的比较
 
-| Feature | `/fork` | `/tree` |
+| 特性 | `/fork` | `/tree` |
 |---------|---------|---------|
-| View | Flat list of user messages | Full tree structure |
-| Action | Extracts path to **new session file** | Changes leaf in **same session** |
-| Summary | Never | Optional (user prompted) |
-| Events | `session_before_fork` / `session_fork` | `session_before_tree` / `session_tree` |
+| 视图 | 用户消息的扁平列表 | 完整的树结构 |
+| 动作 | 提取路径到**新会话文件** | 更改**同一会话**中的 leaf |
+| 摘要 | 从不 | 可选（提示用户） |
+| 事件 | `session_before_fork` / `session_fork` | `session_before_tree` / `session_tree` |
 
-## Tree UI
+## 树形 UI
 
 ```
 ├─ user: "Hello, can you help..."
@@ -28,68 +28,68 @@ Sessions are stored as trees where each entry has an `id` and `parentId`. The "l
 │        └─ assistant: "For approach B..."
 ```
 
-### Controls
+### 控制
 
-| Key | Action |
+| 按键 | 动作 |
 |-----|--------|
-| ↑/↓ | Navigate (depth-first order) |
-| Enter | Select node |
-| Escape/Ctrl+C | Cancel |
-| Ctrl+U | Toggle: user messages only |
-| Ctrl+O | Toggle: show all (including custom/label entries) |
+| ↑/↓ | 导航（深度优先顺序） |
+| Enter | 选择节点 |
+| Escape/Ctrl+C | 取消 |
+| Ctrl+U | 切换：仅用户消息 |
+| Ctrl+O | 切换：显示全部（包括自定义/标签条目） |
 
-### Display
+### 显示
 
-- Height: half terminal height
-- Current leaf marked with `← active`
-- Labels shown inline: `[label-name]`
-- Default filter hides `label` and `custom` entries (shown in Ctrl+O mode)
-- Children sorted by timestamp (oldest first)
+- 高度：终端高度的一半
+- 当前 leaf 标记为 `← active`
+- 标签内联显示：`[label-name]`
+- 默认过滤器隐藏 `label` 和 `custom` 条目（在 Ctrl+O 模式下显示）
+- 子节点按时间戳排序（最旧的在前）
 
-## Selection Behavior
+## 选择行为
 
-### User Message or Custom Message
-1. Leaf set to **parent** of selected node (or `null` if root)
-2. Message text placed in **editor** for re-submission
-3. User edits and submits, creating a new branch
+### 用户消息或自定义消息
+1. Leaf 设置为所选节点的**父节点**（如果是根节点则为 `null`）
+2. 消息文本放入**编辑器**以重新提交
+3. 用户编辑并提交，创建一个新分支
 
-### Non-User Message (assistant, compaction, etc.)
-1. Leaf set to **selected node**
-2. Editor stays empty
-3. User continues from that point
+### 非用户消息（assistant, compaction 等）
+1. Leaf 设置为**所选节点**
+2. 编辑器保持为空
+3. 用户从该点继续
 
-### Selecting Root User Message
-If user selects the very first message (has no parent):
-1. Leaf reset to `null` (empty conversation)
-2. Message text placed in editor
-3. User effectively restarts from scratch
+### 选择根用户消息
+如果用户选择了第一条消息（没有父节点）：
+1. Leaf 重置为 `null`（空对话）
+2. 消息文本放入编辑器
+3. 用户实际上是从头开始重新启动
 
-## Branch Summarization
+## 分支摘要
 
-When switching branches, user is presented with three options:
+切换分支时，用户会看到三个选项：
 
-1. **No summary** - Switch immediately without summarizing
-2. **Summarize** - Generate a summary using the default prompt
-3. **Summarize with custom prompt** - Opens an editor to enter additional focus instructions that are appended to the default summarization prompt
+1. **No summary** - 立即切换而不摘要
+2. **Summarize** - 使用默认提示生成摘要
+3. **Summarize with custom prompt** - 打开编辑器输入额外的焦点指令，附加到默认摘要提示中
 
-### What Gets Summarized
+### 摘要内容
 
-Path from old leaf back to common ancestor with target:
+从旧 leaf 回溯到与目标的共同祖先的路径：
 
 ```
 A → B → C → D → E → F  ← old leaf
         ↘ G → H        ← target
 ```
 
-Abandoned path: D → E → F (summarized)
+被放弃的路径：D → E → F（被摘要）
 
-Summarization stops at:
-1. Common ancestor (always)
-2. Compaction node (if encountered first)
+摘要停止于：
+1. 共同祖先（总是）
+2. Compaction 节点（如果先遇到）
 
-### Summary Storage
+### 摘要存储
 
-Stored as `BranchSummaryEntry`:
+存储为 `BranchSummaryEntry`:
 
 ```typescript
 interface BranchSummaryEntry {
@@ -103,7 +103,7 @@ interface BranchSummaryEntry {
 }
 ```
 
-## Implementation
+## 实现
 
 ### AgentSession.navigateTree()
 
@@ -119,41 +119,41 @@ async navigateTree(
 ): Promise<{ editorText?: string; cancelled: boolean }>
 ```
 
-Options:
-- `summarize`: Whether to generate a summary of the abandoned branch
-- `customInstructions`: Custom instructions for the summarizer
-- `replaceInstructions`: If true, `customInstructions` replaces the default prompt instead of being appended
-- `label`: Label to attach to the branch summary entry (or target entry if not summarizing)
+选项：
+- `summarize`: 是否摘要被放弃的分支
+- `customInstructions`: 摘要器的自定义指令
+- `replaceInstructions`: 如果为 true，`customInstructions` 替换默认提示而不是附加
+- `label`: 附加到分支摘要条目的标签（如果不摘要则附加到目标条目）
 
-Flow:
-1. Validate target, check no-op (target === current leaf)
-2. Find common ancestor between old leaf and target
-3. Collect entries to summarize (if requested)
-4. Fire `session_before_tree` event (hook can cancel or provide summary)
-5. Run default summarizer if needed
-6. Switch leaf via `branch()` or `branchWithSummary()`
-7. Update agent: `agent.replaceMessages(sessionManager.buildSessionContext().messages)`
-8. Fire `session_tree` event
-9. Notify custom tools via session event
-10. Return result with `editorText` if user message was selected
+流程：
+1. 验证目标，检查无操作（target === current leaf）
+2. 找到旧 leaf 和目标之间的共同祖先
+3. 收集要摘要的条目（如果请求）
+4. 触发 `session_before_tree` 事件（钩子可以取消或提供摘要）
+5. 如果需要，运行默认摘要器
+6. 通过 `branch()` 或 `branchWithSummary()` 切换 leaf
+7. 更新 agent: `agent.replaceMessages(sessionManager.buildSessionContext().messages)`
+8. 触发 `session_tree` 事件
+9. 通过 session 事件通知自定义工具
+10. 如果选择了用户消息，返回带有 `editorText` 的结果
 
 ### SessionManager
 
-- `getLeafUuid(): string | null` - Current leaf (null if empty)
-- `resetLeaf(): void` - Set leaf to null (for root user message navigation)
-- `getTree(): SessionTreeNode[]` - Full tree with children sorted by timestamp
-- `branch(id)` - Change leaf pointer
-- `branchWithSummary(id, summary)` - Change leaf and create summary entry
+- `getLeafUuid(): string | null` - 当前 leaf（如果为空则为 null）
+- `resetLeaf(): void` - 将 leaf 设置为 null（用于根用户消息导航）
+- `getTree(): SessionTreeNode[]` - 完整的树，子节点按时间戳排序
+- `branch(id)` - 更改 leaf 指针
+- `branchWithSummary(id, summary)` - 更改 leaf 并创建摘要条目
 
 ### InteractiveMode
 
-`/tree` command shows `TreeSelectorComponent`, then:
-1. Prompt for summarization
-2. Call `session.navigateTree()`
-3. Clear and re-render chat
-4. Set editor text if applicable
+`/tree` 命令显示 `TreeSelectorComponent`，然后：
+1. 提示摘要
+2. 调用 `session.navigateTree()`
+3. 清除并重新渲染聊天
+4. 如果适用，设置编辑器文本
 
-## Hook Events
+## Hook 事件
 
 ### `session_before_tree`
 
@@ -184,7 +184,7 @@ interface SessionBeforeTreeResult {
 }
 ```
 
-Extensions can override `customInstructions`, `replaceInstructions`, and `label` by returning them from the `session_before_tree` handler.
+扩展可以通过从 `session_before_tree` 处理程序返回它们来覆盖 `customInstructions`、`replaceInstructions` 和 `label`。
 
 ### `session_tree`
 
@@ -198,7 +198,7 @@ interface SessionTreeEvent {
 }
 ```
 
-### Example: Custom Summarizer
+### 示例：自定义摘要器
 
 ```typescript
 export default function(pi: HookAPI) {
@@ -212,8 +212,8 @@ export default function(pi: HookAPI) {
 }
 ```
 
-## Error Handling
+## 错误处理
 
-- Summarization failure: cancels navigation, shows error
-- User abort (Escape): cancels navigation
-- Hook returns `cancel: true`: cancels navigation silently
+- 摘要失败：取消导航，显示错误
+- 用户中止 (Escape)：取消导航
+- Hook 返回 `cancel: true`：静默取消导航

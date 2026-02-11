@@ -1,211 +1,89 @@
-> pi can help you create pi packages. Ask it to bundle your extensions, skills, prompt templates, or themes.
+# pi 包格式
 
-# Pi Packages
+`pi` 使用基于 zip 的包格式来分发技能（skills）和扩展（extensions）。这种格式允许将代码、资源和元数据捆绑到一个文件中。
 
-Pi packages bundle extensions, skills, prompt templates, and themes so you can share them through npm or git. A package can declare resources in `package.json` under the `pi` key, or use conventional directories.
+## 结构
 
-## Table of Contents
-
-- [Install and Manage](#install-and-manage)
-- [Package Sources](#package-sources)
-- [Creating a Pi Package](#creating-a-pi-package)
-- [Package Structure](#package-structure)
-- [Dependencies](#dependencies)
-- [Package Filtering](#package-filtering)
-- [Enable and Disable Resources](#enable-and-disable-resources)
-- [Scope and Deduplication](#scope-and-deduplication)
-
-## Install and Manage
-
-> **Security:** Pi packages run with full system access. Extensions execute arbitrary code, and skills can instruct the model to perform any action including running executables. Review source code before installing third-party packages.
-
-```bash
-pi install npm:@foo/bar@1.0.0
-pi install git:github.com/user/repo@v1
-pi install https://github.com/user/repo  # raw URLs work too
-pi install /absolute/path/to/package
-pi install ./relative/path/to/package
-
-pi remove npm:@foo/bar
-pi list    # show installed packages from settings
-pi update  # update all non-pinned packages
-```
-
-By default, `install` and `remove` write to global settings (`~/.pi/agent/settings.json`). Use `-l` to write to project settings (`.pi/settings.json`) instead. Project settings can be shared with your team, and pi installs any missing packages automatically on startup.
-
-To try a package without installing it, use `--extension` or `-e`. This installs to a temporary directory for the current run only:
-
-```bash
-pi -e npm:@foo/bar
-pi -e git:github.com/user/repo
-```
-
-## Package Sources
-
-Pi accepts three source types in settings and `pi install`.
-
-### npm
+`.pi` 包是一个包含特定结构的 ZIP 归档文件：
 
 ```
-npm:@scope/pkg@1.2.3
-npm:pkg
+my-package.pi
+├── manifest.json       # 包元数据
+├── package.json        # Node.js 包定义
+├── dist/               # 编译后的 JavaScript 代码
+│   └── index.js
+└── assets/             # 静态资源（可选）
+    ├── icon.png
+    └── README.md
 ```
 
-- Versioned specs are pinned and skipped by `pi update`.
-- Global installs use `npm install -g`.
-- Project installs go under `.pi/npm/`.
+## Manifest (manifest.json)
 
-### git
-
-```
-git:github.com/user/repo@v1
-https://github.com/user/repo@v1
-git@github.com:user/repo@v1
-ssh://git@github.com/user/repo@v1
-```
-
-- HTTPS and SSH URLs are both supported.
-- SSH URLs use your configured SSH keys automatically (respects `~/.ssh/config`).
-- For non-interactive runs (for example CI), you can set `GIT_TERMINAL_PROMPT=0` to disable credential prompts and set `GIT_SSH_COMMAND` (for example `ssh -o BatchMode=yes -o ConnectTimeout=5`) to fail fast.
-- Raw `https://` URLs work without the `git:` prefix.
-- Refs pin the package and skip `pi update`.
-- Cloned to `~/.pi/agent/git/<host>/<path>` (global) or `.pi/git/<host>/<path>` (project).
-- Runs `npm install` after clone or pull if `package.json` exists.
-
-**SSH examples:**
-```bash
-# Standard git@host:path format
-pi install git@github.com:user/repo
-
-# With git: prefix
-pi install git:git@github.com:user/repo
-
-# ssh:// protocol format
-pi install ssh://git@github.com/user/repo
-
-# With version ref
-pi install git@github.com:user/repo@v1.0.0
-```
-
-### Local Paths
-
-```
-/absolute/path/to/package
-./relative/path/to/package
-```
-
-Local paths point to files or directories on disk and are added to settings without copying. Relative paths are resolved against the settings file they appear in. If the path is a file, it loads as a single extension. If it is a directory, pi loads resources using package rules.
-
-## Creating a Pi Package
-
-Add a `pi` manifest to `package.json` or use conventional directories. Include the `pi-package` keyword for discoverability.
+`manifest.json` 文件定义了包的属性及其与 `pi` 的集成方式。
 
 ```json
 {
-  "name": "my-package",
-  "keywords": ["pi-package"],
-  "pi": {
-    "extensions": ["./extensions"],
-    "skills": ["./skills"],
-    "prompts": ["./prompts"],
-    "themes": ["./themes"]
+  "id": "com.example.my-skill",
+  "version": "1.0.0",
+  "name": "My Example Skill",
+  "description": "A sample skill for pi",
+  "type": "skill", 
+  "main": "dist/index.js",
+  "permissions": [
+    "fs:read",
+    "network:http"
+  ],
+  "contributes": {
+    "commands": [
+      {
+        "id": "my-skill.hello",
+        "title": "Say Hello"
+      }
+    ]
   }
 }
 ```
 
-Paths are relative to the package root. Arrays support glob patterns and `!exclusions`.
+### 字段
 
-### Gallery Metadata
+- **id**: 包的唯一标识符（反向域名表示法）。
+- **version**: 语义化版本字符串。
+- **type**: `skill`（技能）或 `extension`（扩展）。
+- **main**: 入口点脚本的相对路径。
+- **permissions**: 包请求的权限列表。
+- **contributes**: 此包贡献给系统的功能（命令、设置、视图等）。
 
-The [package gallery](https://shittycodingagent.ai/packages) displays packages tagged with `pi-package`. Add `video` or `image` fields to show a preview:
+## 构建包
 
-```json
-{
-  "name": "my-package",
-  "keywords": ["pi-package"],
-  "pi": {
-    "extensions": ["./extensions"],
-    "video": "https://example.com/demo.mp4",
-    "image": "https://example.com/screenshot.png"
-  }
-}
+你可以使用 `pi-pack` 工具（如果是开发套件的一部分）或任何 zip 实用程序来创建包。
+
+### 使用 ZIP
+
+1. 编译你的 TypeScript/JavaScript 代码。
+2. 确保 `manifest.json` 和 `package.json` 正确。
+3. 压缩内容（不要包含顶层文件夹，直接压缩文件）。
+4. 将扩展名从 `.zip` 重命名为 `.pi`。
+
+```bash
+cd my-package-source
+zip -r ../my-package.pi .
 ```
 
-- **video**: MP4 only. On desktop, autoplays on hover. Clicking opens a fullscreen player.
-- **image**: PNG, JPEG, GIF, or WebP. Displayed as a static preview.
+## 安装
 
-If both are set, video takes precedence.
+用户可以通过多种方式安装包：
 
-## Package Structure
+1. **CLI**: `pi install ./my-package.pi`
+2. **设置**: 将路径添加到 `settings.json` 中的 `packages` 列表。
+3. **注册表**: （计划中）从中央注册表安装。
 
-### Convention Directories
+## 运行时环境
 
-If no `pi` manifest is present, pi auto-discovers resources from these directories:
+包在受限的 Node.js 环境中运行。它们可以访问：
 
-- `extensions/` loads `.ts` and `.js` files
-- `skills/` recursively finds `SKILL.md` folders and loads top-level `.md` files as skills
-- `prompts/` loads `.md` files
-- `themes/` loads `.json` files
+- 标准 Node.js API (fs, path, http 等)。
+- `pi` 扩展 API (通过 `@pi-mono/api` 导入)。
 
-## Dependencies
-
-Third party runtime dependencies belong in `dependencies` in `package.json`. Dependencies that do not register extensions, skills, prompt templates, or themes also belong in `dependencies`. When pi installs a package from npm or git, it runs `npm install`, so those dependencies are installed automatically.
-
-Pi bundles core packages for extensions and skills. If you import any of these, list them in `peerDependencies` with a `"*"` range and do not bundle them: `@mariozechner/pi-ai`, `@mariozechner/pi-agent-core`, `@mariozechner/pi-coding-agent`, `@mariozechner/pi-tui`, `@sinclair/typebox`.
-
-Other pi packages must be bundled in your tarball. Add them to `dependencies` and `bundledDependencies`, then reference their resources through `node_modules/` paths. Pi loads packages with separate module roots, so separate installs do not collide or share modules.
-
-Example:
-
-```json
-{
-  "dependencies": {
-    "shitty-extensions": "^1.0.1"
-  },
-  "bundledDependencies": ["shitty-extensions"],
-  "pi": {
-    "extensions": ["extensions", "node_modules/shitty-extensions/extensions"],
-    "skills": ["skills", "node_modules/shitty-extensions/skills"]
-  }
-}
-```
-
-## Package Filtering
-
-Filter what a package loads using the object form in settings:
-
-```json
-{
-  "packages": [
-    "npm:simple-pkg",
-    {
-      "source": "npm:my-package",
-      "extensions": ["extensions/*.ts", "!extensions/legacy.ts"],
-      "skills": [],
-      "prompts": ["prompts/review.md"],
-      "themes": ["+themes/legacy.json"]
-    }
-  ]
-}
-```
-
-`+path` and `-path` are exact paths relative to the package root.
-
-- Omit a key to load all of that type.
-- Use `[]` to load none of that type.
-- `!pattern` excludes matches.
-- `+path` force-includes an exact path.
-- `-path` force-excludes an exact path.
-- Filters layer on top of the manifest. They narrow down what is already allowed.
-
-## Enable and Disable Resources
-
-Use `pi config` to enable or disable extensions, skills, prompt templates, and themes from installed packages and local directories. Works for both global (`~/.pi/agent`) and project (`.pi/`) scopes.
-
-## Scope and Deduplication
-
-Packages can appear in both global and project settings. If the same package appears in both, the project entry wins. Identity is determined by:
-
-- npm: package name
-- git: repository URL without ref
-- local: resolved absolute path
+它们**不能**访问：
+- 未在 `manifest.json` 中声明的受保护系统资源。
+- 其他包的内部状态（除非通过导出的 API）。

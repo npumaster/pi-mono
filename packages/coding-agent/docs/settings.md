@@ -1,25 +1,25 @@
-# Settings
+# 设置
 
-Pi uses JSON settings files with project settings overriding global settings.
+Pi 使用 JSON 设置文件，项目设置会覆盖全局设置。
 
-| Location | Scope |
+| 位置 | 范围 |
 |----------|-------|
-| `~/.pi/agent/settings.json` | Global (all projects) |
-| `.pi/settings.json` | Project (current directory) |
+| `~/.pi/agent/settings.json` | 全局（所有项目） |
+| `.pi/settings.json` | 项目（当前目录） |
 
-Edit directly or use `/settings` for common options.
+直接编辑或使用 `/settings` 进行常用选项设置。
 
-## All Settings
+## 所有设置
 
-### Model & Thinking
+### 模型与思考
 
-| Setting | Type | Default | Description |
+| 设置 | 类型 | 默认值 | 描述 |
 |---------|------|---------|-------------|
-| `defaultProvider` | string | - | Default provider (e.g., `"anthropic"`, `"openai"`) |
-| `defaultModel` | string | - | Default model ID |
+| `defaultProvider` | string | - | 默认提供商 (例如 `"anthropic"`, `"openai"`) |
+| `defaultModel` | string | - | 默认模型 ID |
 | `defaultThinkingLevel` | string | - | `"off"`, `"minimal"`, `"low"`, `"medium"`, `"high"`, `"xhigh"` |
-| `hideThinkingBlock` | boolean | `false` | Hide thinking blocks in output |
-| `thinkingBudgets` | object | - | Custom token budgets per thinking level |
+| `hideThinkingBlock` | boolean | `false` | 在输出中隐藏思考块 |
+| `thinkingBudgets` | object | - | 每个思考等级的自定义 token 预算 |
 
 #### thinkingBudgets
 
@@ -34,25 +34,25 @@ Edit directly or use `/settings` for common options.
 }
 ```
 
-### UI & Display
+### UI 与显示
 
-| Setting | Type | Default | Description |
+| 设置 | 类型 | 默认值 | 描述 |
 |---------|------|---------|-------------|
-| `theme` | string | `"dark"` | Theme name (`"dark"`, `"light"`, or custom) |
-| `quietStartup` | boolean | `false` | Hide startup header |
-| `collapseChangelog` | boolean | `false` | Show condensed changelog after updates |
-| `doubleEscapeAction` | string | `"tree"` | Action for double-escape: `"tree"` or `"fork"` |
-| `editorPaddingX` | number | `0` | Horizontal padding for input editor (0-3) |
-| `autocompleteMaxVisible` | number | `5` | Max visible items in autocomplete dropdown (3-20) |
-| `showHardwareCursor` | boolean | `false` | Show terminal cursor |
+| `theme` | string | `"dark"` | 主题名称 (`"dark"`, `"light"`, 或自定义) |
+| `quietStartup` | boolean | `false` | 隐藏启动标题 |
+| `collapseChangelog` | boolean | `false` | 更新后显示精简的变更日志 |
+| `doubleEscapeAction` | string | `"tree"` | 双击 Escape 的动作: `"tree"` 或 `"fork"` |
+| `editorPaddingX` | number | `0` | 输入编辑器的水平填充 (0-3) |
+| `autocompleteMaxVisible` | number | `5` | 自动完成下拉菜单中的最大可见项 (3-20) |
+| `showHardwareCursor` | boolean | `false` | 显示终端光标 |
 
-### Compaction
+### 压缩
 
-| Setting | Type | Default | Description |
+| 设置 | 类型 | 默认值 | 描述 |
 |---------|------|---------|-------------|
-| `compaction.enabled` | boolean | `true` | Enable auto-compaction |
-| `compaction.reserveTokens` | number | `16384` | Tokens reserved for LLM response |
-| `compaction.keepRecentTokens` | number | `20000` | Recent tokens to keep (not summarized) |
+| `compaction.enabled` | boolean | `true` | 启用自动压缩 |
+| `compaction.reserveTokens` | number | `16384` | 为 LLM 响应保留的 token |
+| `compaction.keepRecentTokens` | number | `20000` | 保留的最近 token（不摘要） |
 
 ```json
 {
@@ -64,22 +64,22 @@ Edit directly or use `/settings` for common options.
 }
 ```
 
-### Branch Summary
+### 分支摘要
 
-| Setting | Type | Default | Description |
+| 设置 | 类型 | 默认值 | 描述 |
 |---------|------|---------|-------------|
-| `branchSummary.reserveTokens` | number | `16384` | Tokens reserved for branch summarization |
+| `branchSummary.reserveTokens` | number | `16384` | 为分支摘要保留的 token |
 
-### Retry
+### 重试
 
-| Setting | Type | Default | Description |
+| 设置 | 类型 | 默认值 | 描述 |
 |---------|------|---------|-------------|
-| `retry.enabled` | boolean | `true` | Enable automatic retry on transient errors |
-| `retry.maxRetries` | number | `3` | Maximum retry attempts |
-| `retry.baseDelayMs` | number | `2000` | Base delay for exponential backoff (2s, 4s, 8s) |
-| `retry.maxDelayMs` | number | `60000` | Max server-requested delay before failing (60s) |
+| `retry.enabled` | boolean | `true` | 启用瞬态错误的自动重试 |
+| `retry.maxRetries` | number | `3` | 最大重试次数 |
+| `retry.baseDelayMs` | number | `2000` | 指数退避的基础延迟 (2s, 4s, 8s) |
+| `retry.maxDelayMs` | number | `60000` | 失败前最大的服务器请求延迟 (60s) |
 
-When a provider requests a retry delay longer than `maxDelayMs` (e.g., Google's "quota will reset after 5h"), the request fails immediately with an informative error instead of waiting silently. Set to `0` to disable the cap.
+当提供商请求的重试延迟超过 `maxDelayMs`（例如，Google 的 "配额将在 5 小时后重置"）时，请求会立即失败并显示信息性错误，而不是静默等待。设置为 `0` 以禁用上限。
 
 ```json
 {
@@ -92,33 +92,33 @@ When a provider requests a retry delay longer than `maxDelayMs` (e.g., Google's 
 }
 ```
 
-### Message Delivery
+### 消息投递
 
-| Setting | Type | Default | Description |
+| 设置 | 类型 | 默认值 | 描述 |
 |---------|------|---------|-------------|
-| `steeringMode` | string | `"one-at-a-time"` | How steering messages are sent: `"all"` or `"one-at-a-time"` |
-| `followUpMode` | string | `"one-at-a-time"` | How follow-up messages are sent: `"all"` or `"one-at-a-time"` |
+| `steeringMode` | string | `"one-at-a-time"` | 引导消息的发送方式: `"all"` 或 `"one-at-a-time"` |
+| `followUpMode` | string | `"one-at-a-time"` | 后续消息的发送方式: `"all"` 或 `"one-at-a-time"` |
 
-### Terminal & Images
+### 终端与图像
 
-| Setting | Type | Default | Description |
+| 设置 | 类型 | 默认值 | 描述 |
 |---------|------|---------|-------------|
-| `terminal.showImages` | boolean | `true` | Show images in terminal (if supported) |
-| `images.autoResize` | boolean | `true` | Resize images to 2000x2000 max |
-| `images.blockImages` | boolean | `false` | Block all images from being sent to LLM |
+| `terminal.showImages` | boolean | `true` | 在终端中显示图像（如果支持） |
+| `images.autoResize` | boolean | `true` | 将图像调整为最大 2000x2000 |
+| `images.blockImages` | boolean | `false` | 阻止所有图像发送到 LLM |
 
 ### Shell
 
-| Setting | Type | Default | Description |
+| 设置 | 类型 | 默认值 | 描述 |
 |---------|------|---------|-------------|
-| `shellPath` | string | - | Custom shell path (e.g., for Cygwin on Windows) |
-| `shellCommandPrefix` | string | - | Prefix for every bash command (e.g., `"shopt -s expand_aliases"`) |
+| `shellPath` | string | - | 自定义 shell 路径（例如，用于 Windows 上的 Cygwin） |
+| `shellCommandPrefix` | string | - | 每个 bash 命令的前缀（例如，`"shopt -s expand_aliases"`） |
 
-### Model Cycling
+### 模型循环
 
-| Setting | Type | Default | Description |
+| 设置 | 类型 | 默认值 | 描述 |
 |---------|------|---------|-------------|
-| `enabledModels` | string[] | - | Model patterns for Ctrl+P cycling (same format as `--models` CLI flag) |
+| `enabledModels` | string[] | - | Ctrl+P 循环的模型模式（与 `--models` CLI 标志格式相同） |
 
 ```json
 {
@@ -128,30 +128,30 @@ When a provider requests a retry delay longer than `maxDelayMs` (e.g., Google's 
 
 ### Markdown
 
-| Setting | Type | Default | Description |
+| 设置 | 类型 | 默认值 | 描述 |
 |---------|------|---------|-------------|
-| `markdown.codeBlockIndent` | string | `"  "` | Indentation for code blocks |
+| `markdown.codeBlockIndent` | string | `"  "` | 代码块的缩进 |
 
-### Resources
+### 资源
 
-These settings define where to load extensions, skills, prompts, and themes from.
+这些设置定义了从哪里加载扩展、技能、提示和主题。
 
-Paths in `~/.pi/agent/settings.json` resolve relative to `~/.pi/agent`. Paths in `.pi/settings.json` resolve relative to `.pi`. Absolute paths and `~` are supported.
+`~/.pi/agent/settings.json` 中的路径相对于 `~/.pi/agent` 解析。`.pi/settings.json` 中的路径相对于 `.pi` 解析。支持绝对路径和 `~`。
 
-| Setting | Type | Default | Description |
+| 设置 | 类型 | 默认值 | 描述 |
 |---------|------|---------|-------------|
-| `packages` | array | `[]` | npm/git packages to load resources from |
-| `extensions` | string[] | `[]` | Local extension file paths or directories |
-| `skills` | string[] | `[]` | Local skill file paths or directories |
-| `prompts` | string[] | `[]` | Local prompt template paths or directories |
-| `themes` | string[] | `[]` | Local theme file paths or directories |
-| `enableSkillCommands` | boolean | `true` | Register skills as `/skill:name` commands |
+| `packages` | array | `[]` | 从 npm/git 包加载资源 |
+| `extensions` | string[] | `[]` | 本地扩展文件路径或目录 |
+| `skills` | string[] | `[]` | 本地技能文件路径或目录 |
+| `prompts` | string[] | `[]` | 本地提示模板路径或目录 |
+| `themes` | string[] | `[]` | 本地主题文件路径或目录 |
+| `enableSkillCommands` | boolean | `true` | 将技能注册为 `/skill:name` 命令 |
 
-Arrays support glob patterns and exclusions. Use `!pattern` to exclude. Use `+path` to force-include an exact path and `-path` to force-exclude an exact path.
+数组支持 glob 模式和排除。使用 `!pattern` 进行排除。使用 `+path` 强制包含确切路径，使用 `-path` 强制排除确切路径。
 
 #### packages
 
-String form loads all resources from a package:
+字符串形式加载包中的所有资源：
 
 ```json
 {
@@ -159,7 +159,7 @@ String form loads all resources from a package:
 }
 ```
 
-Object form filters which resources to load:
+对象形式过滤要加载的资源：
 
 ```json
 {
@@ -173,9 +173,9 @@ Object form filters which resources to load:
 }
 ```
 
-See [packages.md](packages.md) for package management details.
+有关包管理的详细信息，请参阅 [packages.md](packages.md)。
 
-## Example
+## 示例
 
 ```json
 {
@@ -197,9 +197,9 @@ See [packages.md](packages.md) for package management details.
 }
 ```
 
-## Project Overrides
+## 项目覆盖
 
-Project settings (`.pi/settings.json`) override global settings. Nested objects are merged:
+项目设置 (`.pi/settings.json`) 覆盖全局设置。嵌套对象会被合并：
 
 ```json
 // ~/.pi/agent/settings.json (global)

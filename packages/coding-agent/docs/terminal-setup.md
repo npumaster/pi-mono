@@ -1,14 +1,14 @@
-# Terminal Setup
+# 终端设置
 
-Pi uses the [Kitty keyboard protocol](https://sw.kovidgoyal.net/kitty/keyboard-protocol/) for reliable modifier key detection. Most modern terminals support this protocol, but some require configuration.
+Pi 使用 [Kitty 键盘协议](https://sw.kovidgoyal.net/kitty/keyboard-protocol/) 来进行可靠的修饰键检测。大多数现代终端都支持此协议，但有些需要配置。
 
 ## Kitty, iTerm2
 
-Work out of the box.
+开箱即用。
 
 ## Ghostty
 
-Add to your Ghostty config (`~/.config/ghostty/config`):
+添加到你的 Ghostty 配置 (`~/.config/ghostty/config`):
 
 ```
 keybind = alt+backspace=text:\x1b\x7f
@@ -17,7 +17,7 @@ keybind = shift+enter=text:\n
 
 ## WezTerm
 
-Create `~/.wezterm.lua`:
+创建 `~/.wezterm.lua`:
 
 ```lua
 local wezterm = require 'wezterm'
@@ -26,14 +26,14 @@ config.enable_kitty_keyboard = true
 return config
 ```
 
-## VS Code (Integrated Terminal)
+## VS Code (集成终端)
 
-`keybindings.json` locations:
+`keybindings.json` 位置:
 - macOS: `~/Library/Application Support/Code/User/keybindings.json`
 - Linux: `~/.config/Code/User/keybindings.json`
 - Windows: `%APPDATA%\\Code\\User\\keybindings.json`
 
-Add to `keybindings.json` to enable `Shift+Enter` for multi-line input:
+添加到 `keybindings.json` 以启用 `Shift+Enter` 进行多行输入:
 
 ```json
 {
@@ -46,7 +46,7 @@ Add to `keybindings.json` to enable `Shift+Enter` for multi-line input:
 
 ## Windows Terminal
 
-Add to `settings.json` (Ctrl+Shift+, or Settings → Open JSON file):
+添加到 `settings.json` (Ctrl+Shift+, 或 设置 → 打开 JSON 文件):
 
 ```json
 {
@@ -59,12 +59,12 @@ Add to `settings.json` (Ctrl+Shift+, or Settings → Open JSON file):
 }
 ```
 
-If you already have an `actions` array, add the object to it.
+如果你已经有一个 `actions` 数组，请将对象添加到其中。
 
-## IntelliJ IDEA (Integrated Terminal)
+## IntelliJ IDEA (集成终端)
 
-The built-in terminal has limited escape sequence support. Shift+Enter cannot be distinguished from Enter in IntelliJ's terminal.
+内置终端的转义序列支持有限。在 IntelliJ 的终端中，无法区分 Shift+Enter 和 Enter。
 
-If you want the hardware cursor visible, set `PI_HARDWARE_CURSOR=1` before running pi (disabled by default for compatibility).
+如果你希望硬件光标可见，请在运行 pi 之前设置 `PI_HARDWARE_CURSOR=1`（为了兼容性默认禁用）。
 
-Consider using a dedicated terminal emulator for the best experience.
+建议使用专用的终端模拟器以获得最佳体验。

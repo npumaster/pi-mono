@@ -1,174 +1,57 @@
-# Keybindings
+# 键盘快捷键
 
-All keyboard shortcuts can be customized via `~/.pi/agent/keybindings.json`. Each action can be bound to one or more keys.
+在 TUI（终端用户界面）模式下，`pi` 支持多种键盘快捷键以提高效率。
 
-## Key Format
+## 全局
 
-`modifier+key` where modifiers are `ctrl`, `shift`, `alt` (combinable) and keys are:
+| 按键 | 动作 |
+|-----|------|
+| `Ctrl+C` | 中断当前操作或退出（如果空闲） |
+| `Ctrl+L` | 清除屏幕/重绘 |
+| `Ctrl+D` | 退出应用程序（如果输入为空） |
 
-- **Letters:** `a-z`
-- **Special:** `escape`, `esc`, `enter`, `return`, `tab`, `space`, `backspace`, `delete`, `insert`, `clear`, `home`, `end`, `pageUp`, `pageDown`, `up`, `down`, `left`, `right`
-- **Function:** `f1`-`f12`
-- **Symbols:** `` ` ``, `-`, `=`, `[`, `]`, `\`, `;`, `'`, `,`, `.`, `/`, `!`, `@`, `#`, `$`, `%`, `^`, `&`, `*`, `(`, `)`, `_`, `+`, `|`, `~`, `{`, `}`, `:`, `<`, `>`, `?`
+## 输入编辑器
 
-Modifier combinations: `ctrl+shift+x`, `alt+ctrl+x`, `ctrl+shift+alt+x`, etc.
+| 按键 | 动作 |
+|-----|------|
+| `Enter` | 发送消息 |
+| `Alt+Enter` / `Ctrl+Enter` | 插入换行符 |
+| `Up` | 历史记录上一条 |
+| `Down` | 历史记录下一条 |
+| `Ctrl+A` | 移动到行首 |
+| `Ctrl+E` | 移动到行尾 |
+| `Ctrl+U` | 清除当前行 |
+| `Ctrl+K` | 清除至行尾 |
+| `Ctrl+W` | 删除前一个单词 |
 
-## All Actions
+## 导航
 
-### Cursor Movement
+如果界面有多个面板（例如文件树、聊天、差异视图）：
 
-| Action | Default | Description |
-|--------|---------|-------------|
-| `cursorUp` | `up` | Move cursor up |
-| `cursorDown` | `down` | Move cursor down |
-| `cursorLeft` | `left`, `ctrl+b` | Move cursor left |
-| `cursorRight` | `right`, `ctrl+f` | Move cursor right |
-| `cursorWordLeft` | `alt+left`, `ctrl+left`, `alt+b` | Move cursor word left |
-| `cursorWordRight` | `alt+right`, `ctrl+right`, `alt+f` | Move cursor word right |
-| `cursorLineStart` | `home`, `ctrl+a` | Move to line start |
-| `cursorLineEnd` | `end`, `ctrl+e` | Move to line end |
-| `jumpForward` | `ctrl+]` | Jump forward to character |
-| `jumpBackward` | `ctrl+alt+]` | Jump backward to character |
-| `pageUp` | `pageUp` | Scroll up by page |
-| `pageDown` | `pageDown` | Scroll down by page |
+| 按键 | 动作 |
+|-----|------|
+| `Tab` | 切换焦点到下一个面板 |
+| `Shift+Tab` | 切换焦点到上一个面板 |
+| `PageUp` | 向上滚动聊天/视图 |
+| `PageDown` | 向下滚动聊天/视图 |
+| `Home` | 滚动到顶部 |
+| `End` | 滚动到底部 |
 
-### Deletion
+## 模式切换
 
-| Action | Default | Description |
-|--------|---------|-------------|
-| `deleteCharBackward` | `backspace` | Delete character backward |
-| `deleteCharForward` | `delete`, `ctrl+d` | Delete character forward |
-| `deleteWordBackward` | `ctrl+w`, `alt+backspace` | Delete word backward |
-| `deleteWordForward` | `alt+d`, `alt+delete` | Delete word forward |
-| `deleteToLineStart` | `ctrl+u` | Delete to line start |
-| `deleteToLineEnd` | `ctrl+k` | Delete to line end |
+| 按键 | 动作 |
+|-----|------|
+| `Ctrl+O` | 打开文件选择器 |
+| `Ctrl+P` | 打开命令面板（如果可用） |
 
-### Text Input
+## 自定义
 
-| Action | Default | Description |
-|--------|---------|-------------|
-| `newLine` | `shift+enter` | Insert new line |
-| `submit` | `enter` | Submit input |
-| `tab` | `tab` | Tab / autocomplete |
-
-### Kill Ring
-
-| Action | Default | Description |
-|--------|---------|-------------|
-| `yank` | `ctrl+y` | Paste most recently deleted text |
-| `yankPop` | `alt+y` | Cycle through deleted text after yank |
-| `undo` | `ctrl+-` | Undo last edit |
-
-### Clipboard
-
-| Action | Default | Description |
-|--------|---------|-------------|
-| `copy` | `ctrl+c` | Copy selection |
-| `pasteImage` | `ctrl+v` | Paste image from clipboard |
-
-### Application
-
-| Action | Default | Description |
-|--------|---------|-------------|
-| `interrupt` | `escape` | Cancel / abort |
-| `clear` | `ctrl+c` | Clear editor |
-| `exit` | `ctrl+d` | Exit (when editor empty) |
-| `suspend` | `ctrl+z` | Suspend to background |
-| `externalEditor` | `ctrl+g` | Open in external editor (`$VISUAL` or `$EDITOR`) |
-
-### Session
-
-| Action | Default | Description |
-|--------|---------|-------------|
-| `newSession` | *(none)* | Start a new session (`/new`) |
-| `tree` | *(none)* | Open session tree navigator (`/tree`) |
-| `fork` | *(none)* | Fork current session (`/fork`) |
-| `resume` | *(none)* | Open session resume picker (`/resume`) |
-
-### Models & Thinking
-
-| Action | Default | Description |
-|--------|---------|-------------|
-| `selectModel` | `ctrl+l` | Open model selector |
-| `cycleModelForward` | `ctrl+p` | Cycle to next model |
-| `cycleModelBackward` | `shift+ctrl+p` | Cycle to previous model |
-| `cycleThinkingLevel` | `shift+tab` | Cycle thinking level |
-
-### Display
-
-| Action | Default | Description |
-|--------|---------|-------------|
-| `expandTools` | `ctrl+o` | Collapse/expand tool output |
-| `toggleThinking` | `ctrl+t` | Collapse/expand thinking blocks |
-
-### Message Queue
-
-| Action | Default | Description |
-|--------|---------|-------------|
-| `followUp` | `alt+enter` | Queue follow-up message |
-| `dequeue` | `alt+up` | Restore queued messages to editor |
-
-### Selection (Lists, Pickers)
-
-| Action | Default | Description |
-|--------|---------|-------------|
-| `selectUp` | `up` | Move selection up |
-| `selectDown` | `down` | Move selection down |
-| `selectPageUp` | `pageUp` | Page up in list |
-| `selectPageDown` | `pageDown` | Page down in list |
-| `selectConfirm` | `enter` | Confirm selection |
-| `selectCancel` | `escape`, `ctrl+c` | Cancel selection |
-
-### Session Picker
-
-| Action | Default | Description |
-|--------|---------|-------------|
-| `toggleSessionPath` | `ctrl+p` | Toggle path display |
-| `toggleSessionSort` | `ctrl+s` | Toggle sort mode |
-| `toggleSessionNamedFilter` | `ctrl+n` | Toggle named-only filter |
-| `renameSession` | `ctrl+r` | Rename session |
-| `deleteSession` | `ctrl+d` | Delete session |
-| `deleteSessionNoninvasive` | `ctrl+backspace` | Delete session (when query empty) |
-
-## Custom Configuration
-
-Create `~/.pi/agent/keybindings.json`:
+你可以通过 `keybindings.json` 文件自定义这些快捷键。
 
 ```json
 {
-  "cursorUp": ["up", "ctrl+p"],
-  "cursorDown": ["down", "ctrl+n"],
-  "deleteWordBackward": ["ctrl+w", "alt+backspace"]
-}
-```
-
-Each action can have a single key or an array of keys. User config overrides defaults.
-
-### Emacs Example
-
-```json
-{
-  "cursorUp": ["up", "ctrl+p"],
-  "cursorDown": ["down", "ctrl+n"],
-  "cursorLeft": ["left", "ctrl+b"],
-  "cursorRight": ["right", "ctrl+f"],
-  "cursorWordLeft": ["alt+left", "alt+b"],
-  "cursorWordRight": ["alt+right", "alt+f"],
-  "deleteCharForward": ["delete", "ctrl+d"],
-  "deleteCharBackward": ["backspace", "ctrl+h"],
-  "newLine": ["shift+enter", "ctrl+j"]
-}
-```
-
-### Vim Example
-
-```json
-{
-  "cursorUp": ["up", "alt+k"],
-  "cursorDown": ["down", "alt+j"],
-  "cursorLeft": ["left", "alt+h"],
-  "cursorRight": ["right", "alt+l"],
-  "cursorWordLeft": ["alt+left", "alt+b"],
-  "cursorWordRight": ["alt+right", "alt+w"]
+  "submit": ["enter"],
+  "newline": ["alt+enter", "ctrl+enter"],
+  "quit": ["ctrl+q"]
 }
 ```
