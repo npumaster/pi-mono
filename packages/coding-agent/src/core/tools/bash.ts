@@ -29,16 +29,16 @@ export interface BashToolDetails {
 }
 
 /**
- * Pluggable operations for the bash tool.
- * Override these to delegate command execution to remote systems (e.g., SSH).
+ * bash 工具的可插拔操作。
+ * 覆盖这些以将命令执行委托给远程系统（例如 SSH）。
  */
 export interface BashOperations {
 	/**
-	 * Execute a command and stream output.
-	 * @param command - The command to execute
-	 * @param cwd - Working directory
-	 * @param options - Execution options
-	 * @returns Promise resolving to exit code (null if killed)
+	 * 执行命令并流式传输输出。
+	 * @param command - 要执行的命令
+	 * @param cwd - 工作目录
+	 * @param options - 执行选项
+	 * @returns Promise 解析为退出代码（如果被终止则为 null）
 	 */
 	exec: (
 		command: string,
@@ -74,7 +74,7 @@ const defaultBashOperations: BashOperations = {
 
 			let timedOut = false;
 
-			// Set timeout if provided
+			// 如果提供了超时，则设置超时
 			let timeoutHandle: NodeJS.Timeout | undefined;
 			if (timeout !== undefined && timeout > 0) {
 				timeoutHandle = setTimeout(() => {
@@ -85,7 +85,7 @@ const defaultBashOperations: BashOperations = {
 				}, timeout * 1000);
 			}
 
-			// Stream stdout and stderr
+			// 流式传输 stdout 和 stderr
 			if (child.stdout) {
 				child.stdout.on("data", onData);
 			}
@@ -93,14 +93,14 @@ const defaultBashOperations: BashOperations = {
 				child.stderr.on("data", onData);
 			}
 
-			// Handle shell spawn errors
+			// 处理 shell spawn 错误
 			child.on("error", (err) => {
 				if (timeoutHandle) clearTimeout(timeoutHandle);
 				if (signal) signal.removeEventListener("abort", onAbort);
 				reject(err);
 			});
 
-			// Handle abort signal - kill entire process tree
+			// 处理中止信号 - 杀死整个进程树
 			const onAbort = () => {
 				if (child.pid) {
 					killProcessTree(child.pid);
@@ -115,7 +115,7 @@ const defaultBashOperations: BashOperations = {
 				}
 			}
 
-			// Handle process exit
+			// 处理进程退出
 			child.on("close", (code) => {
 				if (timeoutHandle) clearTimeout(timeoutHandle);
 				if (signal) signal.removeEventListener("abort", onAbort);
@@ -171,7 +171,7 @@ export function createBashTool(cwd: string, options?: BashToolOptions): AgentToo
 	return {
 		name: "bash",
 		label: "bash",
-		description: `Execute a bash command in the current working directory. Returns stdout and stderr. Output is truncated to last ${DEFAULT_MAX_LINES} lines or ${DEFAULT_MAX_BYTES / 1024}KB (whichever is hit first). If truncated, full output is saved to a temp file. Optionally provide a timeout in seconds.`,
+		description: `在当前工作目录中执行 bash 命令。返回 stdout 和 stderr。输出被截断为最后 ${DEFAULT_MAX_LINES} 行或 ${DEFAULT_MAX_BYTES / 1024}KB（以先达到者为准）。如果被截断，完整输出将保存到临时文件。可选择提供以秒为单位的超时。`,
 		parameters: bashSchema,
 		execute: async (
 			_toolCallId: string,
@@ -179,51 +179,51 @@ export function createBashTool(cwd: string, options?: BashToolOptions): AgentToo
 			signal?: AbortSignal,
 			onUpdate?,
 		) => {
-			// Apply command prefix if configured (e.g., "shopt -s expand_aliases" for alias support)
+			// 如果配置了命令前缀，则应用它（例如，用于别名支持的 "shopt -s expand_aliases"）
 			const resolvedCommand = commandPrefix ? `${commandPrefix}\n${command}` : command;
 			const spawnContext = resolveSpawnContext(resolvedCommand, cwd, spawnHook);
 
 			return new Promise((resolve, reject) => {
-				// We'll stream to a temp file if output gets large
+				// 如果输出变大，我们将流式传输到临时文件
 				let tempFilePath: string | undefined;
 				let tempFileStream: ReturnType<typeof createWriteStream> | undefined;
 				let totalBytes = 0;
 
-				// Keep a rolling buffer of the last chunk for tail truncation
+				// 保留最后一块的滚动缓冲区用于尾部截断
 				const chunks: Buffer[] = [];
 				let chunksBytes = 0;
-				// Keep more than we need so we have enough for truncation
+				// 保留超过我们需要的内容，以便我们有足够的内容进行截断
 				const maxChunksBytes = DEFAULT_MAX_BYTES * 2;
 
 				const handleData = (data: Buffer) => {
 					totalBytes += data.length;
 
-					// Start writing to temp file once we exceed the threshold
+					// 一旦超过阈值，就开始写入临时文件
 					if (totalBytes > DEFAULT_MAX_BYTES && !tempFilePath) {
 						tempFilePath = getTempFilePath();
 						tempFileStream = createWriteStream(tempFilePath);
-						// Write all buffered chunks to the file
+						// 将所有缓冲的块写入文件
 						for (const chunk of chunks) {
 							tempFileStream.write(chunk);
 						}
 					}
 
-					// Write to temp file if we have one
+					// 如果有临时文件，则写入临时文件
 					if (tempFileStream) {
 						tempFileStream.write(data);
 					}
 
-					// Keep rolling buffer of recent data
+					// 保留最近数据的滚动缓冲区
 					chunks.push(data);
 					chunksBytes += data.length;
 
-					// Trim old chunks if buffer is too large
+					// 如果缓冲区太大，则修剪旧块
 					while (chunksBytes > maxChunksBytes && chunks.length > 1) {
 						const removed = chunks.shift()!;
 						chunksBytes -= removed.length;
 					}
 
-					// Stream partial output to callback (truncated rolling buffer)
+					// 将部分输出流式传输到回调（截断的滚动缓冲区）
 					if (onUpdate) {
 						const fullBuffer = Buffer.concat(chunks);
 						const fullText = fullBuffer.toString("utf-8");
@@ -317,5 +317,5 @@ export function createBashTool(cwd: string, options?: BashToolOptions): AgentToo
 	};
 }
 
-/** Default bash tool using process.cwd() - for backwards compatibility */
+/** 使用 process.cwd() 的默认 bash 工具 - 为了向后兼容 */
 export const bashTool = createBashTool(process.cwd());

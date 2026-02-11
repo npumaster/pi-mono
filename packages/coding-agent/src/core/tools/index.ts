@@ -75,16 +75,16 @@ import { createLsTool, lsTool } from "./ls.js";
 import { createReadTool, type ReadToolOptions, readTool } from "./read.js";
 import { createWriteTool, writeTool } from "./write.js";
 
-/** Tool type (AgentTool from pi-ai) */
+/** 工具类型（来自 pi-ai 的 AgentTool） */
 export type Tool = AgentTool<any>;
 
-// Default tools for full access mode (using process.cwd())
+// 默认工具，用于完全访问模式（使用 process.cwd()）
 export const codingTools: Tool[] = [readTool, bashTool, editTool, writeTool];
 
-// Read-only tools for exploration without modification (using process.cwd())
+// 只读工具，用于无需修改的探索（使用 process.cwd()）
 export const readOnlyTools: Tool[] = [readTool, grepTool, findTool, lsTool];
 
-// All available tools (using process.cwd())
+// 所有可用工具（使用 process.cwd()）
 export const allTools = {
 	read: readTool,
 	bash: bashTool,
@@ -117,14 +117,14 @@ export function createCodingTools(cwd: string, options?: ToolsOptions): Tool[] {
 }
 
 /**
- * Create read-only tools configured for a specific working directory.
+ * 创建配置为特定工作目录的只读工具。
  */
 export function createReadOnlyTools(cwd: string, options?: ToolsOptions): Tool[] {
 	return [createReadTool(cwd, options?.read), createGrepTool(cwd), createFindTool(cwd), createLsTool(cwd)];
 }
 
 /**
- * Create all tools configured for a specific working directory.
+ * 创建配置为特定工作目录的所有工具。
  */
 export function createAllTools(cwd: string, options?: ToolsOptions): Record<ToolName, Tool> {
 	return {

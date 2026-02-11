@@ -1,5 +1,5 @@
 /**
- * Tool wrappers for extensions.
+ * 扩展的工具包装器。
  */
 
 import type { AgentTool, AgentToolUpdateCallback } from "@mariozechner/pi-agent-core";
@@ -23,8 +23,8 @@ export function wrapRegisteredTool(registeredTool: RegisteredTool, runner: Exten
 }
 
 /**
- * Wrap all registered tools into AgentTools.
- * Uses the runner's createContext() for consistent context across tools and event handlers.
+ * 将所有已注册的工具包装为 AgentTool。
+ * 使用 runner 的 createContext() 在工具和事件处理程序之间保持上下文一致。
  */
 export function wrapRegisteredTools(registeredTools: RegisteredTool[], runner: ExtensionRunner): AgentTool[] {
 	return registeredTools.map((rt) => wrapRegisteredTool(rt, runner));
@@ -44,7 +44,7 @@ export function wrapToolWithExtensions<T>(tool: AgentTool<any, T>, runner: Exten
 			signal?: AbortSignal,
 			onUpdate?: AgentToolUpdateCallback<T>,
 		) => {
-			// Emit tool_call event - extensions can block execution
+			// 发出 tool_call 事件 - 扩展可以阻止执行
 			if (runner.hasHandlers("tool_call")) {
 				try {
 					const callResult = (await runner.emitToolCall({
@@ -111,7 +111,7 @@ export function wrapToolWithExtensions<T>(tool: AgentTool<any, T>, runner: Exten
 }
 
 /**
- * Wrap all tools with extension callbacks.
+ * 使用扩展回调包装所有工具。
  */
 export function wrapToolsWithExtensions<T>(tools: AgentTool<any, T>[], runner: ExtensionRunner): AgentTool<any, T>[] {
 	return tools.map((tool) => wrapToolWithExtensions(tool, runner));

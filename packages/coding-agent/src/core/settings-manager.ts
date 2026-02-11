@@ -41,9 +41,9 @@ export interface MarkdownSettings {
 }
 
 /**
- * Package source for npm/git packages.
- * - String form: load all resources from the package
- * - Object form: filter which resources to load
+ * npm/git 包的包源。
+ * - 字符串形式：从包中加载所有资源
+ * - 对象形式：过滤要加载的资源
  */
 export type PackageSource =
 	| string
@@ -67,28 +67,28 @@ export interface Settings {
 	branchSummary?: BranchSummarySettings;
 	retry?: RetrySettings;
 	hideThinkingBlock?: boolean;
-	shellPath?: string; // Custom shell path (e.g., for Cygwin users on Windows)
+	shellPath?: string; // 自定义 shell 路径（例如，Windows 上的 Cygwin 用户）
 	quietStartup?: boolean;
-	shellCommandPrefix?: string; // Prefix prepended to every bash command (e.g., "shopt -s expand_aliases" for alias support)
-	collapseChangelog?: boolean; // Show condensed changelog after update (use /changelog for full)
-	packages?: PackageSource[]; // Array of npm/git package sources (string or object with filtering)
-	extensions?: string[]; // Array of local extension file paths or directories
-	skills?: string[]; // Array of local skill file paths or directories
-	prompts?: string[]; // Array of local prompt template paths or directories
-	themes?: string[]; // Array of local theme file paths or directories
-	enableSkillCommands?: boolean; // default: true - register skills as /skill:name commands
+	shellCommandPrefix?: string; // 添加到每个 bash 命令的前缀（例如，"shopt -s expand_aliases" 用于别名支持）
+	collapseChangelog?: boolean; // 更新后显示简明变更日志（使用 /changelog 查看完整内容）
+	packages?: PackageSource[]; // npm/git 包源数组（字符串或带有过滤的对象）
+	extensions?: string[]; // 本地扩展文件路径或目录的数组
+	skills?: string[]; // 本地技能文件路径或目录的数组
+	prompts?: string[]; // 本地提示词模板路径或目录的数组
+	themes?: string[]; // 本地主题文件路径或目录的数组
+	enableSkillCommands?: boolean; // 默认：true - 将技能注册为 /skill:name 命令
 	terminal?: TerminalSettings;
 	images?: ImageSettings;
-	enabledModels?: string[]; // Model patterns for cycling (same format as --models CLI flag)
-	doubleEscapeAction?: "fork" | "tree" | "none"; // Action for double-escape with empty editor (default: "tree")
-	thinkingBudgets?: ThinkingBudgetsSettings; // Custom token budgets for thinking levels
-	editorPaddingX?: number; // Horizontal padding for input editor (default: 0)
-	autocompleteMaxVisible?: number; // Max visible items in autocomplete dropdown (default: 5)
-	showHardwareCursor?: boolean; // Show terminal cursor while still positioning it for IME
+	enabledModels?: string[]; // 用于循环的模型模式（与 --models CLI 标志格式相同）
+	doubleEscapeAction?: "fork" | "tree" | "none"; // 空编辑器时双击 escape 的操作（默认："tree"）
+	thinkingBudgets?: ThinkingBudgetsSettings; // 思考级别的自定义令牌预算
+	editorPaddingX?: number; // 输入编辑器的水平填充（默认：0）
+	autocompleteMaxVisible?: number; // 自动完成下拉菜单中的最大可见项目数（默认：5）
+	showHardwareCursor?: boolean; // 在为输入法定位时仍显示终端光标
 	markdown?: MarkdownSettings;
 }
 
-/** Deep merge settings: project/overrides take precedence, nested objects merge recursively */
+/** 深度合并设置：项目/覆盖优先，嵌套对象递归合并 */
 function deepMergeSettings(base: Settings, overrides: Settings): Settings {
 	const result: Settings = { ...base };
 
@@ -100,7 +100,7 @@ function deepMergeSettings(base: Settings, overrides: Settings): Settings {
 			continue;
 		}
 
-		// For nested objects, merge recursively
+		// 对于嵌套对象，递归合并
 		if (
 			typeof overrideValue === "object" &&
 			overrideValue !== null &&
@@ -111,7 +111,7 @@ function deepMergeSettings(base: Settings, overrides: Settings): Settings {
 		) {
 			(result as Record<string, unknown>)[key] = { ...baseValue, ...overrideValue };
 		} else {
-			// For primitives and arrays, override value wins
+			// 对于基元和数组，覆盖值胜出
 			(result as Record<string, unknown>)[key] = overrideValue;
 		}
 	}
@@ -123,12 +123,12 @@ export class SettingsManager {
 	private settingsPath: string | null;
 	private projectSettingsPath: string | null;
 	private globalSettings: Settings;
-	private inMemoryProjectSettings: Settings; // For in-memory mode
+	private inMemoryProjectSettings: Settings; // 用于内存模式
 	private settings: Settings;
 	private persist: boolean;
-	private modifiedFields = new Set<keyof Settings>(); // Track fields modified during session
-	private modifiedNestedFields = new Map<keyof Settings, Set<string>>(); // Track nested field modifications
-	private globalSettingsLoadError: Error | null = null; // Track if settings file had parse errors
+	private modifiedFields = new Set<keyof Settings>(); // 跟踪会话期间修改的字段
+	private modifiedNestedFields = new Map<keyof Settings, Set<string>>(); // 跟踪嵌套字段修改
+	private globalSettingsLoadError: Error | null = null; // 跟踪设置文件是否有解析错误
 
 	private constructor(
 		settingsPath: string | null,
@@ -147,7 +147,7 @@ export class SettingsManager {
 		this.settings = deepMergeSettings(this.globalSettings, projectSettings);
 	}
 
-	/** Create a SettingsManager that loads from files */
+	/** 创建从文件加载的 SettingsManager */
 	static create(cwd: string = process.cwd(), agentDir: string = getAgentDir()): SettingsManager {
 		const settingsPath = join(agentDir, "settings.json");
 		const projectSettingsPath = join(cwd, CONFIG_DIR_NAME, "settings.json");
@@ -166,7 +166,7 @@ export class SettingsManager {
 		return new SettingsManager(settingsPath, projectSettingsPath, globalSettings, true, loadError);
 	}
 
-	/** Create an in-memory SettingsManager (no file I/O) */
+	/** 创建内存中的 SettingsManager（无文件 I/O） */
 	static inMemory(settings: Partial<Settings> = {}): SettingsManager {
 		return new SettingsManager(null, null, settings, false);
 	}
@@ -180,15 +180,15 @@ export class SettingsManager {
 		return SettingsManager.migrateSettings(settings);
 	}
 
-	/** Migrate old settings format to new format */
+	/** 将旧设置格式迁移到新格式 */
 	private static migrateSettings(settings: Record<string, unknown>): Settings {
-		// Migrate queueMode -> steeringMode
+		// 迁移 queueMode -> steeringMode
 		if ("queueMode" in settings && !("steeringMode" in settings)) {
 			settings.steeringMode = settings.queueMode;
 			delete settings.queueMode;
 		}
 
-		// Migrate old skills object format to new array format
+		// 将旧的 skills 对象格式迁移到新的数组格式
 		if (
 			"skills" in settings &&
 			typeof settings.skills === "object" &&
@@ -213,7 +213,7 @@ export class SettingsManager {
 	}
 
 	private loadProjectSettings(): Settings {
-		// In-memory mode: return stored in-memory project settings
+		// 内存模式：返回存储的内存项目设置
 		if (!this.persist) {
 			return structuredClone(this.inMemoryProjectSettings);
 		}
@@ -263,12 +263,12 @@ export class SettingsManager {
 		this.settings = deepMergeSettings(this.globalSettings, projectSettings);
 	}
 
-	/** Apply additional overrides on top of current settings */
+	/** 在当前设置之上应用额外的覆盖 */
 	applyOverrides(overrides: Partial<Settings>): void {
 		this.settings = deepMergeSettings(this.settings, overrides);
 	}
 
-	/** Mark a field as modified during this session */
+	/** 将字段标记为在本次会话期间已修改 */
 	private markModified(field: keyof Settings, nestedKey?: string): void {
 		this.modifiedFields.add(field);
 		if (nestedKey) {
@@ -281,9 +281,9 @@ export class SettingsManager {
 
 	private save(): void {
 		if (this.persist && this.settingsPath) {
-			// Don't overwrite if the file had parse errors on initial load
+			// 如果文件在初始加载时有解析错误，请勿覆盖
 			if (this.globalSettingsLoadError) {
-				// Re-merge to update active settings even though we can't persist
+				// 即使我们无法持久化，也重新合并以更新活动设置
 				const projectSettings = this.loadProjectSettings();
 				this.settings = deepMergeSettings(this.globalSettings, projectSettings);
 				return;
@@ -295,17 +295,17 @@ export class SettingsManager {
 					mkdirSync(dir, { recursive: true });
 				}
 
-				// Re-read current file to get latest external changes
+				// 重新读取当前文件以获取最新的外部更改
 				const currentFileSettings = SettingsManager.loadFromFile(this.settingsPath);
 
-				// Start with file settings as base - preserves external edits
+				// 以文件设置作为基础 - 保留外部编辑
 				const mergedSettings: Settings = { ...currentFileSettings };
 
-				// Only override with in-memory values for fields that were explicitly modified during this session
+				// 仅覆盖在本次会话期间显式修改的字段的内存值
 				for (const field of this.modifiedFields) {
 					const value = this.globalSettings[field];
 
-					// Handle nested objects specially - merge at nested level to preserve unmodified nested keys
+					// 特别处理嵌套对象 - 在嵌套级别合并以保留未修改的嵌套键
 					if (this.modifiedNestedFields.has(field) && typeof value === "object" && value !== null) {
 						const nestedModified = this.modifiedNestedFields.get(field)!;
 						const baseNested = (currentFileSettings[field] as Record<string, unknown>) ?? {};
@@ -316,7 +316,7 @@ export class SettingsManager {
 						}
 						(mergedSettings as Record<string, unknown>)[field] = mergedNested;
 					} else {
-						// For top-level primitives and arrays, use the modified value directly
+						// 对于顶级基元和数组，直接使用修改后的值
 						(mergedSettings as Record<string, unknown>)[field] = value;
 					}
 				}
@@ -324,18 +324,18 @@ export class SettingsManager {
 				this.globalSettings = mergedSettings;
 				writeFileSync(this.settingsPath, JSON.stringify(this.globalSettings, null, 2), "utf-8");
 			} catch (error) {
-				// File may have been externally modified with invalid JSON - don't overwrite
+				// 文件可能已被外部修改且 JSON 无效 - 请勿覆盖
 				console.error(`Warning: Could not save settings file: ${error}`);
 			}
 		}
 
-		// Always re-merge to update active settings (needed for both file and inMemory modes)
+		// 始终重新合并以更新活动设置（文件和内存模式都需要）
 		const projectSettings = this.loadProjectSettings();
 		this.settings = deepMergeSettings(this.globalSettings, projectSettings);
 	}
 
 	private saveProjectSettings(settings: Settings): void {
-		// In-memory mode: store in memory
+		// 内存模式：存储在内存中
 		if (!this.persist) {
 			this.inMemoryProjectSettings = structuredClone(settings);
 			return;
@@ -653,7 +653,7 @@ export class SettingsManager {
 	}
 
 	getClearOnShrink(): boolean {
-		// Settings takes precedence, then env var, then default false
+		// 设置优先，然后是环境变量，然后默认 false
 		if (this.settings.terminal?.clearOnShrink !== undefined) {
 			return this.settings.terminal.clearOnShrink;
 		}

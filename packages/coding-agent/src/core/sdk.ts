@@ -39,49 +39,49 @@ import {
 } from "./tools/index.js";
 
 export interface CreateAgentSessionOptions {
-	/** Working directory for project-local discovery. Default: process.cwd() */
+	/** 项目本地发现的工作目录。默认值：process.cwd() */
 	cwd?: string;
-	/** Global config directory. Default: ~/.pi/agent */
+	/** 全局配置目录。默认值：~/.pi/agent */
 	agentDir?: string;
 
-	/** Auth storage for credentials. Default: new AuthStorage(agentDir/auth.json) */
+	/** 用于凭据的身份验证存储。默认值：new AuthStorage(agentDir/auth.json) */
 	authStorage?: AuthStorage;
-	/** Model registry. Default: new ModelRegistry(authStorage, agentDir/models.json) */
+	/** 模型注册表。默认值：new ModelRegistry(authStorage, agentDir/models.json) */
 	modelRegistry?: ModelRegistry;
 
-	/** Model to use. Default: from settings, else first available */
+	/** 要使用的模型。默认值：来自设置，否则为第一个可用的模型 */
 	model?: Model<any>;
-	/** Thinking level. Default: from settings, else 'medium' (clamped to model capabilities) */
+	/** 思考级别。默认值：来自设置，否则为 'medium'（限制为模型功能） */
 	thinkingLevel?: ThinkingLevel;
-	/** Models available for cycling (Ctrl+P in interactive mode) */
+	/** 可用于循环的模型（交互模式下的 Ctrl+P） */
 	scopedModels?: Array<{ model: Model<any>; thinkingLevel: ThinkingLevel }>;
 
-	/** Built-in tools to use. Default: codingTools [read, bash, edit, write] */
+	/** 要使用的内置工具。默认值：codingTools [read, bash, edit, write] */
 	tools?: Tool[];
-	/** Custom tools to register (in addition to built-in tools). */
+	/** 要注册的自定义工具（除内置工具外）。 */
 	customTools?: ToolDefinition[];
 
-	/** Resource loader. When omitted, DefaultResourceLoader is used. */
+	/** 资源加载器。省略时，使用 DefaultResourceLoader。 */
 	resourceLoader?: ResourceLoader;
 
-	/** Session manager. Default: SessionManager.create(cwd) */
+	/** 会话管理器。默认值：SessionManager.create(cwd) */
 	sessionManager?: SessionManager;
 
-	/** Settings manager. Default: SettingsManager.create(cwd, agentDir) */
+	/** 设置管理器。默认值：SettingsManager.create(cwd, agentDir) */
 	settingsManager?: SettingsManager;
 }
 
-/** Result from createAgentSession */
+/** createAgentSession 的结果 */
 export interface CreateAgentSessionResult {
-	/** The created session */
+	/** 创建的会话 */
 	session: AgentSession;
-	/** Extensions result (for UI context setup in interactive mode) */
+	/** 扩展结果（用于交互模式下的 UI 上下文设置） */
 	extensionsResult: LoadExtensionsResult;
-	/** Warning if session was restored with a different model than saved */
+	/** 如果会话恢复时使用的模型与保存时不同，则发出警告 */
 	modelFallbackMessage?: string;
 }
 
-// Re-exports
+// 重新导出
 
 export type {
 	ExtensionAPI,
@@ -98,7 +98,7 @@ export type { Skill } from "./skills.js";
 export type { Tool } from "./tools/index.js";
 
 export {
-	// Pre-built tools (use process.cwd())
+	// 预构建工具（使用 process.cwd()）
 	readTool,
 	bashTool,
 	editTool,
@@ -109,7 +109,7 @@ export {
 	codingTools,
 	readOnlyTools,
 	allTools as allBuiltInTools,
-	// Tool factories (for custom cwd)
+	// 工具工厂（用于自定义 cwd）
 	createCodingTools,
 	createReadOnlyTools,
 	createReadTool,
@@ -121,14 +121,14 @@ export {
 	createLsTool,
 };
 
-// Helper Functions
+// 辅助函数
 
 function getDefaultAgentDir(): string {
 	return getAgentDir();
 }
 
 /**
- * Create an AgentSession with the specified options.
+ * 使用指定选项创建 AgentSession。
  *
  * @example
  * ```typescript
@@ -167,7 +167,7 @@ export async function createAgentSession(options: CreateAgentSessionOptions = {}
 	const agentDir = options.agentDir ?? getDefaultAgentDir();
 	let resourceLoader = options.resourceLoader;
 
-	// Use provided or create AuthStorage and ModelRegistry
+	// 使用提供的或创建 AuthStorage 和 ModelRegistry
 	const authPath = options.agentDir ? join(agentDir, "auth.json") : undefined;
 	const modelsPath = options.agentDir ? join(agentDir, "models.json") : undefined;
 	const authStorage = options.authStorage ?? new AuthStorage(authPath);
@@ -182,7 +182,7 @@ export async function createAgentSession(options: CreateAgentSessionOptions = {}
 		time("resourceLoader.reload");
 	}
 
-	// Check if session has existing data to restore
+	// 检查会话是否有现有数据要恢复
 	const existingSession = sessionManager.buildSessionContext();
 	const hasExistingSession = existingSession.messages.length > 0;
 	const hasThinkingEntry = sessionManager.getBranch().some((entry) => entry.type === "thinking_level_change");
@@ -190,7 +190,7 @@ export async function createAgentSession(options: CreateAgentSessionOptions = {}
 	let model = options.model;
 	let modelFallbackMessage: string | undefined;
 
-	// If session has data, try to restore model from it
+	// 如果会话有数据，尝试从中恢复模型
 	if (!model && hasExistingSession && existingSession.model) {
 		const restoredModel = modelRegistry.find(existingSession.model.provider, existingSession.model.modelId);
 		if (restoredModel && (await modelRegistry.getApiKey(restoredModel))) {
@@ -201,7 +201,7 @@ export async function createAgentSession(options: CreateAgentSessionOptions = {}
 		}
 	}
 
-	// If still no model, use findInitialModel (checks settings default, then provider defaults)
+	// 如果仍然没有模型，使用 findInitialModel（检查设置默认值，然后是提供商默认值）
 	if (!model) {
 		const result = await findInitialModel({
 			scopedModels: [],
@@ -221,19 +221,19 @@ export async function createAgentSession(options: CreateAgentSessionOptions = {}
 
 	let thinkingLevel = options.thinkingLevel;
 
-	// If session has data, restore thinking level from it
+	// 如果会话有数据，从中恢复思考级别
 	if (thinkingLevel === undefined && hasExistingSession) {
 		thinkingLevel = hasThinkingEntry
 			? (existingSession.thinkingLevel as ThinkingLevel)
 			: (settingsManager.getDefaultThinkingLevel() ?? DEFAULT_THINKING_LEVEL);
 	}
 
-	// Fall back to settings default
+	// 回退到设置默认值
 	if (thinkingLevel === undefined) {
 		thinkingLevel = settingsManager.getDefaultThinkingLevel() ?? DEFAULT_THINKING_LEVEL;
 	}
 
-	// Clamp to model capabilities
+	// 限制为模型功能
 	if (!model || !model.reasoning) {
 		thinkingLevel = "off";
 	}
@@ -245,14 +245,14 @@ export async function createAgentSession(options: CreateAgentSessionOptions = {}
 
 	let agent: Agent;
 
-	// Create convertToLlm wrapper that filters images if blockImages is enabled (defense-in-depth)
+	// 创建 convertToLlm 包装器，如果启用 blockImages 则过滤图像（纵深防御）
 	const convertToLlmWithBlockImages = (messages: AgentMessage[]): Message[] => {
 		const converted = convertToLlm(messages);
-		// Check setting dynamically so mid-session changes take effect
+		// 动态检查设置，以便会话中途更改生效
 		if (!settingsManager.getBlockImages()) {
 			return converted;
 		}
-		// Filter out ImageContent from all messages, replacing with text placeholder
+		// 过滤掉所有消息中的 ImageContent，替换为文本占位符
 		return converted.map((msg) => {
 			if (msg.role === "user" || msg.role === "toolResult") {
 				const content = msg.content;
@@ -265,7 +265,7 @@ export async function createAgentSession(options: CreateAgentSessionOptions = {}
 							)
 							.filter(
 								(c, i, arr) =>
-									// Dedupe consecutive "Image reading is disabled." texts
+									// 去重连续的 "Image reading is disabled." 文本
 									!(
 										c.type === "text" &&
 										c.text === "Image reading is disabled." &&
@@ -303,8 +303,8 @@ export async function createAgentSession(options: CreateAgentSessionOptions = {}
 		thinkingBudgets: settingsManager.getThinkingBudgets(),
 		maxRetryDelayMs: settingsManager.getRetrySettings().maxDelayMs,
 		getApiKey: async (provider) => {
-			// Use the provider argument from the in-flight request;
-			// agent.state.model may already be switched mid-turn.
+			// 使用正在进行的请求中的提供商参数；
+			// agent.state.model 可能已经在中途切换。
 			const resolvedProvider = provider || agent.state.model?.provider;
 			if (!resolvedProvider) {
 				throw new Error("No model selected");
@@ -329,14 +329,14 @@ export async function createAgentSession(options: CreateAgentSessionOptions = {}
 		},
 	});
 
-	// Restore messages if session has existing data
+	// 如果会话有现有数据，则恢复消息
 	if (hasExistingSession) {
 		agent.replaceMessages(existingSession.messages);
 		if (!hasThinkingEntry) {
 			sessionManager.appendThinkingLevelChange(thinkingLevel);
 		}
 	} else {
-		// Save initial model and thinking level for new sessions so they can be restored on resume
+		// 为新会话保存初始模型和思考级别，以便在恢复时恢复它们
 		if (model) {
 			sessionManager.appendModelChange(model.provider, model.id);
 		}

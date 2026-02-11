@@ -1,9 +1,9 @@
 /**
- * Bash command execution with streaming support and cancellation.
+ * 具有流式传输支持和取消功能的 Bash 命令执行。
  *
- * This module provides a unified bash execution implementation used by:
- * - AgentSession.executeBash() for interactive and RPC modes
- * - Direct calls from modes that need bash execution
+ * 此模块提供统一的 bash 执行实现，用于：
+ * - 交互式和 RPC 模式下的 AgentSession.executeBash()
+ * - 需要 bash 执行的模式的直接调用
  */
 
 import { randomBytes } from "node:crypto";
@@ -21,22 +21,22 @@ import { DEFAULT_MAX_BYTES, truncateTail } from "./tools/truncate.js";
 // ============================================================================
 
 export interface BashExecutorOptions {
-	/** Callback for streaming output chunks (already sanitized) */
+	/** 流式输出块的回调（已清理） */
 	onChunk?: (chunk: string) => void;
-	/** AbortSignal for cancellation */
+	/** 用于取消的 AbortSignal */
 	signal?: AbortSignal;
 }
 
 export interface BashResult {
-	/** Combined stdout + stderr output (sanitized, possibly truncated) */
+	/** 组合的 stdout + stderr 输出（已清理，可能已截断） */
 	output: string;
-	/** Process exit code (undefined if killed/cancelled) */
+	/** 进程退出代码（如果被终止/取消则为 undefined） */
 	exitCode: number | undefined;
-	/** Whether the command was cancelled via signal */
+	/** 命令是否通过信号被取消 */
 	cancelled: boolean;
-	/** Whether the output was truncated */
+	/** 输出是否被截断 */
 	truncated: boolean;
-	/** Path to temp file containing full output (if output exceeded truncation threshold) */
+	/** 包含完整输出的临时文件路径（如果输出超过截断阈值） */
 	fullOutputPath?: string;
 }
 
@@ -45,18 +45,18 @@ export interface BashResult {
 // ============================================================================
 
 /**
- * Execute a bash command with optional streaming and cancellation support.
+ * 执行带有可选流式传输和取消支持的 bash 命令。
  *
- * Features:
- * - Streams sanitized output via onChunk callback
- * - Writes large output to temp file for later retrieval
- * - Supports cancellation via AbortSignal
- * - Sanitizes output (strips ANSI, removes binary garbage, normalizes newlines)
- * - Truncates output if it exceeds the default max bytes
+ * 功能：
+ * - 通过 onChunk 回调流式传输已清理的输出
+ * - 将大量输出写入临时文件以供稍后检索
+ * - 支持通过 AbortSignal 取消
+ * - 清理输出（去除 ANSI，移除二进制垃圾，标准化换行符）
+ * - 如果超过默认最大字节数，则截断输出
  *
- * @param command - The bash command to execute
- * @param options - Optional streaming callback and abort signal
- * @returns Promise resolving to execution result
+ * @param command - 要执行的 bash 命令
+ * @param options - 可选的流式传输回调和中止信号
+ * @returns 解析为执行结果的 Promise
  */
 export function executeBash(command: string, options?: BashExecutorOptions): Promise<BashResult> {
 	return new Promise((resolve, reject) => {
@@ -67,17 +67,17 @@ export function executeBash(command: string, options?: BashExecutorOptions): Pro
 			stdio: ["ignore", "pipe", "pipe"],
 		});
 
-		// Track sanitized output for truncation
+		// 跟踪已清理的输出以进行截断
 		const outputChunks: string[] = [];
 		let outputBytes = 0;
 		const maxOutputBytes = DEFAULT_MAX_BYTES * 2;
 
-		// Temp file for large output
+		// 用于大量输出的临时文件
 		let tempFilePath: string | undefined;
 		let tempFileStream: WriteStream | undefined;
 		let totalBytes = 0;
 
-		// Handle abort signal
+		// 处理中止信号
 		const abortHandler = () => {
 			if (child.pid) {
 				killProcessTree(child.pid);
@@ -86,7 +86,7 @@ export function executeBash(command: string, options?: BashExecutorOptions): Pro
 
 		if (options?.signal) {
 			if (options.signal.aborted) {
-				// Already aborted, don't even start
+				// 已中止，甚至不要开始
 				child.kill();
 				resolve({
 					output: "",
@@ -104,15 +104,15 @@ export function executeBash(command: string, options?: BashExecutorOptions): Pro
 		const handleData = (data: Buffer) => {
 			totalBytes += data.length;
 
-			// Sanitize once at the source: strip ANSI, replace binary garbage, normalize newlines
+			// 来源处清理一次：去除 ANSI，替换二进制垃圾，标准化换行符
 			const text = sanitizeBinaryOutput(stripAnsi(decoder.decode(data, { stream: true }))).replace(/\r/g, "");
 
-			// Start writing to temp file if exceeds threshold
+			// 如果超过阈值，开始写入临时文件
 			if (totalBytes > DEFAULT_MAX_BYTES && !tempFilePath) {
 				const id = randomBytes(8).toString("hex");
 				tempFilePath = join(tmpdir(), `pi-bash-${id}.log`);
 				tempFileStream = createWriteStream(tempFilePath);
-				// Write already-buffered chunks to temp file
+				// 将已缓冲的块写入临时文件
 				for (const chunk of outputChunks) {
 					tempFileStream.write(chunk);
 				}
@@ -122,7 +122,7 @@ export function executeBash(command: string, options?: BashExecutorOptions): Pro
 				tempFileStream.write(text);
 			}
 
-			// Keep rolling buffer of sanitized text
+			// 保持已清理文本的滚动缓冲区
 			outputChunks.push(text);
 			outputBytes += text.length;
 			while (outputBytes > maxOutputBytes && outputChunks.length > 1) {
@@ -130,7 +130,7 @@ export function executeBash(command: string, options?: BashExecutorOptions): Pro
 				outputBytes -= removed.length;
 			}
 
-			// Stream to callback if provided
+			// 如果提供，流式传输到回调
 			if (options?.onChunk) {
 				options.onChunk(text);
 			}
@@ -140,7 +140,7 @@ export function executeBash(command: string, options?: BashExecutorOptions): Pro
 		child.stderr?.on("data", handleData);
 
 		child.on("close", (code) => {
-			// Clean up abort listener
+			// 清理中止监听器
 			if (options?.signal) {
 				options.signal.removeEventListener("abort", abortHandler);
 			}
@@ -149,11 +149,11 @@ export function executeBash(command: string, options?: BashExecutorOptions): Pro
 				tempFileStream.end();
 			}
 
-			// Combine buffered chunks for truncation (already sanitized)
+			// 组合缓冲块以进行截断（已清理）
 			const fullOutput = outputChunks.join("");
 			const truncationResult = truncateTail(fullOutput);
 
-			// code === null means killed (cancelled)
+			// code === null 表示被终止（已取消）
 			const cancelled = code === null;
 
 			resolve({
@@ -166,7 +166,7 @@ export function executeBash(command: string, options?: BashExecutorOptions): Pro
 		});
 
 		child.on("error", (err) => {
-			// Clean up abort listener
+			// 清理中止监听器
 			if (options?.signal) {
 				options.signal.removeEventListener("abort", abortHandler);
 			}
@@ -181,8 +181,8 @@ export function executeBash(command: string, options?: BashExecutorOptions): Pro
 }
 
 /**
- * Execute a bash command using custom BashOperations.
- * Used for remote execution (SSH, containers, etc.).
+ * 使用自定义 BashOperations 执行 bash 命令。
+ * 用于远程执行（SSH、容器等）。
  */
 export async function executeBashWithOperations(
 	command: string,
@@ -203,10 +203,10 @@ export async function executeBashWithOperations(
 	const onData = (data: Buffer) => {
 		totalBytes += data.length;
 
-		// Sanitize: strip ANSI, replace binary garbage, normalize newlines
+		// 清理：去除 ANSI，替换二进制垃圾，标准化换行符
 		const text = sanitizeBinaryOutput(stripAnsi(decoder.decode(data, { stream: true }))).replace(/\r/g, "");
 
-		// Start writing to temp file if exceeds threshold
+		// 如果超过阈值，开始写入临时文件
 		if (totalBytes > DEFAULT_MAX_BYTES && !tempFilePath) {
 			const id = randomBytes(8).toString("hex");
 			tempFilePath = join(tmpdir(), `pi-bash-${id}.log`);
@@ -220,7 +220,7 @@ export async function executeBashWithOperations(
 			tempFileStream.write(text);
 		}
 
-		// Keep rolling buffer
+		// 保持滚动缓冲区
 		outputChunks.push(text);
 		outputBytes += text.length;
 		while (outputBytes > maxOutputBytes && outputChunks.length > 1) {
@@ -228,7 +228,7 @@ export async function executeBashWithOperations(
 			outputBytes -= removed.length;
 		}
 
-		// Stream to callback
+		// 流式传输到回调
 		if (options?.onChunk) {
 			options.onChunk(text);
 		}
@@ -260,7 +260,7 @@ export async function executeBashWithOperations(
 			tempFileStream.end();
 		}
 
-		// Check if it was an abort
+		// 检查是否为中止
 		if (options?.signal?.aborted) {
 			const fullOutput = outputChunks.join("");
 			const truncationResult = truncateTail(fullOutput);

@@ -1,6 +1,6 @@
-// Core session management
+// 核心会话管理
 
-// Config paths
+// 配置路径
 export { getAgentDir, VERSION } from "./config.js";
 export {
 	AgentSession,
@@ -13,9 +13,9 @@ export {
 	parseSkillBlock,
 	type SessionStats,
 } from "./core/agent-session.js";
-// Auth and model registry
+// 认证和模型注册表
 export { type ApiKeyCredential, type AuthCredential, AuthStorage, type OAuthCredential } from "./core/auth-storage.js";
-// Compaction
+// 压缩
 export {
 	type BranchPreparation,
 	type BranchSummaryResult,
@@ -39,7 +39,7 @@ export {
 	shouldCompact,
 } from "./core/compaction/index.js";
 export { createEventBus, type EventBus, type EventBusController } from "./core/event-bus.js";
-// Extension system
+// 扩展系统
 export type {
 	AgentEndEvent,
 	AgentStartEvent,
@@ -129,7 +129,7 @@ export {
 	wrapToolsWithExtensions,
 	wrapToolWithExtensions,
 } from "./core/extensions/index.js";
-// Footer data provider (git branch + extension statuses - data not otherwise available to extensions)
+// 页脚数据提供者（git 分支 + 扩展状态 - 数据不直接对扩展可用）
 export type { ReadonlyFooterDataProvider } from "./core/footer-data-provider.js";
 export { convertToLlm } from "./core/messages.js";
 export { ModelRegistry } from "./core/model-registry.js";
@@ -144,14 +144,14 @@ export type {
 export { DefaultPackageManager } from "./core/package-manager.js";
 export type { ResourceCollision, ResourceDiagnostic, ResourceLoader } from "./core/resource-loader.js";
 export { DefaultResourceLoader } from "./core/resource-loader.js";
-// SDK for programmatic usage
+// 用于编程式使用的 SDK
 export {
 	type CreateAgentSessionOptions,
 	type CreateAgentSessionResult,
-	// Factory
+	// 工厂函数
 	createAgentSession,
 	createBashTool,
-	// Tool factories (for custom cwd)
+	// 工具工厂（用于自定义 cwd）
 	createCodingTools,
 	createEditTool,
 	createFindTool,
@@ -161,7 +161,7 @@ export {
 	createReadTool,
 	createWriteTool,
 	type PromptTemplate,
-	// Pre-built tools (use process.cwd())
+	// 预构建工具（使用 process.cwd()）
 	readOnlyTools,
 } from "./core/sdk.js";
 export {
@@ -194,7 +194,7 @@ export {
 	type RetrySettings,
 	SettingsManager,
 } from "./core/settings-manager.js";
-// Skills
+// 技能
 export {
 	formatSkillsForPrompt,
 	type LoadSkillsFromDirOptions,
@@ -204,7 +204,7 @@ export {
 	type Skill,
 	type SkillFrontmatter,
 } from "./core/skills.js";
-// Tools
+// 工具
 export {
 	type BashOperations,
 	type BashSpawnContext,
@@ -253,9 +253,9 @@ export {
 	type WriteToolOptions,
 	writeTool,
 } from "./core/tools/index.js";
-// Main entry point
+// 主入口点
 export { main } from "./main.js";
-// Run modes for programmatic SDK usage
+// 用于编程式 SDK 使用的运行模式
 export {
 	InteractiveMode,
 	type InteractiveModeOptions,
@@ -263,7 +263,7 @@ export {
 	runPrintMode,
 	runRpcMode,
 } from "./modes/index.js";
-// UI components for extensions
+// 扩展的 UI 组件
 export {
 	ArminComponent,
 	AssistantMessageComponent,
@@ -304,7 +304,7 @@ export {
 	UserMessageSelectorComponent,
 	type VisualTruncateResult,
 } from "./modes/interactive/components/index.js";
-// Theme utilities for custom tools and extensions
+// 用于自定义工具和扩展的主题实用程序
 export {
 	getLanguageFromPath,
 	getMarkdownTheme,
@@ -315,8 +315,8 @@ export {
 	Theme,
 	type ThemeColor,
 } from "./modes/interactive/theme/theme.js";
-// Clipboard utilities
+// 剪贴板实用程序
 export { copyToClipboard } from "./utils/clipboard.js";
 export { parseFrontmatter, stripFrontmatter } from "./utils/frontmatter.js";
-// Shell utilities
+// Shell 实用程序
 export { getShellConfig } from "./utils/shell.js";

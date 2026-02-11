@@ -1,9 +1,9 @@
 export interface ResourceCollision {
 	resourceType: "extension" | "skill" | "prompt" | "theme";
-	name: string; // skill name, command/tool/flag name, prompt name, theme name
+	name: string; // 技能名称，命令/工具/标志名称，提示词名称，主题名称
 	winnerPath: string;
 	loserPath: string;
-	winnerSource?: string; // e.g., "npm:foo", "git:...", "local"
+	winnerSource?: string; // 例如，"npm:foo", "git:...", "local"
 	loserSource?: string;
 }
 

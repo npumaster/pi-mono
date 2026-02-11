@@ -1,8 +1,8 @@
 /**
- * Context compaction for long sessions.
+ * 长会话的上下文压缩。
  *
- * Pure functions for compaction logic. The session manager handles I/O,
- * and after compaction the session is reloaded.
+ * 压缩逻辑的纯函数。会话管理器处理 I/O，
+ * 压缩后会话将重新加载。
  */
 
 import type { AgentMessage } from "@mariozechner/pi-agent-core";
@@ -26,17 +26,17 @@ import {
 } from "./utils.js";
 
 // ============================================================================
-// File Operation Tracking
+// 文件操作跟踪
 // ============================================================================
 
-/** Details stored in CompactionEntry.details for file tracking */
+/** 存储在 CompactionEntry.details 中的详细信息，用于文件跟踪 */
 export interface CompactionDetails {
 	readFiles: string[];
 	modifiedFiles: string[];
 }
 
 /**
- * Extract file operations from messages and previous compaction entries.
+ * 从消息和以前的压缩条目中提取文件操作。
  */
 function extractFileOperations(
 	messages: AgentMessage[],
@@ -45,11 +45,11 @@ function extractFileOperations(
 ): FileOperations {
 	const fileOps = createFileOps();
 
-	// Collect from previous compaction's details (if pi-generated)
+	// 收集以前压缩的详细信息（如果是 pi 生成的）
 	if (prevCompactionIndex >= 0) {
 		const prevCompaction = entries[prevCompactionIndex] as CompactionEntry;
 		if (!prevCompaction.fromHook && prevCompaction.details) {
-			// fromHook field kept for session file compatibility
+			// fromHook 字段保留用于会话文件兼容性
 			const details = prevCompaction.details as CompactionDetails;
 			if (Array.isArray(details.readFiles)) {
 				for (const f of details.readFiles) fileOps.read.add(f);
@@ -60,7 +60,7 @@ function extractFileOperations(
 		}
 	}
 
-	// Extract from tool calls in messages
+	// 从消息中的工具调用中提取
 	for (const msg of messages) {
 		extractFileOpsFromMessage(msg, fileOps);
 	}
@@ -69,12 +69,12 @@ function extractFileOperations(
 }
 
 // ============================================================================
-// Message Extraction
+// 消息提取
 // ============================================================================
 
 /**
- * Extract AgentMessage from an entry if it produces one.
- * Returns undefined for entries that don't contribute to LLM context.
+ * 如果条目产生消息，则从中提取 AgentMessage。
+ * 对于不贡献 LLM 上下文的条目，返回 undefined。
  */
 function getMessageFromEntry(entry: SessionEntry): AgentMessage | undefined {
 	if (entry.type === "message") {
@@ -92,12 +92,12 @@ function getMessageFromEntry(entry: SessionEntry): AgentMessage | undefined {
 	return undefined;
 }
 
-/** Result from compact() - SessionManager adds uuid/parentUuid when saving */
+/** compact() 的结果 - SessionManager 在保存时添加 uuid/parentUuid */
 export interface CompactionResult<T = unknown> {
 	summary: string;
 	firstKeptEntryId: string;
 	tokensBefore: number;
-	/** Extension-specific data (e.g., ArtifactIndex, version markers for structured compaction) */
+	/** 扩展特定数据（例如，ArtifactIndex，结构化压缩的版本标记） */
 	details?: T;
 }
 
@@ -118,20 +118,20 @@ export const DEFAULT_COMPACTION_SETTINGS: CompactionSettings = {
 };
 
 // ============================================================================
-// Token calculation
+// 令牌计算
 // ============================================================================
 
 /**
- * Calculate total context tokens from usage.
- * Uses the native totalTokens field when available, falls back to computing from components.
+ * 从使用情况计算总上下文令牌。
+ * 在可用时使用本机 totalTokens 字段，否则回退到从组件计算。
  */
 export function calculateContextTokens(usage: Usage): number {
 	return usage.totalTokens || usage.input + usage.output + usage.cacheRead + usage.cacheWrite;
 }
 
 /**
- * Get usage from an assistant message if available.
- * Skips aborted and error messages as they don't have valid usage data.
+ * 如果可用，从助手消息中获取使用情况。
+ * 跳过中止和错误消息，因为它们没有有效的使用数据。
  */
 function getAssistantUsage(msg: AgentMessage): Usage | undefined {
 	if (msg.role === "assistant" && "usage" in msg) {
@@ -144,7 +144,7 @@ function getAssistantUsage(msg: AgentMessage): Usage | undefined {
 }
 
 /**
- * Find the last non-aborted assistant message usage from session entries.
+ * 从会话条目中查找最后一次非中止的助手消息使用情况。
  */
 export function getLastAssistantUsage(entries: SessionEntry[]): Usage | undefined {
 	for (let i = entries.length - 1; i >= 0; i--) {
@@ -173,8 +173,8 @@ function getLastAssistantUsageInfo(messages: AgentMessage[]): { usage: Usage; in
 }
 
 /**
- * Estimate context tokens from messages, using the last assistant usage when available.
- * If there are messages after the last usage, estimate their tokens with estimateTokens.
+ * 根据消息估算上下文令牌，在可用时使用最后一次助手使用情况。
+ * 如果最后一次使用情况之后还有消息，则使用 estimateTokens 估算它们的令牌。
  */
 export function estimateContextTokens(messages: AgentMessage[]): ContextUsageEstimate {
 	const usageInfo = getLastAssistantUsageInfo(messages);
@@ -207,7 +207,7 @@ export function estimateContextTokens(messages: AgentMessage[]): ContextUsageEst
 }
 
 /**
- * Check if compaction should trigger based on context usage.
+ * 根据上下文使用情况检查是否应触发压缩。
  */
 export function shouldCompact(contextTokens: number, contextWindow: number, settings: CompactionSettings): boolean {
 	if (!settings.enabled) return false;
@@ -215,12 +215,12 @@ export function shouldCompact(contextTokens: number, contextWindow: number, sett
 }
 
 // ============================================================================
-// Cut point detection
+// 切割点检测
 // ============================================================================
 
 /**
- * Estimate token count for a message using chars/4 heuristic.
- * This is conservative (overestimates tokens).
+ * 使用 chars/4 启发式方法估算消息的令牌计数。
+ * 这是保守的（高估令牌）。
  */
 export function estimateTokens(message: AgentMessage): number {
 	let chars = 0;
@@ -283,11 +283,10 @@ export function estimateTokens(message: AgentMessage): number {
 }
 
 /**
- * Find valid cut points: indices of user, assistant, custom, or bashExecution messages.
- * Never cut at tool results (they must follow their tool call).
- * When we cut at an assistant message with tool calls, its tool results follow it
- * and will be kept.
- * BashExecutionMessage is treated like a user message (user-initiated context).
+ * 查找有效切割点：用户、助手、自定义或 bashExecution 消息的索引。
+ * 切勿在工具结果处切割（它们必须跟随其工具调用）。
+ * 当我们在带有工具调用的助手消息处切割时，其工具结果跟随它并将被保留。
+ * BashExecutionMessage 被视为用户消息（用户发起的上下文）。
  */
 function findValidCutPoints(entries: SessionEntry[], startIndex: number, endIndex: number): number[] {
 	const cutPoints: number[] = [];
@@ -318,7 +317,7 @@ function findValidCutPoints(entries: SessionEntry[], startIndex: number, endInde
 			case "custom_message":
 			case "label":
 		}
-		// branch_summary and custom_message are user-role messages, valid cut points
+		// branch_summary 和 custom_message 是用户角色消息，有效切割点
 		if (entry.type === "branch_summary" || entry.type === "custom_message") {
 			cutPoints.push(i);
 		}
@@ -327,14 +326,14 @@ function findValidCutPoints(entries: SessionEntry[], startIndex: number, endInde
 }
 
 /**
- * Find the user message (or bashExecution) that starts the turn containing the given entry index.
- * Returns -1 if no turn start found before the index.
- * BashExecutionMessage is treated like a user message for turn boundaries.
+ * 查找开始包含给定条目索引的轮次的用户消息（或 bashExecution）。
+ * 如果在索引之前未找到轮次开始，则返回 -1。
+ * BashExecutionMessage 被视为轮次边界的用户消息。
  */
 export function findTurnStartIndex(entries: SessionEntry[], entryIndex: number, startIndex: number): number {
 	for (let i = entryIndex; i >= startIndex; i--) {
 		const entry = entries[i];
-		// branch_summary and custom_message are user-role messages, can start a turn
+		// branch_summary 和 custom_message 是用户角色消息，可以开始轮次
 		if (entry.type === "branch_summary" || entry.type === "custom_message") {
 			return i;
 		}
@@ -514,8 +513,8 @@ Use this EXACT format:
 Keep each section concise. Preserve exact file paths, function names, and error messages.`;
 
 /**
- * Generate a summary of the conversation using the LLM.
- * If previousSummary is provided, uses the update prompt to merge.
+ * 使用 LLM 生成对话摘要。
+ * 如果提供了 previousSummary，则使用更新提示词进行合并。
  */
 export async function generateSummary(
 	currentMessages: AgentMessage[],
@@ -528,18 +527,18 @@ export async function generateSummary(
 ): Promise<string> {
 	const maxTokens = Math.floor(0.8 * reserveTokens);
 
-	// Use update prompt if we have a previous summary, otherwise initial prompt
+	// 如果我们有以前的摘要，则使用更新提示词，否则使用初始提示词
 	let basePrompt = previousSummary ? UPDATE_SUMMARIZATION_PROMPT : SUMMARIZATION_PROMPT;
 	if (customInstructions) {
 		basePrompt = `${basePrompt}\n\nAdditional focus: ${customInstructions}`;
 	}
 
-	// Serialize conversation to text so model doesn't try to continue it
-	// Convert to LLM messages first (handles custom types like bashExecution, custom, etc.)
+	// 将对话序列化为文本，以免模型尝试继续对话
+	// 首先转换为 LLM 消息（处理自定义消息类型，如 bashExecution、custom 等）
 	const llmMessages = convertToLlm(currentMessages);
 	const conversationText = serializeConversation(llmMessages);
 
-	// Build the prompt with conversation wrapped in tags
+	// 构建包含包裹在标签中的对话的提示词
 	let promptText = `<conversation>\n${conversationText}\n</conversation>\n\n`;
 	if (previousSummary) {
 		promptText += `<previous-summary>\n${previousSummary}\n</previous-summary>\n\n`;
@@ -573,24 +572,24 @@ export async function generateSummary(
 }
 
 // ============================================================================
-// Compaction Preparation (for extensions)
+// 压缩准备（用于扩展）
 // ============================================================================
 
 export interface CompactionPreparation {
-	/** UUID of first entry to keep */
+	/** 第一个保留条目的 UUID */
 	firstKeptEntryId: string;
-	/** Messages that will be summarized and discarded */
+	/** 将被摘要并丢弃的消息 */
 	messagesToSummarize: AgentMessage[];
-	/** Messages that will be turned into turn prefix summary (if splitting) */
+	/** 将变成轮次前缀摘要（如果分割）的消息 */
 	turnPrefixMessages: AgentMessage[];
-	/** Whether this is a split turn (cut point in middle of turn) */
+	/** 这是否是分割轮次（切割点在轮次中间） */
 	isSplitTurn: boolean;
 	tokensBefore: number;
-	/** Summary from previous compaction, for iterative update */
+	/** 来自先前压缩的摘要，用于迭代更新 */
 	previousSummary?: string;
-	/** File operations extracted from messagesToSummarize */
+	/** 从 messagesToSummarize 中提取的文件操作 */
 	fileOps: FileOperations;
-	/** Compaction settions from settings.jsonl	*/
+	/** 来自 settings.jsonl 的压缩设置 */
 	settings: CompactionSettings;
 }
 
@@ -622,23 +621,23 @@ export function prepareCompaction(
 
 	const cutPoint = findCutPoint(pathEntries, boundaryStart, boundaryEnd, settings.keepRecentTokens);
 
-	// Get UUID of first kept entry
+	// 获取第一个保留条目的 UUID
 	const firstKeptEntry = pathEntries[cutPoint.firstKeptEntryIndex];
 	if (!firstKeptEntry?.id) {
-		return undefined; // Session needs migration
+		return undefined; // 会话需要迁移
 	}
 	const firstKeptEntryId = firstKeptEntry.id;
 
 	const historyEnd = cutPoint.isSplitTurn ? cutPoint.turnStartIndex : cutPoint.firstKeptEntryIndex;
 
-	// Messages to summarize (will be discarded after summary)
+	// 要摘要的消息（摘要后将被丢弃）
 	const messagesToSummarize: AgentMessage[] = [];
 	for (let i = boundaryStart; i < historyEnd; i++) {
 		const msg = getMessageFromEntry(pathEntries[i]);
 		if (msg) messagesToSummarize.push(msg);
 	}
 
-	// Messages for turn prefix summary (if splitting a turn)
+	// 轮次前缀摘要的消息（如果分割轮次）
 	const turnPrefixMessages: AgentMessage[] = [];
 	if (cutPoint.isSplitTurn) {
 		for (let i = cutPoint.turnStartIndex; i < cutPoint.firstKeptEntryIndex; i++) {
@@ -647,17 +646,17 @@ export function prepareCompaction(
 		}
 	}
 
-	// Get previous summary for iterative update
+	// 获取先前的摘要以进行迭代更新
 	let previousSummary: string | undefined;
 	if (prevCompactionIndex >= 0) {
 		const prevCompaction = pathEntries[prevCompactionIndex] as CompactionEntry;
 		previousSummary = prevCompaction.summary;
 	}
 
-	// Extract file operations from messages and previous compaction
+	// 从消息和先前的压缩中提取文件操作
 	const fileOps = extractFileOperations(messagesToSummarize, pathEntries, prevCompactionIndex);
 
-	// Also extract file ops from turn prefix if splitting
+	// 如果分割，也从轮次前缀中提取文件操作
 	if (cutPoint.isSplitTurn) {
 		for (const msg of turnPrefixMessages) {
 			extractFileOpsFromMessage(msg, fileOps);
@@ -677,7 +676,7 @@ export function prepareCompaction(
 }
 
 // ============================================================================
-// Main compaction function
+// 主压缩函数
 // ============================================================================
 
 const TURN_PREFIX_SUMMARIZATION_PROMPT = `This is the PREFIX of a turn that was too large to keep. The SUFFIX (recent work) is retained.
@@ -696,11 +695,11 @@ Summarize the prefix to provide context for the retained suffix:
 Be concise. Focus on what's needed to understand the kept suffix.`;
 
 /**
- * Generate summaries for compaction using prepared data.
- * Returns CompactionResult - SessionManager adds uuid/parentUuid when saving.
+ * 使用准备好的数据生成压缩摘要。
+ * 返回 CompactionResult - SessionManager 在保存时添加 uuid/parentUuid。
  *
- * @param preparation - Pre-calculated preparation from prepareCompaction()
- * @param customInstructions - Optional custom focus for the summary
+ * @param preparation - 从 prepareCompaction() 预先计算的准备数据
+ * @param customInstructions - 可选的摘要自定义重点
  */
 export async function compact(
 	preparation: CompactionPreparation,
@@ -720,11 +719,11 @@ export async function compact(
 		settings,
 	} = preparation;
 
-	// Generate summaries (can be parallel if both needed) and merge into one
+	// 生成摘要（如果需要，可以并行进行）并合并为一个
 	let summary: string;
 
 	if (isSplitTurn && turnPrefixMessages.length > 0) {
-		// Generate both summaries in parallel
+		// 并行生成两个摘要
 		const [historyResult, turnPrefixResult] = await Promise.all([
 			messagesToSummarize.length > 0
 				? generateSummary(
@@ -739,10 +738,10 @@ export async function compact(
 				: Promise.resolve("No prior history."),
 			generateTurnPrefixSummary(turnPrefixMessages, model, settings.reserveTokens, apiKey, signal),
 		]);
-		// Merge into single summary
+		// 合并为单个摘要
 		summary = `${historyResult}\n\n---\n\n**Turn Context (split turn):**\n\n${turnPrefixResult}`;
 	} else {
-		// Just generate history summary
+		// 仅生成历史摘要
 		summary = await generateSummary(
 			messagesToSummarize,
 			model,
@@ -754,7 +753,7 @@ export async function compact(
 		);
 	}
 
-	// Compute file lists and append to summary
+	// 计算文件列表并附加到摘要
 	const { readFiles, modifiedFiles } = computeFileLists(fileOps);
 	summary += formatFileOperations(readFiles, modifiedFiles);
 
@@ -771,7 +770,7 @@ export async function compact(
 }
 
 /**
- * Generate a summary for a turn prefix (when splitting a turn).
+ * 为轮次前缀生成摘要（当分割轮次时）。
  */
 async function generateTurnPrefixSummary(
 	messages: AgentMessage[],
@@ -780,7 +779,7 @@ async function generateTurnPrefixSummary(
 	apiKey: string,
 	signal?: AbortSignal,
 ): Promise<string> {
-	const maxTokens = Math.floor(0.5 * reserveTokens); // Smaller budget for turn prefix
+	const maxTokens = Math.floor(0.5 * reserveTokens); // 轮次前缀的预算较小
 	const llmMessages = convertToLlm(messages);
 	const conversationText = serializeConversation(llmMessages);
 	const promptText = `<conversation>\n${conversationText}\n</conversation>\n\n${TURN_PREFIX_SUMMARIZATION_PROMPT}`;

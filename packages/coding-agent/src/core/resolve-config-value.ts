@@ -1,17 +1,17 @@
 /**
- * Resolve configuration values that may be shell commands, environment variables, or literals.
- * Used by auth-storage.ts and model-registry.ts.
+ * 解析可能是 shell 命令、环境变量或字面量的配置值。
+ * 由 auth-storage.ts 和 model-registry.ts 使用。
  */
 
 import { execSync } from "child_process";
 
-// Cache for shell command results (persists for process lifetime)
+// Shell 命令结果的缓存（在进程生命周期内持久存在）
 const commandResultCache = new Map<string, string | undefined>();
 
 /**
- * Resolve a config value (API key, header value, etc.) to an actual value.
- * - If starts with "!", executes the rest as a shell command and uses stdout (cached)
- * - Otherwise checks environment variable first, then treats as literal (not cached)
+ * 将配置值（API 密钥、标头值等）解析为实际值。
+ * - 如果以 "!" 开头，则将剩余部分作为 shell 命令执行并使用 stdout（缓存）
+ * - 否则首先检查环境变量，然后视为字面量（不缓存）
  */
 export function resolveConfigValue(config: string): string | undefined {
 	if (config.startsWith("!")) {
@@ -44,7 +44,7 @@ function executeCommand(commandConfig: string): string | undefined {
 }
 
 /**
- * Resolve all header values using the same resolution logic as API keys.
+ * 使用与 API 密钥相同的解析逻辑解析所有标头值。
  */
 export function resolveHeaders(headers: Record<string, string> | undefined): Record<string, string> | undefined {
 	if (!headers) return undefined;
@@ -58,7 +58,7 @@ export function resolveHeaders(headers: Record<string, string> | undefined): Rec
 	return Object.keys(resolved).length > 0 ? resolved : undefined;
 }
 
-/** Clear the config value command cache. Exported for testing. */
+/** 清除配置值命令缓存。导出用于测试。 */
 export function clearConfigValueCache(): void {
 	commandResultCache.clear();
 }

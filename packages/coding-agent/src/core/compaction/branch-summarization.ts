@@ -82,32 +82,26 @@ export interface GenerateBranchSummaryOptions {
 // ============================================================================
 
 /**
- * Collect entries that should be summarized when navigating from one position to another.
+ * 树导航的分支摘要。
  *
- * Walks from oldLeafId back to the common ancestor with targetId, collecting entries
- * along the way. Does NOT stop at compaction boundaries - those are included and their
- * summaries become context.
- *
- * @param session - Session manager (read-only access)
- * @param oldLeafId - Current position (where we're navigating from)
- * @param targetId - Target position (where we're navigating to)
- * @returns Entries to summarize and the common ancestor
+ * 当导航到会话树中的不同点时，这将生成
+ * 正在离开的分支的摘要，以免丢失上下文。
  */
 export function collectEntriesForBranchSummary(
 	session: ReadonlySessionManager,
 	oldLeafId: string | null,
 	targetId: string,
 ): CollectEntriesResult {
-	// If no old position, nothing to summarize
+	// 如果没有旧位置，则无需摘要
 	if (!oldLeafId) {
 		return { entries: [], commonAncestorId: null };
 	}
 
-	// Find common ancestor (deepest node that's on both paths)
+	// 查找共同祖先（两条路径上最深的节点）
 	const oldPath = new Set(session.getBranch(oldLeafId).map((e) => e.id));
 	const targetPath = session.getBranch(targetId);
 
-	// targetPath is root-first, so iterate backwards to find deepest common ancestor
+	// targetPath 是根优先的，因此向后迭代以查找最深的共同祖先
 	let commonAncestorId: string | null = null;
 	for (let i = targetPath.length - 1; i >= 0; i--) {
 		if (oldPath.has(targetPath[i].id)) {
@@ -116,7 +110,7 @@ export function collectEntriesForBranchSummary(
 		}
 	}
 
-	// Collect entries from old leaf back to common ancestor
+	// 收集从旧叶子回到共同祖先的条目
 	const entries: SessionEntry[] = [];
 	let current: string | null = oldLeafId;
 
@@ -127,24 +121,24 @@ export function collectEntriesForBranchSummary(
 		current = entry.parentId;
 	}
 
-	// Reverse to get chronological order
+	// 反转以获得按时间顺序排列
 	entries.reverse();
 
 	return { entries, commonAncestorId };
 }
 
 // ============================================================================
-// Entry to Message Conversion
+// 条目到消息的转换
 // ============================================================================
 
 /**
- * Extract AgentMessage from a session entry.
- * Similar to getMessageFromEntry in compaction.ts but also handles compaction entries.
+ * 从会话条目中提取 AgentMessage。
+ * 类似于 compaction.ts 中的 getMessageFromEntry，但也处理压缩条目。
  */
 function getMessageFromEntry(entry: SessionEntry): AgentMessage | undefined {
 	switch (entry.type) {
 		case "message":
-			// Skip tool results - context is in assistant's tool call
+			// 跳过工具结果 - 上下文在助手的工具调用中
 			if (entry.message.role === "toolResult") return undefined;
 			return entry.message;
 
@@ -157,7 +151,7 @@ function getMessageFromEntry(entry: SessionEntry): AgentMessage | undefined {
 		case "compaction":
 			return createCompactionSummaryMessage(entry.summary, entry.tokensBefore, entry.timestamp);
 
-		// These don't contribute to conversation content
+		// 这些不贡献对话内容
 		case "thinking_level_change":
 		case "model_change":
 		case "custom":
@@ -167,26 +161,26 @@ function getMessageFromEntry(entry: SessionEntry): AgentMessage | undefined {
 }
 
 /**
- * Prepare entries for summarization with token budget.
+ * 准备具有令牌预算的摘要条目。
  *
- * Walks entries from NEWEST to OLDEST, adding messages until we hit the token budget.
- * This ensures we keep the most recent context when the branch is too long.
+ * 从最新到最旧遍历条目，添加消息直到达到令牌预算。
+ * 这确保了当分支太长时，我们保留最近的上下文。
  *
- * Also collects file operations from:
- * - Tool calls in assistant messages
- * - Existing branch_summary entries' details (for cumulative tracking)
+ * 还收集文件操作：
+ * - 助手消息中的工具调用
+ * - 现有 branch_summary 条目的详细信息（用于累积跟踪）
  *
- * @param entries - Entries in chronological order
- * @param tokenBudget - Maximum tokens to include (0 = no limit)
+ * @param entries - 按时间顺序排列的条目
+ * @param tokenBudget - 要包含的最大令牌数（0 = 无限制）
  */
 export function prepareBranchEntries(entries: SessionEntry[], tokenBudget: number = 0): BranchPreparation {
 	const messages: AgentMessage[] = [];
 	const fileOps = createFileOps();
 	let totalTokens = 0;
 
-	// First pass: collect file ops from ALL entries (even if they don't fit in token budget)
-	// This ensures we capture cumulative file tracking from nested branch summaries
-	// Only extract from pi-generated summaries (fromHook !== true), not extension-generated ones
+	// 第一遍：从所有条目收集文件操作（即使它们不适合令牌预算）
+	// 这确保我们捕获来自嵌套分支摘要的累积文件跟踪
+	// 仅从 pi 生成的摘要（fromHook !== true）中提取，而不是扩展生成的摘要
 	for (const entry of entries) {
 		if (entry.type === "branch_summary" && !entry.fromHook && entry.details) {
 			const details = entry.details as BranchSummaryDetails;
@@ -194,7 +188,7 @@ export function prepareBranchEntries(entries: SessionEntry[], tokenBudget: numbe
 				for (const f of details.readFiles) fileOps.read.add(f);
 			}
 			if (Array.isArray(details.modifiedFiles)) {
-				// Modified files go into both edited and written for proper deduplication
+				// 修改后的文件同时进入编辑和写入，以便正确去重
 				for (const f of details.modifiedFiles) {
 					fileOps.edited.add(f);
 				}
@@ -202,27 +196,27 @@ export function prepareBranchEntries(entries: SessionEntry[], tokenBudget: numbe
 		}
 	}
 
-	// Second pass: walk from newest to oldest, adding messages until token budget
+	// 第二遍：从最新到最旧遍历，添加消息直到达到令牌预算
 	for (let i = entries.length - 1; i >= 0; i--) {
 		const entry = entries[i];
 		const message = getMessageFromEntry(entry);
 		if (!message) continue;
 
-		// Extract file ops from assistant messages (tool calls)
+		// 从助手消息（工具调用）中提取文件操作
 		extractFileOpsFromMessage(message, fileOps);
 
 		const tokens = estimateTokens(message);
 
-		// Check budget before adding
+		// 在添加之前检查预算
 		if (tokenBudget > 0 && totalTokens + tokens > tokenBudget) {
-			// If this is a summary entry, try to fit it anyway as it's important context
+			// 如果这是一个摘要条目，尝试适应它，因为它也是重要的上下文
 			if (entry.type === "compaction" || entry.type === "branch_summary") {
 				if (totalTokens < tokenBudget * 0.9) {
 					messages.unshift(message);
 					totalTokens += tokens;
 				}
 			}
-			// Stop - we've hit the budget
+			// 停止 - 我们已达到预算
 			break;
 		}
 
@@ -234,7 +228,7 @@ export function prepareBranchEntries(entries: SessionEntry[], tokenBudget: numbe
 }
 
 // ============================================================================
-// Summary Generation
+// 摘要生成
 // ============================================================================
 
 const BRANCH_SUMMARY_PREAMBLE = `The user explored a different conversation branch before returning here.

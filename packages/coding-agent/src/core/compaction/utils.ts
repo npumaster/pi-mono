@@ -1,12 +1,12 @@
 /**
- * Shared utilities for compaction and branch summarization.
+ * 压缩和分支摘要的共享实用程序。
  */
 
 import type { AgentMessage } from "@mariozechner/pi-agent-core";
 import type { Message } from "@mariozechner/pi-ai";
 
 // ============================================================================
-// File Operation Tracking
+// 文件操作跟踪
 // ============================================================================
 
 export interface FileOperations {
@@ -24,7 +24,7 @@ export function createFileOps(): FileOperations {
 }
 
 /**
- * Extract file operations from tool calls in an assistant message.
+ * 从助手消息中的工具调用中提取文件操作。
  */
 export function extractFileOpsFromMessage(message: AgentMessage, fileOps: FileOperations): void {
 	if (message.role !== "assistant") return;
@@ -56,8 +56,8 @@ export function extractFileOpsFromMessage(message: AgentMessage, fileOps: FileOp
 }
 
 /**
- * Compute final file lists from file operations.
- * Returns readFiles (files only read, not modified) and modifiedFiles.
+ * 从文件操作计算最终文件列表。
+ * 返回 readFiles（仅读取，未修改的文件）和 modifiedFiles。
  */
 export function computeFileLists(fileOps: FileOperations): { readFiles: string[]; modifiedFiles: string[] } {
 	const modified = new Set([...fileOps.edited, ...fileOps.written]);
@@ -67,7 +67,7 @@ export function computeFileLists(fileOps: FileOperations): { readFiles: string[]
 }
 
 /**
- * Format file operations as XML tags for summary.
+ * 将文件操作格式化为 XML 标记以进行摘要。
  */
 export function formatFileOperations(readFiles: string[], modifiedFiles: string[]): string {
 	const sections: string[] = [];
@@ -82,13 +82,13 @@ export function formatFileOperations(readFiles: string[], modifiedFiles: string[
 }
 
 // ============================================================================
-// Message Serialization
+// 消息序列化
 // ============================================================================
 
 /**
- * Serialize LLM messages to text for summarization.
- * This prevents the model from treating it as a conversation to continue.
- * Call convertToLlm() first to handle custom message types.
+ * 将 LLM 消息序列化为文本以进行摘要。
+ * 这可以防止模型将其视为要继续的对话。
+ * 首先调用 convertToLlm() 以处理自定义消息类型。
  */
 export function serializeConversation(messages: Message[]): string {
 	const parts: string[] = [];
@@ -146,7 +146,7 @@ export function serializeConversation(messages: Message[]): string {
 }
 
 // ============================================================================
-// Summarization System Prompt
+// 摘要系统提示词
 // ============================================================================
 
 export const SUMMARIZATION_SYSTEM_PROMPT = `You are a context summarization assistant. Your task is to read a conversation between a user and an AI coding assistant, then produce a structured summary following the exact format specified.

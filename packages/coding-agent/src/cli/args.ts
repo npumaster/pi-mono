@@ -1,5 +1,5 @@
 /**
- * CLI argument parsing and help display
+ * CLI 参数解析和帮助显示
  */
 
 import type { ThinkingLevel } from "@mariozechner/pi-agent-core";
@@ -41,7 +41,7 @@ export interface Args {
 	verbose?: boolean;
 	messages: string[];
 	fileArgs: string[];
-	/** Unknown flags (potentially extension flags) - map of flag name to value */
+	/** 未知标志（可能是扩展标志）- 标志名称到值的映射 */
 	unknownFlags: Map<string, boolean | string>;
 }
 
@@ -143,7 +143,7 @@ export function parseArgs(args: string[], extensionFlags?: Map<string, { type: "
 		} else if (arg === "--no-themes") {
 			result.noThemes = true;
 		} else if (arg === "--list-models") {
-			// Check if next arg is a search pattern (not a flag or file arg)
+			// 检查下一个参数是否是搜索模式（不是标志或文件参数）
 			if (i + 1 < args.length && !args[i + 1].startsWith("-") && !args[i + 1].startsWith("@")) {
 				result.listModels = args[++i];
 			} else {
@@ -152,9 +152,9 @@ export function parseArgs(args: string[], extensionFlags?: Map<string, { type: "
 		} else if (arg === "--verbose") {
 			result.verbose = true;
 		} else if (arg.startsWith("@")) {
-			result.fileArgs.push(arg.slice(1)); // Remove @ prefix
+			result.fileArgs.push(arg.slice(1)); // 移除 @ 前缀
 		} else if (arg.startsWith("--") && extensionFlags) {
-			// Check if it's an extension-registered flag
+			// 检查它是否是扩展注册的标志
 			const flagName = arg.slice(2);
 			const extFlag = extensionFlags.get(flagName);
 			if (extFlag) {
@@ -164,7 +164,7 @@ export function parseArgs(args: string[], extensionFlags?: Map<string, { type: "
 					result.unknownFlags.set(flagName, args[++i]);
 				}
 			}
-			// Unknown flags without extensionFlags are silently ignored (first pass)
+			// 没有 extensionFlags 的未知标志将被静默忽略（第一遍）
 		} else if (!arg.startsWith("-")) {
 			result.messages.push(arg);
 		}
@@ -174,92 +174,92 @@ export function parseArgs(args: string[], extensionFlags?: Map<string, { type: "
 }
 
 export function printHelp(): void {
-	console.log(`${chalk.bold(APP_NAME)} - AI coding assistant with read, bash, edit, write tools
+	console.log(`${chalk.bold(APP_NAME)} - 具有读取、bash、编辑、写入工具的 AI 编码助手
 
 ${chalk.bold("Usage:")}
   ${APP_NAME} [options] [@files...] [messages...]
 
 ${chalk.bold("Commands:")}
-  ${APP_NAME} install <source> [-l]    Install extension source and add to settings
-  ${APP_NAME} remove <source> [-l]     Remove extension source from settings
-  ${APP_NAME} update [source]          Update installed extensions (skips pinned sources)
-  ${APP_NAME} list                     List installed extensions from settings
-  ${APP_NAME} config                   Open TUI to enable/disable package resources
-  ${APP_NAME} <command> --help         Show help for install/remove/update/list
+  ${APP_NAME} install <source> [-l]    安装扩展源并添加到设置中
+  ${APP_NAME} remove <source> [-l]     从设置中移除扩展源
+  ${APP_NAME} update [source]          更新已安装的扩展（跳过固定源）
+  ${APP_NAME} list                     列出设置中已安装的扩展
+  ${APP_NAME} config                   打开 TUI 以启用/禁用包资源
+  ${APP_NAME} <command> --help         显示 install/remove/update/list 的帮助信息
 
 ${chalk.bold("Options:")}
-  --provider <name>              Provider name (default: google)
-  --model <id>                   Model ID (default: gemini-2.5-flash)
-  --api-key <key>                API key (defaults to env vars)
-  --system-prompt <text>         System prompt (default: coding assistant prompt)
-  --append-system-prompt <text>  Append text or file contents to the system prompt
-  --mode <mode>                  Output mode: text (default), json, or rpc
-  --print, -p                    Non-interactive mode: process prompt and exit
-  --continue, -c                 Continue previous session
-  --resume, -r                   Select a session to resume
-  --session <path>               Use specific session file
-  --session-dir <dir>            Directory for session storage and lookup
-  --no-session                   Don't save session (ephemeral)
-  --models <patterns>            Comma-separated model patterns for Ctrl+P cycling
-                                 Supports globs (anthropic/*, *sonnet*) and fuzzy matching
-  --no-tools                     Disable all built-in tools
-  --tools <tools>                Comma-separated list of tools to enable (default: read,bash,edit,write)
-                                 Available: read, bash, edit, write, grep, find, ls
-  --thinking <level>             Set thinking level: off, minimal, low, medium, high, xhigh
-  --extension, -e <path>         Load an extension file (can be used multiple times)
-  --no-extensions, -ne           Disable extension discovery (explicit -e paths still work)
-  --skill <path>                 Load a skill file or directory (can be used multiple times)
-  --no-skills, -ns               Disable skills discovery and loading
-  --prompt-template <path>       Load a prompt template file or directory (can be used multiple times)
-  --no-prompt-templates, -np     Disable prompt template discovery and loading
-  --theme <path>                 Load a theme file or directory (can be used multiple times)
-  --no-themes                    Disable theme discovery and loading
-  --export <file>                Export session file to HTML and exit
-  --list-models [search]         List available models (with optional fuzzy search)
-  --verbose                      Force verbose startup (overrides quietStartup setting)
-  --help, -h                     Show this help
-  --version, -v                  Show version number
+  --provider <name>              提供商名称 (默认: google)
+  --model <id>                   模型 ID (默认: gemini-2.5-flash)
+  --api-key <key>                API 密钥 (默认为环境变量)
+  --system-prompt <text>         系统提示词 (默认: 编码助手提示词)
+  --append-system-prompt <text>  将文本或文件内容追加到系统提示词
+  --mode <mode>                  输出模式: text (默认), json, 或 rpc
+  --print, -p                    非交互式模式: 处理提示词并退出
+  --continue, -c                 继续上一个会话
+  --resume, -r                   选择要恢复的会话
+  --session <path>               使用特定的会话文件
+  --session-dir <dir>            会话存储和查找目录
+  --no-session                   不保存会话 (临时)
+  --models <patterns>            用于 Ctrl+P 循环的逗号分隔模型模式
+                                 支持 glob (anthropic/*, *sonnet*) 和模糊匹配
+  --no-tools                     禁用所有内置工具
+  --tools <tools>                要启用的逗号分隔工具列表 (默认: read,bash,edit,write)
+                                 可用: read, bash, edit, write, grep, find, ls
+  --thinking <level>             设置思考级别: off, minimal, low, medium, high, xhigh
+  --extension, -e <path>         加载扩展文件 (可多次使用)
+  --no-extensions, -ne           禁用扩展发现 (显式 -e 路径仍然有效)
+  --skill <path>                 加载技能文件或目录 (可多次使用)
+  --no-skills, -ns               禁用技能发现和加载
+  --prompt-template <path>       加载提示模板文件或目录 (可多次使用)
+  --no-prompt-templates, -np     禁用提示模板发现和加载
+  --theme <path>                 加载主题文件或目录 (可多次使用)
+  --no-themes                    禁用主题发现和加载
+  --export <file>                将会话文件导出为 HTML 并退出
+  --list-models [search]         列出可用模型 (可选模糊搜索)
+  --verbose                      强制详细启动 (覆盖 quietStartup 设置)
+  --help, -h                     显示此帮助信息
+  --version, -v                  显示版本号
 
-Extensions can register additional flags (e.g., --plan from plan-mode extension).
+扩展可以注册额外的标志 (例如 plan-mode 扩展的 --plan)。
 
 ${chalk.bold("Examples:")}
-  # Interactive mode
+  # 交互式模式
   ${APP_NAME}
 
-  # Interactive mode with initial prompt
+  # 带有初始提示词的交互式模式
   ${APP_NAME} "List all .ts files in src/"
 
-  # Include files in initial message
+  # 在初始消息中包含文件
   ${APP_NAME} @prompt.md @image.png "What color is the sky?"
 
-  # Non-interactive mode (process and exit)
+  # 非交互式模式 (处理并退出)
   ${APP_NAME} -p "List all .ts files in src/"
 
-  # Multiple messages (interactive)
+  # 多条消息 (交互式)
   ${APP_NAME} "Read package.json" "What dependencies do we have?"
 
-  # Continue previous session
+  # 继续上一个会话
   ${APP_NAME} --continue "What did we discuss?"
 
-  # Use different model
+  # 使用不同的模型
   ${APP_NAME} --provider openai --model gpt-4o-mini "Help me refactor this code"
 
-  # Limit model cycling to specific models
+  # 将模型循环限制为特定模型
   ${APP_NAME} --models claude-sonnet,claude-haiku,gpt-4o
 
-  # Limit to a specific provider with glob pattern
+  # 使用 glob 模式限制为特定提供商
   ${APP_NAME} --models "github-copilot/*"
 
-  # Cycle models with fixed thinking levels
+  # 循环使用具有固定思考级别的模型
   ${APP_NAME} --models sonnet:high,haiku:low
 
-  # Start with a specific thinking level
+  # 以特定思考级别开始
   ${APP_NAME} --thinking high "Solve this complex problem"
 
-  # Read-only mode (no file modifications possible)
+  # 只读模式 (无法修改文件)
   ${APP_NAME} --tools read,grep,find,ls -p "Review the code in src/"
 
-  # Export a session file to HTML
+  # 将会话文件导出为 HTML
   ${APP_NAME} --export ~/${CONFIG_DIR_NAME}/agent/sessions/--path--/session.jsonl
   ${APP_NAME} --export session.jsonl output.html
 
@@ -287,18 +287,18 @@ ${chalk.bold("Environment Variables:")}
   AWS_SECRET_ACCESS_KEY            - AWS secret key for Amazon Bedrock
   AWS_BEARER_TOKEN_BEDROCK         - Bedrock API key (bearer token)
   AWS_REGION                       - AWS region for Amazon Bedrock (e.g., us-east-1)
-  ${ENV_AGENT_DIR.padEnd(32)} - Session storage directory (default: ~/${CONFIG_DIR_NAME}/agent)
-  PI_PACKAGE_DIR                   - Override package directory (for Nix/Guix store paths)
-  PI_SHARE_VIEWER_URL              - Base URL for /share command (default: https://pi.dev/session/)
-  PI_AI_ANTIGRAVITY_VERSION        - Override Antigravity User-Agent version (e.g., 1.23.0)
+  ${ENV_AGENT_DIR.padEnd(32)} - 会话存储目录 (默认: ~/${CONFIG_DIR_NAME}/agent)
+  PI_PACKAGE_DIR                   - 覆盖包目录 (用于 Nix/Guix 存储路径)
+  PI_SHARE_VIEWER_URL              - /share 命令的基础 URL (默认: https://pi.dev/session/)
+  PI_AI_ANTIGRAVITY_VERSION        - 覆盖 Antigravity User-Agent 版本 (例如 1.23.0)
 
 ${chalk.bold("Available Tools (default: read, bash, edit, write):")}
-  read   - Read file contents
-  bash   - Execute bash commands
-  edit   - Edit files with find/replace
-  write  - Write files (creates/overwrites)
-  grep   - Search file contents (read-only, off by default)
-  find   - Find files by glob pattern (read-only, off by default)
-  ls     - List directory contents (read-only, off by default)
+  read   - 读取文件内容
+  bash   - 执行 bash 命令
+  edit   - 使用查找/替换编辑文件
+  write  - 写入文件 (创建/覆盖)
+  grep   - 搜索文件内容 (只读，默认关闭)
+  find   - 按 glob 模式查找文件 (只读，默认关闭)
+  ls     - 列出目录内容 (只读，默认关闭)
 `);
 }

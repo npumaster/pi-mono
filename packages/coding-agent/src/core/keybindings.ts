@@ -12,7 +12,7 @@ import { join } from "path";
 import { getAgentDir } from "../config.js";
 
 /**
- * Application-level actions (coding agent specific).
+ * 应用程序级操作（编码代理特定）。
  */
 export type AppAction =
 	| "interrupt"
@@ -36,19 +36,19 @@ export type AppAction =
 	| "resume";
 
 /**
- * All configurable actions.
+ * 所有可配置的操作。
  */
 export type KeyAction = AppAction | EditorAction;
 
 /**
- * Full keybindings configuration (app + editor actions).
+ * 完整的键绑定配置（应用程序 + 编辑器操作）。
  */
 export type KeybindingsConfig = {
 	[K in KeyAction]?: KeyId | KeyId[];
 };
 
 /**
- * Default application keybindings.
+ * 默认应用程序键绑定。
  */
 export const DEFAULT_APP_KEYBINDINGS: Record<AppAction, KeyId | KeyId[]> = {
 	interrupt: "escape",
@@ -73,14 +73,14 @@ export const DEFAULT_APP_KEYBINDINGS: Record<AppAction, KeyId | KeyId[]> = {
 };
 
 /**
- * All default keybindings (app + editor).
+ * 所有默认键绑定（应用程序 + 编辑器）。
  */
 export const DEFAULT_KEYBINDINGS: Required<KeybindingsConfig> = {
 	...DEFAULT_EDITOR_KEYBINDINGS,
 	...DEFAULT_APP_KEYBINDINGS,
 };
 
-// App actions list for type checking
+// 用于类型检查的应用程序操作列表
 const APP_ACTIONS: AppAction[] = [
 	"interrupt",
 	"clear",
@@ -108,7 +108,7 @@ function isAppAction(action: string): action is AppAction {
 }
 
 /**
- * Manages all keybindings (app + editor).
+ * 管理所有键绑定（应用程序 + 编辑器）。
  */
 export class KeybindingsManager {
 	private config: KeybindingsConfig;
@@ -121,15 +121,15 @@ export class KeybindingsManager {
 	}
 
 	/**
-	 * Create from config file and set up editor keybindings.
+	 * 从配置文件创建并设置编辑器键绑定。
 	 */
 	static create(agentDir: string = getAgentDir()): KeybindingsManager {
 		const configPath = join(agentDir, "keybindings.json");
 		const config = KeybindingsManager.loadFromFile(configPath);
 		const manager = new KeybindingsManager(config);
 
-		// Set up editor keybindings globally
-		// Include both editor actions and expandTools (shared between app and editor)
+		// 全局设置编辑器键绑定
+		// 包括编辑器操作和 expandTools（应用程序和编辑器之间共享）
 		const editorConfig: EditorKeybindingsConfig = {};
 		for (const [action, keys] of Object.entries(config)) {
 			if (!isAppAction(action) || action === "expandTools") {
@@ -142,7 +142,7 @@ export class KeybindingsManager {
 	}
 
 	/**
-	 * Create in-memory.
+	 * 在内存中创建。
 	 */
 	static inMemory(config: KeybindingsConfig = {}): KeybindingsManager {
 		return new KeybindingsManager(config);
@@ -160,13 +160,13 @@ export class KeybindingsManager {
 	private buildMaps(): void {
 		this.appActionToKeys.clear();
 
-		// Set defaults for app actions
+		// 为应用程序操作设置默认值
 		for (const [action, keys] of Object.entries(DEFAULT_APP_KEYBINDINGS)) {
 			const keyArray = Array.isArray(keys) ? keys : [keys];
 			this.appActionToKeys.set(action as AppAction, [...keyArray]);
 		}
 
-		// Override with user config (app actions only)
+		// 使用用户配置覆盖（仅限应用程序操作）
 		for (const [action, keys] of Object.entries(this.config)) {
 			if (keys === undefined || !isAppAction(action)) continue;
 			const keyArray = Array.isArray(keys) ? keys : [keys];
@@ -175,7 +175,7 @@ export class KeybindingsManager {
 	}
 
 	/**
-	 * Check if input matches an app action.
+	 * 检查输入是否匹配应用程序操作。
 	 */
 	matches(data: string, action: AppAction): boolean {
 		const keys = this.appActionToKeys.get(action);
@@ -187,14 +187,14 @@ export class KeybindingsManager {
 	}
 
 	/**
-	 * Get keys bound to an app action.
+	 * 获取绑定到应用程序操作的键。
 	 */
 	getKeys(action: AppAction): KeyId[] {
 		return this.appActionToKeys.get(action) ?? [];
 	}
 
 	/**
-	 * Get the full effective config.
+	 * 获取完整的有效配置。
 	 */
 	getEffectiveConfig(): Required<KeybindingsConfig> {
 		const result = { ...DEFAULT_KEYBINDINGS };
@@ -207,5 +207,5 @@ export class KeybindingsManager {
 	}
 }
 
-// Re-export for convenience
+// 为方便起见重新导出
 export type { EditorAction, KeyId };

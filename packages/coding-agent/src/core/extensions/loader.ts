@@ -14,13 +14,13 @@ import * as _bundledPiAgentCore from "@mariozechner/pi-agent-core";
 import * as _bundledPiAi from "@mariozechner/pi-ai";
 import type { KeyId } from "@mariozechner/pi-tui";
 import * as _bundledPiTui from "@mariozechner/pi-tui";
-// Static imports of packages that extensions may use.
-// These MUST be static so Bun bundles them into the compiled binary.
-// The virtualModules option then makes them available to extensions.
+// 扩展可能使用的包的静态导入。
+// 这些必须是静态的，以便 Bun 将它们捆绑到编译的二进制文件中。
+// 然后 virtualModules 选项使它们可供扩展使用。
 import * as _bundledTypebox from "@sinclair/typebox";
 import { getAgentDir, isBunBinary } from "../../config.js";
-// NOTE: This import works because loader.ts exports are NOT re-exported from index.ts,
-// avoiding a circular dependency. Extensions can import from @mariozechner/pi-coding-agent.
+// 注意：此导入有效，因为 loader.ts 的导出没有从 index.ts 重新导出，
+// 避免了循环依赖。扩展可以从 @mariozechner/pi-coding-agent 导入。
 import * as _bundledPiCodingAgent from "../../index.js";
 import { createEventBus, type EventBus } from "../event-bus.js";
 import type { ExecOptions } from "../exec.js";
@@ -49,8 +49,8 @@ const VIRTUAL_MODULES: Record<string, unknown> = {
 const require = createRequire(import.meta.url);
 
 /**
- * Get aliases for jiti (used in Node.js/development mode).
- * In Bun binary mode, virtualModules is used instead.
+ * 获取 jiti 的别名（在 Node.js/开发模式下使用）。
+ * 在 Bun 二进制模式下，使用 virtualModules 代替。
  */
 let _aliases: Record<string, string> | null = null;
 function getAliases(): Record<string, string> {
@@ -129,9 +129,9 @@ export function createExtensionRuntime(): ExtensionRuntime {
 }
 
 /**
- * Create the ExtensionAPI for an extension.
- * Registration methods write to the extension object.
- * Action methods delegate to the shared runtime.
+ * 为扩展创建 ExtensionAPI。
+ * 注册方法写入扩展对象。
+ * 操作方法委托给共享运行时。
  */
 function createExtensionAPI(
 	extension: Extension,
@@ -140,7 +140,7 @@ function createExtensionAPI(
 	eventBus: EventBus,
 ): ExtensionAPI {
 	const api = {
-		// Registration methods - write to extension
+		// 注册方法 - 写入扩展
 		on(event: string, handler: HandlerFn): void {
 			const list = extension.handlers.get(event) ?? [];
 			list.push(handler);
@@ -270,7 +270,7 @@ async function loadExtensionModule(extensionPath: string) {
 }
 
 /**
- * Create an Extension object with empty collections.
+ * 创建具有空集合的 Extension 对象。
  */
 function createExtension(extensionPath: string, resolvedPath: string): Extension {
 	return {
@@ -327,7 +327,7 @@ export async function loadExtensionFromFactory(
 }
 
 /**
- * Load extensions from paths.
+ * 从路径加载扩展。
  */
 export async function loadExtensions(paths: string[], cwd: string, eventBus?: EventBus): Promise<LoadExtensionsResult> {
 	const extensions: Extension[] = [];
@@ -407,7 +407,7 @@ function resolveExtensionEntries(dir: string): string[] | null {
 		}
 	}
 
-	// Check for index.ts or index.js
+	// 检查 index.ts 或 index.js
 	const indexTs = path.join(dir, "index.ts");
 	const indexJs = path.join(dir, "index.js");
 	if (fs.existsSync(indexTs)) {
@@ -486,25 +486,25 @@ export async function discoverAndLoadExtensions(
 		}
 	};
 
-	// 1. Global extensions: agentDir/extensions/
+	// 1. 全局扩展：agentDir/extensions/
 	const globalExtDir = path.join(agentDir, "extensions");
 	addPaths(discoverExtensionsInDir(globalExtDir));
 
-	// 2. Project-local extensions: cwd/.pi/extensions/
+	// 2. 项目本地扩展：cwd/.pi/extensions/
 	const localExtDir = path.join(cwd, ".pi", "extensions");
 	addPaths(discoverExtensionsInDir(localExtDir));
 
-	// 3. Explicitly configured paths
+	// 3. 显式配置的路径
 	for (const p of configuredPaths) {
 		const resolved = resolvePath(p, cwd);
 		if (fs.existsSync(resolved) && fs.statSync(resolved).isDirectory()) {
-			// Check for package.json with pi manifest or index.ts
+			// 检查带有 pi 清单或 index.ts 的 package.json
 			const entries = resolveExtensionEntries(resolved);
 			if (entries) {
 				addPaths(entries);
 				continue;
 			}
-			// No explicit entries - discover individual files in directory
+			// 没有显式条目 - 发现目录中的单个文件
 			addPaths(discoverExtensionsInDir(resolved));
 			continue;
 		}

@@ -1,31 +1,31 @@
 /**
- * Print mode (single-shot): Send prompts, output result, exit.
+ * 打印模式（单次）：发送提示，输出结果，退出。
  *
- * Used for:
- * - `pi -p "prompt"` - text output
- * - `pi --mode json "prompt"` - JSON event stream
+ * 用于：
+ * - `pi -p "prompt"` - 文本输出
+ * - `pi --mode json "prompt"` - JSON 事件流
  */
 
 import type { AssistantMessage, ImageContent } from "@mariozechner/pi-ai";
 import type { AgentSession } from "../core/agent-session.js";
 
 /**
- * Options for print mode.
+ * 打印模式的选项。
  */
 export interface PrintModeOptions {
-	/** Output mode: "text" for final response only, "json" for all events */
+	/** 输出模式："text" 仅用于最终响应，"json" 用于所有事件 */
 	mode: "text" | "json";
-	/** Array of additional prompts to send after initialMessage */
+	/** initialMessage 之后要发送的额外提示数组 */
 	messages?: string[];
-	/** First message to send (may contain @file content) */
+	/** 要发送的第一条消息（可能包含 @file 内容） */
 	initialMessage?: string;
-	/** Images to attach to the initial message */
+	/** 附加到初始消息的图像 */
 	initialImages?: ImageContent[];
 }
 
 /**
- * Run in print (single-shot) mode.
- * Sends prompts to the agent and outputs the result.
+ * 在打印（单次）模式下运行。
+ * 向 agent 发送提示并输出结果。
  */
 export async function runPrintMode(session: AgentSession, options: PrintModeOptions): Promise<void> {
 	const { mode, messages = [], initialMessage, initialImages } = options;
@@ -35,7 +35,7 @@ export async function runPrintMode(session: AgentSession, options: PrintModeOpti
 			console.log(JSON.stringify(header));
 		}
 	}
-	// Set up extensions for print mode (no UI)
+	// 为打印模式设置扩展（无 UI）
 	await session.bindExtensions({
 		commandContextActions: {
 			waitForIdle: () => session.agent.waitForIdle(),
@@ -72,25 +72,25 @@ export async function runPrintMode(session: AgentSession, options: PrintModeOpti
 		},
 	});
 
-	// Always subscribe to enable session persistence via _handleAgentEvent
+	// 始终订阅以通过 _handleAgentEvent 启用会话持久性
 	session.subscribe((event) => {
-		// In JSON mode, output all events
+		// 在 JSON 模式下，输出所有事件
 		if (mode === "json") {
 			console.log(JSON.stringify(event));
 		}
 	});
 
-	// Send initial message with attachments
+	// 发送带有附件的初始消息
 	if (initialMessage) {
 		await session.prompt(initialMessage, { images: initialImages });
 	}
 
-	// Send remaining messages
+	// 发送剩余消息
 	for (const message of messages) {
 		await session.prompt(message);
 	}
 
-	// In text mode, output final response
+	// 在文本模式下，输出最终响应
 	if (mode === "text") {
 		const state = session.state;
 		const lastMessage = state.messages[state.messages.length - 1];
@@ -98,13 +98,13 @@ export async function runPrintMode(session: AgentSession, options: PrintModeOpti
 		if (lastMessage?.role === "assistant") {
 			const assistantMsg = lastMessage as AssistantMessage;
 
-			// Check for error/aborted
+			// 检查错误/中止
 			if (assistantMsg.stopReason === "error" || assistantMsg.stopReason === "aborted") {
 				console.error(assistantMsg.errorMessage || `Request ${assistantMsg.stopReason}`);
 				process.exit(1);
 			}
 
-			// Output text content
+			// 输出文本内容
 			for (const content of assistantMsg.content) {
 				if (content.type === "text") {
 					console.log(content.text);
@@ -113,8 +113,8 @@ export async function runPrintMode(session: AgentSession, options: PrintModeOpti
 		}
 	}
 
-	// Ensure stdout is fully flushed before returning
-	// This prevents race conditions where the process exits before all output is written
+	// 确保 stdout 在返回之前完全刷新
+	// 这可以防止进程在所有输出写入之前退出的竞争条件
 	await new Promise<void>((resolve, reject) => {
 		process.stdout.write("", (err) => {
 			if (err) reject(err);

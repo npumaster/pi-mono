@@ -4,24 +4,24 @@ import { dirname, join, resolve } from "path";
 import { fileURLToPath } from "url";
 
 // =============================================================================
-// Package Detection
+// 包检测
 // =============================================================================
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
 /**
- * Detect if we're running as a Bun compiled binary.
- * Bun binaries have import.meta.url containing "$bunfs", "~BUN", or "%7EBUN" (Bun's virtual filesystem path)
+ * 检测我们是否作为 Bun 编译的二进制文件运行。
+ * Bun 二进制文件的 import.meta.url 包含 "$bunfs"、"~BUN" 或 "%7EBUN"（Bun 的虚拟文件系统路径）
  */
 export const isBunBinary =
 	import.meta.url.includes("$bunfs") || import.meta.url.includes("~BUN") || import.meta.url.includes("%7EBUN");
 
-/** Detect if Bun is the runtime (compiled binary or bun run) */
+/** 检测 Bun 是否为运行时（编译的二进制文件或 bun run） */
 export const isBunRuntime = !!process.versions.bun;
 
 // =============================================================================
-// Install Method Detection
+// 安装方法检测
 // =============================================================================
 
 export type InstallMethod = "bun-binary" | "npm" | "pnpm" | "yarn" | "bun" | "unknown";
@@ -68,17 +68,17 @@ export function getUpdateInstruction(packageName: string): string {
 }
 
 // =============================================================================
-// Package Asset Paths (shipped with executable)
+// 包资产路径（随可执行文件发布）
 // =============================================================================
 
 /**
- * Get the base directory for resolving package assets (themes, package.json, README.md, CHANGELOG.md).
- * - For Bun binary: returns the directory containing the executable
- * - For Node.js (dist/): returns __dirname (the dist/ directory)
- * - For tsx (src/): returns parent directory (the package root)
+ * 获取用于解析包资产（主题、package.json、README.md、CHANGELOG.md）的基本目录。
+ * - 对于 Bun 二进制文件：返回包含可执行文件的目录
+ * - 对于 Node.js (dist/)：返回 __dirname (dist/ 目录)
+ * - 对于 tsx (src/)：返回父目录（包根目录）
  */
 export function getPackageDir(): string {
-	// Allow override via environment variable (useful for Nix/Guix where store paths tokenize poorly)
+	// 允许通过环境变量覆盖（对于存储路径分词效果不佳的 Nix/Guix 很有用）
 	const envDir = process.env.PI_PACKAGE_DIR;
 	if (envDir) {
 		if (envDir === "~") return homedir();
@@ -87,10 +87,10 @@ export function getPackageDir(): string {
 	}
 
 	if (isBunBinary) {
-		// Bun binary: process.execPath points to the compiled executable
+		// Bun 二进制文件：process.execPath 指向编译后的可执行文件
 		return dirname(process.execPath);
 	}
-	// Node.js: walk up from __dirname until we find package.json
+	// Node.js：从 __dirname 向上遍历直到找到 package.json
 	let dir = __dirname;
 	while (dir !== dirname(dir)) {
 		if (existsSync(join(dir, "package.json"))) {
@@ -98,31 +98,31 @@ export function getPackageDir(): string {
 		}
 		dir = dirname(dir);
 	}
-	// Fallback (shouldn't happen)
+	// 回退（不应发生）
 	return __dirname;
 }
 
 /**
- * Get path to built-in themes directory (shipped with package)
- * - For Bun binary: theme/ next to executable
- * - For Node.js (dist/): dist/modes/interactive/theme/
- * - For tsx (src/): src/modes/interactive/theme/
+ * 获取内置主题目录的路径（随包发布）
+ * - 对于 Bun 二进制文件：可执行文件旁边的 theme/
+ * - 对于 Node.js (dist/)：dist/modes/interactive/theme/
+ * - 对于 tsx (src/)：src/modes/interactive/theme/
  */
 export function getThemesDir(): string {
 	if (isBunBinary) {
 		return join(dirname(process.execPath), "theme");
 	}
-	// Theme is in modes/interactive/theme/ relative to src/ or dist/
+	// 主题位于相对于 src/ 或 dist/ 的 modes/interactive/theme/
 	const packageDir = getPackageDir();
 	const srcOrDist = existsSync(join(packageDir, "src")) ? "src" : "dist";
 	return join(packageDir, srcOrDist, "modes", "interactive", "theme");
 }
 
 /**
- * Get path to HTML export template directory (shipped with package)
- * - For Bun binary: export-html/ next to executable
- * - For Node.js (dist/): dist/core/export-html/
- * - For tsx (src/): src/core/export-html/
+ * 获取 HTML 导出模板目录的路径（随包发布）
+ * - 对于 Bun 二进制文件：可执行文件旁边的 export-html/
+ * - 对于 Node.js (dist/)：dist/core/export-html/
+ * - 对于 tsx (src/)：src/core/export-html/
  */
 export function getExportTemplateDir(): string {
 	if (isBunBinary) {
@@ -133,33 +133,33 @@ export function getExportTemplateDir(): string {
 	return join(packageDir, srcOrDist, "core", "export-html");
 }
 
-/** Get path to package.json */
+/** 获取 package.json 的路径 */
 export function getPackageJsonPath(): string {
 	return join(getPackageDir(), "package.json");
 }
 
-/** Get path to README.md */
+/** 获取 README.md 的路径 */
 export function getReadmePath(): string {
 	return resolve(join(getPackageDir(), "README.md"));
 }
 
-/** Get path to docs directory */
+/** 获取 docs 目录的路径 */
 export function getDocsPath(): string {
 	return resolve(join(getPackageDir(), "docs"));
 }
 
-/** Get path to examples directory */
+/** 获取 examples 目录的路径 */
 export function getExamplesPath(): string {
 	return resolve(join(getPackageDir(), "examples"));
 }
 
-/** Get path to CHANGELOG.md */
+/** 获取 CHANGELOG.md 的路径 */
 export function getChangelogPath(): string {
 	return resolve(join(getPackageDir(), "CHANGELOG.md"));
 }
 
 // =============================================================================
-// App Config (from package.json piConfig)
+// 应用配置（来自 package.json piConfig）
 // =============================================================================
 
 const pkg = JSON.parse(readFileSync(getPackageJsonPath(), "utf-8"));
@@ -168,26 +168,26 @@ export const APP_NAME: string = pkg.piConfig?.name || "pi";
 export const CONFIG_DIR_NAME: string = pkg.piConfig?.configDir || ".pi";
 export const VERSION: string = pkg.version;
 
-// e.g., PI_CODING_AGENT_DIR or TAU_CODING_AGENT_DIR
+// 例如：PI_CODING_AGENT_DIR 或 TAU_CODING_AGENT_DIR
 export const ENV_AGENT_DIR = `${APP_NAME.toUpperCase()}_CODING_AGENT_DIR`;
 
 const DEFAULT_SHARE_VIEWER_URL = "https://pi.dev/session/";
 
-/** Get the share viewer URL for a gist ID */
+/** 获取 gist ID 的分享查看器 URL */
 export function getShareViewerUrl(gistId: string): string {
 	const baseUrl = process.env.PI_SHARE_VIEWER_URL || DEFAULT_SHARE_VIEWER_URL;
 	return `${baseUrl}#${gistId}`;
 }
 
 // =============================================================================
-// User Config Paths (~/.pi/agent/*)
+// 用户配置路径 (~/.pi/agent/*)
 // =============================================================================
 
-/** Get the agent config directory (e.g., ~/.pi/agent/) */
+/** 获取代理配置目录（例如：~/.pi/agent/） */
 export function getAgentDir(): string {
 	const envDir = process.env[ENV_AGENT_DIR];
 	if (envDir) {
-		// Expand tilde to home directory
+		// 将波浪号扩展为主目录
 		if (envDir === "~") return homedir();
 		if (envDir.startsWith("~/")) return homedir() + envDir.slice(1);
 		return envDir;
@@ -195,47 +195,47 @@ export function getAgentDir(): string {
 	return join(homedir(), CONFIG_DIR_NAME, "agent");
 }
 
-/** Get path to user's custom themes directory */
+/** 获取用户自定义主题目录的路径 */
 export function getCustomThemesDir(): string {
 	return join(getAgentDir(), "themes");
 }
 
-/** Get path to models.json */
+/** 获取 models.json 的路径 */
 export function getModelsPath(): string {
 	return join(getAgentDir(), "models.json");
 }
 
-/** Get path to auth.json */
+/** 获取 auth.json 的路径 */
 export function getAuthPath(): string {
 	return join(getAgentDir(), "auth.json");
 }
 
-/** Get path to settings.json */
+/** 获取 settings.json 的路径 */
 export function getSettingsPath(): string {
 	return join(getAgentDir(), "settings.json");
 }
 
-/** Get path to tools directory */
+/** 获取 tools 目录的路径 */
 export function getToolsDir(): string {
 	return join(getAgentDir(), "tools");
 }
 
-/** Get path to managed binaries directory (fd, rg) */
+/** 获取托管二进制文件目录（fd, rg）的路径 */
 export function getBinDir(): string {
 	return join(getAgentDir(), "bin");
 }
 
-/** Get path to prompt templates directory */
+/** 获取提示词模板目录的路径 */
 export function getPromptsDir(): string {
 	return join(getAgentDir(), "prompts");
 }
 
-/** Get path to sessions directory */
+/** 获取 sessions 目录的路径 */
 export function getSessionsDir(): string {
 	return join(getAgentDir(), "sessions");
 }
 
-/** Get path to debug log file */
+/** 获取调试日志文件的路径 */
 export function getDebugLogPath(): string {
 	return join(getAgentDir(), `${APP_NAME}-debug.log`);
 }

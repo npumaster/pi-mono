@@ -6,8 +6,8 @@ import { resolveToCwd } from "./path-utils.js";
 import { DEFAULT_MAX_BYTES, formatSize, type TruncationResult, truncateHead } from "./truncate.js";
 
 const lsSchema = Type.Object({
-	path: Type.Optional(Type.String({ description: "Directory to list (default: current directory)" })),
-	limit: Type.Optional(Type.Number({ description: "Maximum number of entries to return (default: 500)" })),
+	path: Type.Optional(Type.String({ description: "要列出的目录（默认：当前目录）" })),
+	limit: Type.Optional(Type.Number({ description: "返回的最大条目数（默认：500）" })),
 });
 
 export type LsToolInput = Static<typeof lsSchema>;
@@ -166,5 +166,5 @@ export function createLsTool(cwd: string, options?: LsToolOptions): AgentTool<ty
 	};
 }
 
-/** Default ls tool using process.cwd() - for backwards compatibility */
+/** 使用 process.cwd() 的默认 ls 工具 - 为了向后兼容 */
 export const lsTool = createLsTool(process.cwd());

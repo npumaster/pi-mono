@@ -1,8 +1,8 @@
 /**
- * Tool HTML renderer for custom tools in HTML export.
+ * 用于 HTML 导出的自定义工具的工具 HTML 渲染器。
  *
- * Renders custom tool calls and results to HTML by invoking their TUI renderers
- * and converting the ANSI output to HTML.
+ * 通过调用其 TUI 渲染器并将 ANSI 输出转换为 HTML，
+ * 将自定义工具调用和结果渲染为 HTML。
  */
 
 import type { ImageContent, TextContent } from "@mariozechner/pi-ai";
@@ -11,18 +11,18 @@ import type { ToolDefinition } from "../extensions/types.js";
 import { ansiLinesToHtml } from "./ansi-to-html.js";
 
 export interface ToolHtmlRendererDeps {
-	/** Function to look up tool definition by name */
+	/** 按名称查找工具定义的函数 */
 	getToolDefinition: (name: string) => ToolDefinition | undefined;
-	/** Theme for styling */
+	/** 用于样式的色 */
 	theme: Theme;
-	/** Terminal width for rendering (default: 100) */
+	/** 用于渲染的终端宽度（默认：100） */
 	width?: number;
 }
 
 export interface ToolHtmlRenderer {
-	/** Render a tool call to HTML. Returns undefined if tool has no custom renderer. */
+	/** 将工具调用渲染为 HTML。如果工具没有自定义渲染器，则返回 undefined。 */
 	renderCall(toolName: string, args: unknown): string | undefined;
-	/** Render a tool result to HTML. Returns undefined if tool has no custom renderer. */
+	/** 将工具结果渲染为 HTML。如果工具没有自定义渲染器，则返回 undefined。 */
 	renderResult(
 		toolName: string,
 		result: Array<{ type: string; text?: string; data?: string; mimeType?: string }>,
@@ -32,10 +32,10 @@ export interface ToolHtmlRenderer {
 }
 
 /**
- * Create a tool HTML renderer.
+ * 创建工具 HTML 渲染器。
  *
- * The renderer looks up tool definitions and invokes their renderCall/renderResult
- * methods, converting the resulting TUI Component output (ANSI) to HTML.
+ * 渲染器查找工具定义并调用其 renderCall/renderResult
+ * 方法，将生成的 TUI 组件输出 (ANSI) 转换为 HTML。
  */
 export function createToolHtmlRenderer(deps: ToolHtmlRendererDeps): ToolHtmlRenderer {
 	const { getToolDefinition, theme, width = 100 } = deps;
@@ -52,7 +52,7 @@ export function createToolHtmlRenderer(deps: ToolHtmlRendererDeps): ToolHtmlRend
 				const lines = component.render(width);
 				return ansiLinesToHtml(lines);
 			} catch {
-				// On error, return undefined to trigger JSON fallback
+				// 出错时，返回 undefined 以触发 JSON 回退
 				return undefined;
 			}
 		},
@@ -77,12 +77,12 @@ export function createToolHtmlRenderer(deps: ToolHtmlRendererDeps): ToolHtmlRend
 					isError,
 				};
 
-				// Always render expanded, client-side will apply truncation
+				// 始终渲染扩展，客户端将应用截断
 				const component = toolDef.renderResult(agentToolResult, { expanded: true, isPartial: false }, theme);
 				const lines = component.render(width);
 				return ansiLinesToHtml(lines);
 			} catch {
-				// On error, return undefined to trigger JSON fallback
+				// 出错时，返回 undefined 以触发 JSON 回退
 				return undefined;
 			}
 		},

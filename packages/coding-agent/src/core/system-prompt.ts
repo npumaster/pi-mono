@@ -1,11 +1,11 @@
 /**
- * System prompt construction and project context loading
+ * 系统提示词构建和项目上下文加载
  */
 
 import { getDocsPath, getExamplesPath, getReadmePath } from "../config.js";
 import { formatSkillsForPrompt, type Skill } from "./skills.js";
 
-/** Tool descriptions for system prompt */
+/** 系统提示词的工具描述 */
 const toolDescriptions: Record<string, string> = {
 	read: "Read file contents",
 	bash: "Execute bash commands (ls, grep, find, etc.)",
@@ -17,21 +17,21 @@ const toolDescriptions: Record<string, string> = {
 };
 
 export interface BuildSystemPromptOptions {
-	/** Custom system prompt (replaces default). */
+	/** 自定义系统提示词（替换默认值）。 */
 	customPrompt?: string;
-	/** Tools to include in prompt. Default: [read, bash, edit, write] */
+	/** 包含在提示词中的工具。默认值：[read, bash, edit, write] */
 	selectedTools?: string[];
-	/** Text to append to system prompt. */
+	/** 追加到系统提示词的文本。 */
 	appendSystemPrompt?: string;
-	/** Working directory. Default: process.cwd() */
+	/** 工作目录。默认值：process.cwd() */
 	cwd?: string;
-	/** Pre-loaded context files. */
+	/** 预加载的上下文文件。 */
 	contextFiles?: Array<{ path: string; content: string }>;
-	/** Pre-loaded skills. */
+	/** 预加载的技能。 */
 	skills?: Skill[];
 }
 
-/** Build the system prompt with tools, guidelines, and context */
+/** 使用工具、指南和上下文构建系统提示词 */
 export function buildSystemPrompt(options: BuildSystemPromptOptions = {}): string {
 	const {
 		customPrompt,
@@ -67,7 +67,7 @@ export function buildSystemPrompt(options: BuildSystemPromptOptions = {}): strin
 			prompt += appendSection;
 		}
 
-		// Append project context files
+		// 追加项目上下文文件
 		if (contextFiles.length > 0) {
 			prompt += "\n\n# Project Context\n\n";
 			prompt += "Project-specific instructions and guidelines:\n\n";
@@ -76,29 +76,29 @@ export function buildSystemPrompt(options: BuildSystemPromptOptions = {}): strin
 			}
 		}
 
-		// Append skills section (only if read tool is available)
+		// 追加技能部分（仅当 read 工具可用时）
 		const customPromptHasRead = !selectedTools || selectedTools.includes("read");
 		if (customPromptHasRead && skills.length > 0) {
 			prompt += formatSkillsForPrompt(skills);
 		}
 
-		// Add date/time and working directory last
+		// 最后添加日期/时间和工作目录
 		prompt += `\nCurrent date and time: ${dateTime}`;
 		prompt += `\nCurrent working directory: ${resolvedCwd}`;
 
 		return prompt;
 	}
 
-	// Get absolute paths to documentation and examples
+	// 获取文档和示例的绝对路径
 	const readmePath = getReadmePath();
 	const docsPath = getDocsPath();
 	const examplesPath = getExamplesPath();
 
-	// Build tools list based on selected tools (only built-in tools with known descriptions)
+	// 根据所选工具构建工具列表（仅限具有已知描述的内置工具）
 	const tools = (selectedTools || ["read", "bash", "edit", "write"]).filter((t) => t in toolDescriptions);
 	const toolsList = tools.length > 0 ? tools.map((t) => `- ${t}: ${toolDescriptions[t]}`).join("\n") : "(none)";
 
-	// Build guidelines based on which tools are actually available
+	// 根据实际可用的工具构建指南
 	const guidelinesList: string[] = [];
 
 	const hasBash = tools.includes("bash");
@@ -109,36 +109,36 @@ export function buildSystemPrompt(options: BuildSystemPromptOptions = {}): strin
 	const hasLs = tools.includes("ls");
 	const hasRead = tools.includes("read");
 
-	// File exploration guidelines
+	// 文件探索指南
 	if (hasBash && !hasGrep && !hasFind && !hasLs) {
 		guidelinesList.push("Use bash for file operations like ls, rg, find");
 	} else if (hasBash && (hasGrep || hasFind || hasLs)) {
 		guidelinesList.push("Prefer grep/find/ls tools over bash for file exploration (faster, respects .gitignore)");
 	}
 
-	// Read before edit guideline
+	// 编辑前读取指南
 	if (hasRead && hasEdit) {
 		guidelinesList.push("Use read to examine files before editing. You must use this tool instead of cat or sed.");
 	}
 
-	// Edit guideline
+	// 编辑指南
 	if (hasEdit) {
 		guidelinesList.push("Use edit for precise changes (old text must match exactly)");
 	}
 
-	// Write guideline
+	// 写入指南
 	if (hasWrite) {
 		guidelinesList.push("Use write only for new files or complete rewrites");
 	}
 
-	// Output guideline (only when actually writing or executing)
+	// 输出指南（仅在实际写入或执行时）
 	if (hasEdit || hasWrite) {
 		guidelinesList.push(
 			"When summarizing your actions, output plain text directly - do NOT use cat or bash to display what you did",
 		);
 	}
 
-	// Always include these
+	// 始终包含这些
 	guidelinesList.push("Be concise in your responses");
 	guidelinesList.push("Show file paths clearly when working with files");
 
@@ -166,7 +166,7 @@ Pi documentation (read only when the user asks about pi itself, its SDK, extensi
 		prompt += appendSection;
 	}
 
-	// Append project context files
+	// 追加项目上下文文件
 	if (contextFiles.length > 0) {
 		prompt += "\n\n# Project Context\n\n";
 		prompt += "Project-specific instructions and guidelines:\n\n";
@@ -175,12 +175,12 @@ Pi documentation (read only when the user asks about pi itself, its SDK, extensi
 		}
 	}
 
-	// Append skills section (only if read tool is available)
+	// 追加技能部分（仅当 read 工具可用时）
 	if (hasRead && skills.length > 0) {
 		prompt += formatSkillsForPrompt(skills);
 	}
 
-	// Add date/time and working directory last
+	// 最后添加日期/时间和工作目录
 	prompt += `\nCurrent date and time: ${dateTime}`;
 	prompt += `\nCurrent working directory: ${resolvedCwd}`;
 

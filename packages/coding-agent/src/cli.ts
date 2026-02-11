@@ -1,9 +1,9 @@
 #!/usr/bin/env node
 /**
- * CLI entry point for the refactored coding agent.
- * Uses main.ts with AgentSession and new mode modules.
+ * 重构后的编码代理 CLI 入口点。
+ * 使用 main.ts，结合 AgentSession 和新的模式模块。
  *
- * Test with: npx tsx src/cli-new.ts [args...]
+ * 测试命令：npx tsx src/cli-new.ts [args...]
  */
 process.title = "pi";
 

@@ -56,7 +56,7 @@ const defaultGrepOperations: GrepOperations = {
 };
 
 export interface GrepToolOptions {
-	/** Custom operations for grep. Default: local filesystem + ripgrep */
+	/** 用于 grep 的自定义操作。默认值：本地文件系统 + ripgrep */
 	operations?: GrepOperations;
 }
 
@@ -66,7 +66,7 @@ export function createGrepTool(cwd: string, options?: GrepToolOptions): AgentToo
 	return {
 		name: "grep",
 		label: "grep",
-		description: `Search file contents for a pattern. Returns matching lines with file paths and line numbers. Respects .gitignore. Output is truncated to ${DEFAULT_LIMIT} matches or ${DEFAULT_MAX_BYTES / 1024}KB (whichever is hit first). Long lines are truncated to ${GREP_MAX_LINE_LENGTH} chars.`,
+		description: `在文件内容中搜索模式。返回带有文件路径和行号的匹配行。遵循 .gitignore。输出被截断为 ${DEFAULT_LIMIT} 个匹配项或 ${DEFAULT_MAX_BYTES / 1024}KB（以先达到者为准）。长行被截断为 ${GREP_MAX_LINE_LENGTH} 个字符。`,
 		parameters: grepSchema,
 		execute: async (
 			_toolCallId: string,
@@ -342,5 +342,5 @@ export function createGrepTool(cwd: string, options?: GrepToolOptions): AgentToo
 	};
 }
 
-/** Default grep tool using process.cwd() - for backwards compatibility */
+/** 使用 process.cwd() 的默认 grep 工具 - 为了向后兼容 */
 export const grepTool = createGrepTool(process.cwd());

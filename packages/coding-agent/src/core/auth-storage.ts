@@ -1,9 +1,9 @@
 /**
- * Credential storage for API keys and OAuth tokens.
- * Handles loading, saving, and refreshing credentials from auth.json.
+ * API 密钥和 OAuth 令牌的凭据存储。
+ * 处理从 auth.json 加载、保存和刷新凭据。
  *
- * Uses file locking to prevent race conditions when multiple pi instances
- * try to refresh tokens simultaneously.
+ * 使用文件锁定以防止多个 pi 实例
+ * 尝试同时刷新令牌时的竞争条件。
  */
 
 import {
@@ -35,7 +35,7 @@ export type AuthCredential = ApiKeyCredential | OAuthCredential;
 export type AuthStorageData = Record<string, AuthCredential>;
 
 /**
- * Credential storage backed by a JSON file.
+ * 由 JSON 文件支持的凭据存储。
  */
 export class AuthStorage {
 	private data: AuthStorageData = {};
@@ -47,30 +47,30 @@ export class AuthStorage {
 	}
 
 	/**
-	 * Set a runtime API key override (not persisted to disk).
-	 * Used for CLI --api-key flag.
+	 * 设置运行时 API 密钥覆盖（不持久化到磁盘）。
+	 * 用于 CLI --api-key 标志。
 	 */
 	setRuntimeApiKey(provider: string, apiKey: string): void {
 		this.runtimeOverrides.set(provider, apiKey);
 	}
 
 	/**
-	 * Remove a runtime API key override.
+	 * 移除运行时 API 密钥覆盖。
 	 */
 	removeRuntimeApiKey(provider: string): void {
 		this.runtimeOverrides.delete(provider);
 	}
 
 	/**
-	 * Set a fallback resolver for API keys not found in auth.json or env vars.
-	 * Used for custom provider keys from models.json.
+	 * 设置用于在 auth.json 或环境变量中找不到的 API 密钥的回退解析器。
+	 * 用于 models.json 中的自定义提供商密钥。
 	 */
 	setFallbackResolver(resolver: (provider: string) => string | undefined): void {
 		this.fallbackResolver = resolver;
 	}
 
 	/**
-	 * Reload credentials from disk.
+	 * 从磁盘重新加载凭据。
 	 */
 	reload(): void {
 		if (!existsSync(this.authPath)) {
@@ -85,7 +85,7 @@ export class AuthStorage {
 	}
 
 	/**
-	 * Save credentials to disk.
+	 * 将凭据保存到磁盘。
 	 */
 	private save(): void {
 		const dir = dirname(this.authPath);
@@ -97,14 +97,14 @@ export class AuthStorage {
 	}
 
 	/**
-	 * Get credential for a provider.
+	 * 获取提供商的凭据。
 	 */
 	get(provider: string): AuthCredential | undefined {
 		return this.data[provider] ?? undefined;
 	}
 
 	/**
-	 * Set credential for a provider.
+	 * 设置提供商的凭据。
 	 */
 	set(provider: string, credential: AuthCredential): void {
 		this.data[provider] = credential;
@@ -112,7 +112,7 @@ export class AuthStorage {
 	}
 
 	/**
-	 * Remove credential for a provider.
+	 * 移除提供商的凭据。
 	 */
 	remove(provider: string): void {
 		delete this.data[provider];
@@ -120,22 +120,22 @@ export class AuthStorage {
 	}
 
 	/**
-	 * List all providers with credentials.
+	 * 列出所有具有凭据的提供商。
 	 */
 	list(): string[] {
 		return Object.keys(this.data);
 	}
 
 	/**
-	 * Check if credentials exist for a provider in auth.json.
+	 * 检查 auth.json 中是否存在提供商的凭据。
 	 */
 	has(provider: string): boolean {
 		return provider in this.data;
 	}
 
 	/**
-	 * Check if any form of auth is configured for a provider.
-	 * Unlike getApiKey(), this doesn't refresh OAuth tokens.
+	 * 检查是否为提供商配置了任何形式的身份验证。
+	 * 与 getApiKey() 不同，这不会刷新 OAuth 令牌。
 	 */
 	hasAuth(provider: string): boolean {
 		if (this.runtimeOverrides.has(provider)) return true;
@@ -146,14 +146,14 @@ export class AuthStorage {
 	}
 
 	/**
-	 * Get all credentials (for passing to getOAuthApiKey).
+	 * 获取所有凭据（用于传递给 getOAuthApiKey）。
 	 */
 	getAll(): AuthStorageData {
 		return { ...this.data };
 	}
 
 	/**
-	 * Login to an OAuth provider.
+	 * 登录到 OAuth 提供商。
 	 */
 	async login(providerId: OAuthProviderId, callbacks: OAuthLoginCallbacks): Promise<void> {
 		const provider = getOAuthProvider(providerId);
@@ -166,16 +166,16 @@ export class AuthStorage {
 	}
 
 	/**
-	 * Logout from a provider.
+	 * 登出提供商。
 	 */
 	logout(provider: string): void {
 		this.remove(provider);
 	}
 
 	/**
-	 * Refresh OAuth token with file locking to prevent race conditions.
-	 * Multiple pi instances may try to refresh simultaneously when tokens expire.
-	 * This ensures only one instance refreshes while others wait and use the result.
+	 * 使用文件锁定刷新 OAuth 令牌以防止竞争条件。
+	 * 当令牌过期时，多个 pi 实例可能会尝试同时刷新。
+	 * 这确保只有一个实例刷新，而其他实例等待并使用结果。
 	 */
 	private async refreshOAuthTokenWithLock(
 		providerId: OAuthProviderId,
@@ -185,7 +185,7 @@ export class AuthStorage {
 			return null;
 		}
 
-		// Ensure auth file exists for locking
+		// 确保 auth 文件存在以便锁定
 		if (!existsSync(this.authPath)) {
 			const dir = dirname(this.authPath);
 			if (!existsSync(dir)) {
@@ -205,8 +205,8 @@ export class AuthStorage {
 		};
 
 		try {
-			// Acquire exclusive lock with retry and timeout
-			// Use generous retry window to handle slow token endpoints
+			// 获取排他锁，带重试和超时
+			// 使用慷慨的重试窗口来处理慢速令牌端点
 			release = await lockfile.lock(this.authPath, {
 				retries: {
 					retries: 10,
@@ -215,7 +215,7 @@ export class AuthStorage {
 					maxTimeout: 10000,
 					randomize: true,
 				},
-				stale: 30000, // Consider lock stale after 30 seconds
+				stale: 30000, // 30 秒后认为锁已过时
 				onCompromised: (err) => {
 					lockCompromised = true;
 					lockCompromisedError = err;
@@ -224,7 +224,7 @@ export class AuthStorage {
 
 			throwIfLockCompromised();
 
-			// Re-read file after acquiring lock - another instance may have refreshed
+			// 获取锁后重新读取文件 - 另一个实例可能已经刷新
 			this.reload();
 
 			const cred = this.data[providerId];
@@ -232,16 +232,16 @@ export class AuthStorage {
 				return null;
 			}
 
-			// Check if token is still expired after re-reading
-			// (another instance may have already refreshed it)
+			// 检查重新读取后令牌是否仍然过期
+			// （另一个实例可能已经刷新了它）
 			if (Date.now() < cred.expires) {
-				// Token is now valid - another instance refreshed it
+				// 令牌现在有效 - 另一个实例刷新了它
 				throwIfLockCompromised();
 				const apiKey = provider.getApiKey(cred);
 				return { apiKey, newCredentials: cred };
 			}
 
-			// Token still expired, we need to refresh
+			// 令牌仍然过期，我们需要刷新
 			const oauthCreds: Record<string, OAuthCredentials> = {};
 			for (const [key, value] of Object.entries(this.data)) {
 				if (value.type === "oauth") {
@@ -261,28 +261,28 @@ export class AuthStorage {
 			throwIfLockCompromised();
 			return null;
 		} finally {
-			// Always release the lock
+			// 始终释放锁
 			if (release) {
 				try {
 					await release();
 				} catch {
-					// Ignore unlock errors (lock may have been compromised)
+					// 忽略解锁错误（锁可能已受损）
 				}
 			}
 		}
 	}
 
 	/**
-	 * Get API key for a provider.
-	 * Priority:
-	 * 1. Runtime override (CLI --api-key)
-	 * 2. API key from auth.json
-	 * 3. OAuth token from auth.json (auto-refreshed with locking)
-	 * 4. Environment variable
-	 * 5. Fallback resolver (models.json custom providers)
+	 * 获取提供商的 API 密钥。
+	 * 优先级：
+	 * 1. 运行时覆盖 (CLI --api-key)
+	 * 2. 来自 auth.json 的 API 密钥
+	 * 3. 来自 auth.json 的 OAuth 令牌（带锁自动刷新）
+	 * 4. 环境变量
+	 * 5. 回退解析器（models.json 自定义提供商）
 	 */
 	async getApiKey(providerId: string): Promise<string | undefined> {
-		// Runtime override takes highest priority
+		// 运行时覆盖具有最高优先级
 		const runtimeKey = this.runtimeOverrides.get(providerId);
 		if (runtimeKey) {
 			return runtimeKey;
@@ -297,50 +297,50 @@ export class AuthStorage {
 		if (cred?.type === "oauth") {
 			const provider = getOAuthProvider(providerId);
 			if (!provider) {
-				// Unknown OAuth provider, can't get API key
+				// 未知的 OAuth 提供商，无法获取 API 密钥
 				return undefined;
 			}
 
-			// Check if token needs refresh
+			// 检查令牌是否需要刷新
 			const needsRefresh = Date.now() >= cred.expires;
 
 			if (needsRefresh) {
-				// Use locked refresh to prevent race conditions
+				// 使用锁定刷新以防止竞争条件
 				try {
 					const result = await this.refreshOAuthTokenWithLock(providerId);
 					if (result) {
 						return result.apiKey;
 					}
 				} catch {
-					// Refresh failed - re-read file to check if another instance succeeded
+					// 刷新失败 - 重新读取文件以检查另一个实例是否成功
 					this.reload();
 					const updatedCred = this.data[providerId];
 
 					if (updatedCred?.type === "oauth" && Date.now() < updatedCred.expires) {
-						// Another instance refreshed successfully, use those credentials
+						// 另一个实例刷新成功，使用这些凭据
 						return provider.getApiKey(updatedCred);
 					}
 
-					// Refresh truly failed - return undefined so model discovery skips this provider
-					// User can /login to re-authenticate (credentials preserved for retry)
+					// 刷新确实失败 - 返回 undefined 以便模型发现跳过此提供商
+					// 用户可以 /login 以重新验证（保留凭据以重试）
 					return undefined;
 				}
 			} else {
-				// Token not expired, use current access token
+				// 令牌未过期，使用当前访问令牌
 				return provider.getApiKey(cred);
 			}
 		}
 
-		// Fall back to environment variable
+		// 回退到环境变量
 		const envKey = getEnvApiKey(providerId);
 		if (envKey) return envKey;
 
-		// Fall back to custom resolver (e.g., models.json custom providers)
+		// 回退到自定义解析器（例如，models.json 自定义提供商）
 		return this.fallbackResolver?.(providerId) ?? undefined;
 	}
 
 	/**
-	 * Get all registered OAuth providers
+	 * 获取所有注册的 OAuth 提供商
 	 */
 	getOAuthProviders() {
 		return getOAuthProviders();

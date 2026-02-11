@@ -534,12 +534,12 @@ function isEnabledByOverrides(filePath: string, patterns: string[], baseDir: str
 }
 
 /**
- * Apply patterns to paths and return a Set of enabled paths.
- * Pattern types:
- * - Plain patterns: include matching paths
- * - `!pattern`: exclude matching paths
- * - `+path`: force-include exact path (overrides exclusions)
- * - `-path`: force-exclude exact path (overrides force-includes)
+ * 将模式应用于路径并返回已启用路径的集合。
+ * 模式类型：
+ * - 普通模式：包含匹配的路径
+ * - `!pattern`：排除匹配的路径
+ * - `+path`：强制包含精确路径（覆盖排除）
+ * - `-path`：强制排除精确路径（覆盖强制包含）
  */
 function applyPatterns(allPaths: string[], patterns: string[], baseDir: string): Set<string> {
 	const includes: string[] = [];
@@ -559,7 +559,7 @@ function applyPatterns(allPaths: string[], patterns: string[], baseDir: string):
 		}
 	}
 
-	// Step 1: Apply includes (or all if no includes)
+	// 步骤 1：应用包含（如果没有包含，则为全部）
 	let result: string[];
 	if (includes.length === 0) {
 		result = [...allPaths];
@@ -567,12 +567,12 @@ function applyPatterns(allPaths: string[], patterns: string[], baseDir: string):
 		result = allPaths.filter((filePath) => matchesAnyPattern(filePath, includes, baseDir));
 	}
 
-	// Step 2: Apply excludes
+	// 步骤 2：应用排除
 	if (excludes.length > 0) {
 		result = result.filter((filePath) => !matchesAnyPattern(filePath, excludes, baseDir));
 	}
 
-	// Step 3: Force-include (add back from allPaths, overriding exclusions)
+	// 步骤 3：强制包含（从 allPaths 添加回来，覆盖排除）
 	if (forceIncludes.length > 0) {
 		for (const filePath of allPaths) {
 			if (!result.includes(filePath) && matchesAnyExactPattern(filePath, forceIncludes, baseDir)) {
@@ -581,7 +581,7 @@ function applyPatterns(allPaths: string[], patterns: string[], baseDir: string):
 		}
 	}
 
-	// Step 4: Force-exclude (remove even if included or force-included)
+	// 步骤 4：强制排除（即使包含或强制包含也移除）
 	if (forceExcludes.length > 0) {
 		result = result.filter((filePath) => !matchesAnyExactPattern(filePath, forceExcludes, baseDir));
 	}
@@ -687,7 +687,7 @@ export class DefaultPackageManager implements PackageManager {
 		const globalSettings = this.settingsManager.getGlobalSettings();
 		const projectSettings = this.settingsManager.getProjectSettings();
 
-		// Collect all packages with scope
+		// 收集所有带范围的包
 		const allPackages: Array<{ pkg: PackageSource; scope: SourceScope }> = [];
 		for (const pkg of globalSettings.packages ?? []) {
 			allPackages.push({ pkg, scope: "user" });
@@ -696,7 +696,7 @@ export class DefaultPackageManager implements PackageManager {
 			allPackages.push({ pkg, scope: "project" });
 		}
 
-		// Dedupe: project scope wins over global for same package identity
+		// 去重：对于相同的包标识，项目范围优先于全局范围
 		const packageSources = this.dedupePackages(allPackages);
 		await this.resolvePackageSources(packageSources, accumulator, onMissing);
 
@@ -989,7 +989,7 @@ export class DefaultPackageManager implements PackageManager {
 			return { type: "local", path: source };
 		}
 
-		// Try parsing as git URL
+		// 尝试解析为 git URL
 		const gitParsed = parseGitUrl(source);
 		if (gitParsed) {
 			return gitParsed;

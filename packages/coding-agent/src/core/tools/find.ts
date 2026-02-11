@@ -26,13 +26,13 @@ export interface FindToolDetails {
 }
 
 /**
- * Pluggable operations for the find tool.
- * Override these to delegate file search to remote systems (e.g., SSH).
+ * find 工具的可插拔操作。
+ * 覆盖这些以将文件搜索委托给远程系统（例如 SSH）。
  */
 export interface FindOperations {
-	/** Check if path exists */
+	/** 检查路径是否存在 */
 	exists: (absolutePath: string) => Promise<boolean> | boolean;
-	/** Find files matching glob pattern. Returns relative paths. */
+	/** 查找匹配 glob 模式的文件。返回相对路径。 */
 	glob: (pattern: string, cwd: string, options: { ignore: string[]; limit: number }) => Promise<string[]> | string[];
 }
 
@@ -55,7 +55,7 @@ export function createFindTool(cwd: string, options?: FindToolOptions): AgentToo
 	return {
 		name: "find",
 		label: "find",
-		description: `Search for files by glob pattern. Returns matching file paths relative to the search directory. Respects .gitignore. Output is truncated to ${DEFAULT_LIMIT} results or ${DEFAULT_MAX_BYTES / 1024}KB (whichever is hit first).`,
+		description: `按 glob 模式搜索文件。返回相对于搜索目录的匹配文件路径。遵循 .gitignore。输出被截断为 ${DEFAULT_LIMIT} 个结果或 ${DEFAULT_MAX_BYTES / 1024}KB（以先达到者为准）。`,
 		parameters: findSchema,
 		execute: async (
 			_toolCallId: string,
@@ -77,7 +77,7 @@ export function createFindTool(cwd: string, options?: FindToolOptions): AgentToo
 						const effectiveLimit = limit ?? DEFAULT_LIMIT;
 						const ops = customOps ?? defaultFindOperations;
 
-						// If custom operations provided with glob, use that
+						// 如果提供了自定义操作 glob，则使用它
 						if (customOps?.glob) {
 							if (!(await ops.exists(searchPath))) {
 								reject(new Error(`Path not found: ${searchPath}`));
@@ -136,14 +136,14 @@ export function createFindTool(cwd: string, options?: FindToolOptions): AgentToo
 							return;
 						}
 
-						// Default: use fd
+						// 默认：使用 fd
 						const fdPath = await ensureTool("fd", true);
 						if (!fdPath) {
 							reject(new Error("fd is not available and could not be downloaded"));
 							return;
 						}
 
-						// Build fd arguments
+						// 构建 fd 参数
 						const args: string[] = [
 							"--glob",
 							"--color=never",
@@ -152,7 +152,7 @@ export function createFindTool(cwd: string, options?: FindToolOptions): AgentToo
 							String(effectiveLimit),
 						];
 
-						// Include .gitignore files
+						// 包含 .gitignore 文件
 						const gitignoreFiles = new Set<string>();
 						const rootGitignore = path.join(searchPath, ".gitignore");
 						if (existsSync(rootGitignore)) {
@@ -269,5 +269,5 @@ export function createFindTool(cwd: string, options?: FindToolOptions): AgentToo
 	};
 }
 
-/** Default find tool using process.cwd() - for backwards compatibility */
+/** 使用 process.cwd() 的默认 find 工具 - 为了向后兼容 */
 export const findTool = createFindTool(process.cwd());

@@ -1,5 +1,5 @@
 /**
- * List available models with optional fuzzy search
+ * 列出可用模型，支持可选的模糊搜索
  */
 
 import type { Api, Model } from "@mariozechner/pi-ai";
@@ -7,7 +7,7 @@ import { fuzzyFilter } from "@mariozechner/pi-tui";
 import type { ModelRegistry } from "../core/model-registry.js";
 
 /**
- * Format a number as human-readable (e.g., 200000 -> "200K", 1000000 -> "1M")
+ * 将数字格式化为人类可读的格式（例如：200000 -> "200K", 1000000 -> "1M"）
  */
 function formatTokenCount(count: number): string {
 	if (count >= 1_000_000) {
@@ -22,7 +22,7 @@ function formatTokenCount(count: number): string {
 }
 
 /**
- * List available models, optionally filtered by search pattern
+ * 列出可用模型，可选择通过搜索模式进行过滤
  */
 export async function listModels(modelRegistry: ModelRegistry, searchPattern?: string): Promise<void> {
 	const models = modelRegistry.getAvailable();
@@ -32,7 +32,7 @@ export async function listModels(modelRegistry: ModelRegistry, searchPattern?: s
 		return;
 	}
 
-	// Apply fuzzy filter if search pattern provided
+	// 如果提供了搜索模式，则应用模糊过滤器
 	let filteredModels: Model<Api>[] = models;
 	if (searchPattern) {
 		filteredModels = fuzzyFilter(models, searchPattern, (m) => `${m.provider} ${m.id}`);
@@ -43,14 +43,14 @@ export async function listModels(modelRegistry: ModelRegistry, searchPattern?: s
 		return;
 	}
 
-	// Sort by provider, then by model id
+	// 按提供商排序，然后按模型 ID 排序
 	filteredModels.sort((a, b) => {
 		const providerCmp = a.provider.localeCompare(b.provider);
 		if (providerCmp !== 0) return providerCmp;
 		return a.id.localeCompare(b.id);
 	});
 
-	// Calculate column widths
+	// 计算列宽
 	const rows = filteredModels.map((m) => ({
 		provider: m.provider,
 		model: m.id,
@@ -78,7 +78,7 @@ export async function listModels(modelRegistry: ModelRegistry, searchPattern?: s
 		images: Math.max(headers.images.length, ...rows.map((r) => r.images.length)),
 	};
 
-	// Print header
+	// 打印标题
 	const headerLine = [
 		headers.provider.padEnd(widths.provider),
 		headers.model.padEnd(widths.model),
@@ -89,7 +89,7 @@ export async function listModels(modelRegistry: ModelRegistry, searchPattern?: s
 	].join("  ");
 	console.log(headerLine);
 
-	// Print rows
+	// 打印行
 	for (const row of rows) {
 		const line = [
 			row.provider.padEnd(widths.provider),

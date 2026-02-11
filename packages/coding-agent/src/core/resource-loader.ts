@@ -310,7 +310,7 @@ export class DefaultResourceLoader implements ResourceLoader {
 			temporary: true,
 		});
 
-		// Helper to extract enabled paths and store metadata
+		// 提取已启用路径并存储元数据的辅助函数
 		const getEnabledResources = (
 			resources: Array<{ path: string; enabled: boolean; metadata: PathMetadata }>,
 		): Array<{ path: string; enabled: boolean; metadata: PathMetadata }> => {
@@ -326,7 +326,7 @@ export class DefaultResourceLoader implements ResourceLoader {
 			resources: Array<{ path: string; enabled: boolean; metadata: PathMetadata }>,
 		): string[] => getEnabledResources(resources).map((r) => r.path);
 
-		// Store metadata and get enabled paths
+		// 存储元数据并获取已启用路径
 		this.pathMetadata = new Map();
 		const enabledExtensions = getEnabledPaths(resolvedPaths.extensions);
 		const enabledSkillResources = getEnabledResources(resolvedPaths.skills);
@@ -357,7 +357,7 @@ export class DefaultResourceLoader implements ResourceLoader {
 
 		const enabledSkills = enabledSkillResources.map(mapSkillPath);
 
-		// Add CLI paths metadata
+		// 添加 CLI 路径元数据
 		for (const r of cliExtensionPaths.extensions) {
 			if (!this.pathMetadata.has(r.path)) {
 				this.pathMetadata.set(r.path, { source: "cli", scope: "temporary", origin: "top-level" });
@@ -383,7 +383,7 @@ export class DefaultResourceLoader implements ResourceLoader {
 		extensionsResult.extensions.push(...inlineExtensions.extensions);
 		extensionsResult.errors.push(...inlineExtensions.errors);
 
-		// Detect extension conflicts (tools, commands, flags with same names from different extensions)
+		// 检测扩展冲突（来自不同扩展的具有相同名称的工具、命令、标志）
 		const conflicts = this.detectExtensionConflicts(extensionsResult.extensions);
 		if (conflicts.length > 0) {
 			const conflictingPaths = new Set(conflicts.map((c) => c.path));
@@ -820,13 +820,13 @@ export class DefaultResourceLoader implements ResourceLoader {
 	private detectExtensionConflicts(extensions: Extension[]): Array<{ path: string; message: string }> {
 		const conflicts: Array<{ path: string; message: string }> = [];
 
-		// Track which extension registered each tool, command, and flag
+		// 跟踪哪个扩展注册了每个工具、命令和标志
 		const toolOwners = new Map<string, string>();
 		const commandOwners = new Map<string, string>();
 		const flagOwners = new Map<string, string>();
 
 		for (const ext of extensions) {
-			// Check tools
+			// 检查工具
 			for (const toolName of ext.tools.keys()) {
 				const existingOwner = toolOwners.get(toolName);
 				if (existingOwner && existingOwner !== ext.path) {
@@ -839,7 +839,7 @@ export class DefaultResourceLoader implements ResourceLoader {
 				}
 			}
 
-			// Check commands
+			// 检查命令
 			for (const commandName of ext.commands.keys()) {
 				const existingOwner = commandOwners.get(commandName);
 				if (existingOwner && existingOwner !== ext.path) {
@@ -852,7 +852,7 @@ export class DefaultResourceLoader implements ResourceLoader {
 				}
 			}
 
-			// Check flags
+			// 检查标志
 			for (const flagName of ext.flags.keys()) {
 				const existingOwner = flagOwners.get(flagName);
 				if (existingOwner && existingOwner !== ext.path) {

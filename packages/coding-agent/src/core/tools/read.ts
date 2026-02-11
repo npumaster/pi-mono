@@ -9,9 +9,9 @@ import { resolveReadPath } from "./path-utils.js";
 import { DEFAULT_MAX_BYTES, DEFAULT_MAX_LINES, formatSize, type TruncationResult, truncateHead } from "./truncate.js";
 
 const readSchema = Type.Object({
-	path: Type.String({ description: "Path to the file to read (relative or absolute)" }),
-	offset: Type.Optional(Type.Number({ description: "Line number to start reading from (1-indexed)" })),
-	limit: Type.Optional(Type.Number({ description: "Maximum number of lines to read" })),
+	path: Type.String({ description: "要读取的文件路径（相对或绝对）" }),
+	offset: Type.Optional(Type.Number({ description: "开始读取的行号（从 1 开始）" })),
+	limit: Type.Optional(Type.Number({ description: "读取的最大行数" })),
 });
 
 export type ReadToolInput = Static<typeof readSchema>;
@@ -21,15 +21,15 @@ export interface ReadToolDetails {
 }
 
 /**
- * Pluggable operations for the read tool.
- * Override these to delegate file reading to remote systems (e.g., SSH).
+ * read 工具的可插拔操作。
+ * 覆盖这些以将文件读取委托给远程系统（例如 SSH）。
  */
 export interface ReadOperations {
-	/** Read file contents as a Buffer */
+	/** 将文件内容读取为 Buffer */
 	readFile: (absolutePath: string) => Promise<Buffer>;
-	/** Check if file is readable (throw if not) */
+	/** 检查文件是否可读（如果不可读则抛出异常） */
 	access: (absolutePath: string) => Promise<void>;
-	/** Detect image MIME type, return null/undefined for non-images */
+	/** 检测图像 MIME 类型，对于非图像返回 null/undefined */
 	detectImageMimeType?: (absolutePath: string) => Promise<string | null | undefined>;
 }
 
@@ -218,5 +218,5 @@ export function createReadTool(cwd: string, options?: ReadToolOptions): AgentToo
 	};
 }
 
-/** Default read tool using process.cwd() - for backwards compatibility */
+/** 使用 process.cwd() 的默认 read 工具 - 为了向后兼容 */
 export const readTool = createReadTool(process.cwd());

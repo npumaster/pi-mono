@@ -1,11 +1,11 @@
 /**
- * Extension system types.
+ * 扩展系统类型。
  *
- * Extensions are TypeScript modules that can:
- * - Subscribe to agent lifecycle events
- * - Register LLM-callable tools
- * - Register commands, keyboard shortcuts, and CLI flags
- * - Interact with the user via UI primitives
+ * 扩展是可以执行以下操作的 TypeScript 模块：
+ * - 订阅 agent 生命周期事件
+ * - 注册 LLM 可调用的工具
+ * - 注册命令、键盘快捷键和 CLI 标志
+ * - 通过 UI 原语与用户交互
  */
 
 import type {
@@ -79,47 +79,47 @@ export type { AppAction, KeybindingsManager } from "../keybindings.js";
 // UI Context
 // ============================================================================
 
-/** Options for extension UI dialogs. */
+/** 扩展 UI 对话框的选项。 */
 export interface ExtensionUIDialogOptions {
-	/** AbortSignal to programmatically dismiss the dialog. */
+	/** 以编程方式关闭对话框的 AbortSignal。 */
 	signal?: AbortSignal;
-	/** Timeout in milliseconds. Dialog auto-dismisses with live countdown display. */
+	/** 以毫秒为单位的超时。对话框会自动关闭并显示倒计时。 */
 	timeout?: number;
 }
 
-/** Placement for extension widgets. */
+/** 扩展小部件的放置位置。 */
 export type WidgetPlacement = "aboveEditor" | "belowEditor";
 
-/** Options for extension widgets. */
+/** 扩展小部件的选项。 */
 export interface ExtensionWidgetOptions {
-	/** Where the widget is rendered. Defaults to "aboveEditor". */
+	/** 小部件呈现的位置。默认为 "aboveEditor"。 */
 	placement?: WidgetPlacement;
 }
 
 /**
- * UI context for extensions to request interactive UI.
- * Each mode (interactive, RPC, print) provides its own implementation.
+ * 用于扩展请求交互式 UI 的 UI 上下文。
+ * 每个模式（interactive, RPC, print）都提供自己的实现。
  */
 export interface ExtensionUIContext {
-	/** Show a selector and return the user's choice. */
+	/** 显示选择器并返回用户的选择。 */
 	select(title: string, options: string[], opts?: ExtensionUIDialogOptions): Promise<string | undefined>;
 
-	/** Show a confirmation dialog. */
+	/** 显示确认对话框。 */
 	confirm(title: string, message: string, opts?: ExtensionUIDialogOptions): Promise<boolean>;
 
-	/** Show a text input dialog. */
+	/** 显示文本输入对话框。 */
 	input(title: string, placeholder?: string, opts?: ExtensionUIDialogOptions): Promise<string | undefined>;
 
-	/** Show a notification to the user. */
+	/** 向用户显示通知。 */
 	notify(message: string, type?: "info" | "warning" | "error"): void;
 
-	/** Set status text in the footer/status bar. Pass undefined to clear. */
+	/** 设置页脚/状态栏中的状态文本。传递 undefined 以清除。 */
 	setStatus(key: string, text: string | undefined): void;
 
-	/** Set the working/loading message shown during streaming. Call with no argument to restore default. */
+	/** 设置流式传输期间显示的工作/加载消息。调用时不带参数以恢复默认值。 */
 	setWorkingMessage(message?: string): void;
 
-	/** Set a widget to display above or below the editor. Accepts string array or component factory. */
+	/** 设置显示在编辑器上方或下方的小部件。接受字符串数组或组件工厂。 */
 	setWidget(key: string, content: string[] | undefined, options?: ExtensionWidgetOptions): void;
 	setWidget(
 		key: string,
@@ -127,11 +127,11 @@ export interface ExtensionUIContext {
 		options?: ExtensionWidgetOptions,
 	): void;
 
-	/** Set a custom footer component, or undefined to restore the built-in footer.
+	/** 设置自定义页脚组件，或传递 undefined 以恢复内置页脚。
 	 *
-	 * The factory receives a FooterDataProvider for data not otherwise accessible:
-	 * git branch and extension statuses from setStatus(). Token stats, model info,
-	 * etc. are available via ctx.sessionManager and ctx.model.
+	 * 工厂接收 FooterDataProvider 以获取无法通过其他方式访问的数据：
+	 * git 分支和来自 setStatus() 的扩展状态。令牌统计信息、模型信息等
+	 * 可通过 ctx.sessionManager 和 ctx.model 获取。
 	 */
 	setFooter(
 		factory:
@@ -250,64 +250,64 @@ export interface CompactOptions {
 }
 
 /**
- * Context passed to extension event handlers.
+ * 传递给扩展事件处理程序的上下文。
  */
 export interface ExtensionContext {
-	/** UI methods for user interaction */
+	/** 用于用户交互的 UI 方法 */
 	ui: ExtensionUIContext;
-	/** Whether UI is available (false in print/RPC mode) */
+	/** UI 是否可用（在 print/RPC 模式下为 false） */
 	hasUI: boolean;
-	/** Current working directory */
+	/** 当前工作目录 */
 	cwd: string;
-	/** Session manager (read-only) */
+	/** 会话管理器（只读） */
 	sessionManager: ReadonlySessionManager;
-	/** Model registry for API key resolution */
+	/** 用于 API 密钥解析的模型注册表 */
 	modelRegistry: ModelRegistry;
-	/** Current model (may be undefined) */
+	/** 当前模型（可能未定义） */
 	model: Model<any> | undefined;
-	/** Whether the agent is idle (not streaming) */
+	/** agent 是否空闲（未流式传输） */
 	isIdle(): boolean;
-	/** Abort the current agent operation */
+	/** 中止当前 agent 操作 */
 	abort(): void;
-	/** Whether there are queued messages waiting */
+	/** 是否有排队的消息在等待 */
 	hasPendingMessages(): boolean;
-	/** Gracefully shutdown pi and exit. Available in all contexts. */
+	/** 正常关闭 pi 并退出。在所有上下文中可用。 */
 	shutdown(): void;
-	/** Get current context usage for the active model. */
+	/** 获取当前活动模型的上下文使用情况。 */
 	getContextUsage(): ContextUsage | undefined;
-	/** Trigger compaction without awaiting completion. */
+	/** 触发压缩而不等待完成。 */
 	compact(options?: CompactOptions): void;
-	/** Get the current effective system prompt. */
+	/** 获取当前有效的系统提示。 */
 	getSystemPrompt(): string;
 }
 
 /**
- * Extended context for command handlers.
- * Includes session control methods only safe in user-initiated commands.
+ * 命令处理程序的扩展上下文。
+ * 仅包含在用户发起的命令中安全的会话控制方法。
  */
 export interface ExtensionCommandContext extends ExtensionContext {
-	/** Wait for the agent to finish streaming */
+	/** 等待 agent 完成流式传输 */
 	waitForIdle(): Promise<void>;
 
-	/** Start a new session, optionally with initialization. */
+	/** 启动新会话，可选择初始化。 */
 	newSession(options?: {
 		parentSession?: string;
 		setup?: (sessionManager: SessionManager) => Promise<void>;
 	}): Promise<{ cancelled: boolean }>;
 
-	/** Fork from a specific entry, creating a new session file. */
+	/** 从特定条目分叉，创建新的会话文件。 */
 	fork(entryId: string): Promise<{ cancelled: boolean }>;
 
-	/** Navigate to a different point in the session tree. */
+	/** 导航到会话树中的不同点。 */
 	navigateTree(
 		targetId: string,
 		options?: { summarize?: boolean; customInstructions?: string; replaceInstructions?: boolean; label?: string },
 	): Promise<{ cancelled: boolean }>;
 
-	/** Switch to a different session file. */
+	/** 切换到不同的会话文件。 */
 	switchSession(sessionPath: string): Promise<{ cancelled: boolean }>;
 
-	/** Reload extensions, skills, prompts, and themes. */
+	/** 重新加载扩展、技能、提示和主题。 */
 	reload(): Promise<void>;
 }
 
@@ -315,28 +315,28 @@ export interface ExtensionCommandContext extends ExtensionContext {
 // Tool Types
 // ============================================================================
 
-/** Rendering options for tool results */
+/** 工具结果的渲染选项 */
 export interface ToolRenderResultOptions {
-	/** Whether the result view is expanded */
+	/** 结果视图是否已扩展 */
 	expanded: boolean;
-	/** Whether this is a partial/streaming result */
+	/** 这是否是部分/流式结果 */
 	isPartial: boolean;
 }
 
 /**
- * Tool definition for registerTool().
+ * registerTool() 的工具定义。
  */
 export interface ToolDefinition<TParams extends TSchema = TSchema, TDetails = unknown> {
-	/** Tool name (used in LLM tool calls) */
+	/** 工具名称（用于 LLM 工具调用） */
 	name: string;
-	/** Human-readable label for UI */
+	/** UI 的人类可读标签 */
 	label: string;
-	/** Description for LLM */
+	/** LLM 的描述 */
 	description: string;
-	/** Parameter schema (TypeBox) */
+	/** 参数模式 (TypeBox) */
 	parameters: TParams;
 
-	/** Execute the tool. */
+	/** 执行工具。 */
 	execute(
 		toolCallId: string,
 		params: Static<TParams>,
@@ -345,10 +345,10 @@ export interface ToolDefinition<TParams extends TSchema = TSchema, TDetails = un
 		ctx: ExtensionContext,
 	): Promise<AgentToolResult<TDetails>>;
 
-	/** Custom rendering for tool call display */
+	/** 工具调用显示的自定义渲染 */
 	renderCall?: (args: Static<TParams>, theme: Theme) => Component;
 
-	/** Custom rendering for tool result display */
+	/** 工具结果显示的自定义渲染 */
 	renderResult?: (result: AgentToolResult<TDetails>, options: ToolRenderResultOptions, theme: Theme) => Component;
 }
 
@@ -473,13 +473,13 @@ export type SessionEvent =
 // Agent Events
 // ============================================================================
 
-/** Fired before each LLM call. Can modify messages. */
+/** 在每次 LLM 调用之前触发。可以修改消息。 */
 export interface ContextEvent {
 	type: "context";
 	messages: AgentMessage[];
 }
 
-/** Fired after user submits prompt but before agent loop. */
+/** 在用户提交提示后但在 agent 循环之前触发。 */
 export interface BeforeAgentStartEvent {
 	type: "before_agent_start";
 	prompt: string;
@@ -487,25 +487,25 @@ export interface BeforeAgentStartEvent {
 	systemPrompt: string;
 }
 
-/** Fired when an agent loop starts */
+/** 当 agent 循环开始时触发 */
 export interface AgentStartEvent {
 	type: "agent_start";
 }
 
-/** Fired when an agent loop ends */
+/** 当 agent 循环结束时触发 */
 export interface AgentEndEvent {
 	type: "agent_end";
 	messages: AgentMessage[];
 }
 
-/** Fired at the start of each turn */
+/** 在每轮开始时触发 */
 export interface TurnStartEvent {
 	type: "turn_start";
 	turnIndex: number;
 	timestamp: number;
 }
 
-/** Fired at the end of each turn */
+/** 在每轮结束时触发 */
 export interface TurnEndEvent {
 	type: "turn_end";
 	turnIndex: number;
@@ -519,7 +519,7 @@ export interface TurnEndEvent {
 
 export type ModelSelectSource = "set" | "cycle" | "restore";
 
-/** Fired when a new model is selected */
+/** 当选择新模型时触发 */
 export interface ModelSelectEvent {
 	type: "model_select";
 	model: Model<any>;
@@ -546,21 +546,21 @@ export interface UserBashEvent {
 // Input Events
 // ============================================================================
 
-/** Source of user input */
+/** 用户输入的来源 */
 export type InputSource = "interactive" | "rpc" | "extension";
 
-/** Fired when user input is received, before agent processing */
+/** 收到用户输入时触发，在 agent 处理之前 */
 export interface InputEvent {
 	type: "input";
-	/** The input text */
+	/** 输入文本 */
 	text: string;
-	/** Attached images, if any */
+	/** 附加图像（如果有） */
 	images?: ImageContent[];
-	/** Where the input came from */
+	/** 输入来自哪里 */
 	source: InputSource;
 }
 
-/** Result from input event handler */
+/** 输入事件处理程序的结果 */
 export type InputEventResult =
 	| { action: "continue" }
 	| { action: "transform"; text: string; images?: ImageContent[] }
@@ -615,7 +615,7 @@ export interface CustomToolCallEvent extends ToolCallEventBase {
 	input: Record<string, unknown>;
 }
 
-/** Fired before a tool executes. Can block. */
+/** 在工具执行之前触发。可以阻塞。 */
 export type ToolCallEvent =
 	| BashToolCallEvent
 	| ReadToolCallEvent
@@ -709,24 +709,24 @@ export function isLsToolResult(e: ToolResultEvent): e is LsToolResultEvent {
 }
 
 /**
- * Type guard for narrowing ToolCallEvent by tool name.
+ * 用于按工具名称缩小 ToolCallEvent 的类型保护。
  *
- * Built-in tools narrow automatically (no type params needed):
+ * 内置工具自动缩小（无需类型参数）：
  * ```ts
  * if (isToolCallEventType("bash", event)) {
  *   event.input.command;  // string
  * }
  * ```
  *
- * Custom tools require explicit type parameters:
+ * 自定义工具需要显式类型参数：
  * ```ts
  * if (isToolCallEventType<"my_tool", MyToolInput>("my_tool", event)) {
  *   event.input.action;  // typed
  * }
  * ```
  *
- * Note: Direct narrowing via `event.toolName === "bash"` doesn't work because
- * CustomToolCallEvent.toolName is `string` which overlaps with all literals.
+ * 注意：直接通过 `event.toolName === "bash"` 缩小不起作用，因为
+ * CustomToolCallEvent.toolName 是 `string`，它与所有文字重叠。
  */
 export function isToolCallEventType(toolName: "bash", event: ToolCallEvent): event is BashToolCallEvent;
 export function isToolCallEventType(toolName: "read", event: ToolCallEvent): event is ReadToolCallEvent;
@@ -772,11 +772,11 @@ export interface ToolCallEventResult {
 	reason?: string;
 }
 
-/** Result from user_bash event handler */
+/** user_bash 事件处理程序的结果 */
 export interface UserBashEventResult {
-	/** Custom operations to use for execution */
+	/** 用于执行的自定义操作 */
 	operations?: BashOperations;
-	/** Full replacement: extension handled execution, use this result */
+	/** 完全替换：扩展处理执行，使用此结果 */
 	result?: BashResult;
 }
 
@@ -788,7 +788,7 @@ export interface ToolResultEventResult {
 
 export interface BeforeAgentStartEventResult {
 	message?: Pick<CustomMessage, "customType" | "content" | "display" | "details">;
-	/** Replace the system prompt for this turn. If multiple extensions return this, they are chained. */
+	/** 替换此轮的系统提示。如果多个扩展返回此内容，则它们会被链接。 */
 	systemPrompt?: string;
 }
 
@@ -812,11 +812,11 @@ export interface SessionBeforeTreeResult {
 		summary: string;
 		details?: unknown;
 	};
-	/** Override custom instructions for summarization */
+	/** 覆盖总结的自定义说明 */
 	customInstructions?: string;
-	/** Override whether customInstructions replaces the default prompt */
+	/** 覆盖 customInstructions 是否替换默认提示 */
 	replaceInstructions?: boolean;
-	/** Override label to attach to the branch summary entry */
+	/** 覆盖附加到分支摘要条目的标签 */
 	label?: string;
 }
 
@@ -891,20 +891,20 @@ export interface ExtensionAPI {
 	on(event: "input", handler: ExtensionHandler<InputEvent, InputEventResult>): void;
 
 	// =========================================================================
-	// Tool Registration
+	// 工具注册
 	// =========================================================================
 
-	/** Register a tool that the LLM can call. */
+	/** 注册一个 LLM 可以调用的工具。 */
 	registerTool<TParams extends TSchema = TSchema, TDetails = unknown>(tool: ToolDefinition<TParams, TDetails>): void;
 
 	// =========================================================================
-	// Command, Shortcut, Flag Registration
+	// 命令、快捷键、标志注册
 	// =========================================================================
 
-	/** Register a custom command. */
+	/** 注册自定义命令。 */
 	registerCommand(name: string, options: Omit<RegisteredCommand, "name">): void;
 
-	/** Register a keyboard shortcut. */
+	/** 注册键盘快捷键。 */
 	registerShortcut(
 		shortcut: KeyId,
 		options: {
@@ -913,7 +913,7 @@ export interface ExtensionAPI {
 		},
 	): void;
 
-	/** Register a CLI flag. */
+	/** 注册 CLI 标志。 */
 	registerFlag(
 		name: string,
 		options: {
@@ -923,81 +923,81 @@ export interface ExtensionAPI {
 		},
 	): void;
 
-	/** Get the value of a registered CLI flag. */
+	/** 获取已注册 CLI 标志的值。 */
 	getFlag(name: string): boolean | string | undefined;
 
 	// =========================================================================
-	// Message Rendering
+	// 消息渲染
 	// =========================================================================
 
-	/** Register a custom renderer for CustomMessageEntry. */
+	/** 为 CustomMessageEntry 注册自定义渲染器。 */
 	registerMessageRenderer<T = unknown>(customType: string, renderer: MessageRenderer<T>): void;
 
 	// =========================================================================
-	// Actions
+	// 操作
 	// =========================================================================
 
-	/** Send a custom message to the session. */
+	/** 向会话发送自定义消息。 */
 	sendMessage<T = unknown>(
 		message: Pick<CustomMessage<T>, "customType" | "content" | "display" | "details">,
 		options?: { triggerTurn?: boolean; deliverAs?: "steer" | "followUp" | "nextTurn" },
 	): void;
 
 	/**
-	 * Send a user message to the agent. Always triggers a turn.
-	 * When the agent is streaming, use deliverAs to specify how to queue the message.
+	 * 向 agent 发送用户消息。始终触发一轮对话。
+	 * 当 agent 正在流式传输时，使用 deliverAs 指定如何排队消息。
 	 */
 	sendUserMessage(
 		content: string | (TextContent | ImageContent)[],
 		options?: { deliverAs?: "steer" | "followUp" },
 	): void;
 
-	/** Append a custom entry to the session for state persistence (not sent to LLM). */
+	/** 将自定义条目附加到会话以保持状态（不发送给 LLM）。 */
 	appendEntry<T = unknown>(customType: string, data?: T): void;
 
 	// =========================================================================
-	// Session Metadata
+	// 会话元数据
 	// =========================================================================
 
-	/** Set the session display name (shown in session selector). */
+	/** 设置会话显示名称（显示在会话选择器中）。 */
 	setSessionName(name: string): void;
 
-	/** Get the current session name, if set. */
+	/** 获取当前会话名称（如果已设置）。 */
 	getSessionName(): string | undefined;
 
-	/** Set or clear a label on an entry. Labels are user-defined markers for bookmarking/navigation. */
+	/** 在条目上设置或清除标签。标签是用于书签/导航的用户定义标记。 */
 	setLabel(entryId: string, label: string | undefined): void;
 
-	/** Execute a shell command. */
+	/** 执行 shell 命令。 */
 	exec(command: string, args: string[], options?: ExecOptions): Promise<ExecResult>;
 
-	/** Get the list of currently active tool names. */
+	/** 获取当前活动工具名称的列表。 */
 	getActiveTools(): string[];
 
-	/** Get all configured tools with name and description. */
+	/** 获取所有已配置工具的名称和描述。 */
 	getAllTools(): ToolInfo[];
 
-	/** Set the active tools by name. */
+	/** 按名称设置活动工具。 */
 	setActiveTools(toolNames: string[]): void;
 
-	/** Get available slash commands in the current session. */
+	/** 获取当前会话中可用的斜杠命令。 */
 	getCommands(): SlashCommandInfo[];
 
 	// =========================================================================
-	// Model and Thinking Level
+	// 模型和思考层级
 	// =========================================================================
 
-	/** Set the current model. Returns false if no API key available. */
+	/** 设置当前模型。如果没有可用的 API 密钥，则返回 false。 */
 	setModel(model: Model<any>): Promise<boolean>;
 
-	/** Get current thinking level. */
+	/** 获取当前思考层级。 */
 	getThinkingLevel(): ThinkingLevel;
 
-	/** Set thinking level (clamped to model capabilities). */
+	/** 设置思考层级（受限于模型能力）。 */
 	setThinkingLevel(level: ThinkingLevel): void;
 
 	// =========================================================================
-	// Provider Registration
+	// 提供商注册
 	// =========================================================================
 
 	/**

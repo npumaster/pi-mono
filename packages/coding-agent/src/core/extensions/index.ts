@@ -1,5 +1,5 @@
 /**
- * Extension system for lifecycle events and custom tools.
+ * 用于生命周期事件和自定义工具的扩展系统。
  */
 
 export type { SlashCommandInfo, SlashCommandLocation, SlashCommandSource } from "../slash-commands.js";

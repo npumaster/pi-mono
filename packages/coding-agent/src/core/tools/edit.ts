@@ -14,9 +14,9 @@ import {
 import { resolveToCwd } from "./path-utils.js";
 
 const editSchema = Type.Object({
-	path: Type.String({ description: "Path to the file to edit (relative or absolute)" }),
-	oldText: Type.String({ description: "Exact text to find and replace (must match exactly)" }),
-	newText: Type.String({ description: "New text to replace the old text with" }),
+	path: Type.String({ description: "要编辑的文件路径（相对或绝对）" }),
+	oldText: Type.String({ description: "要查找和替换的确切文本（必须完全匹配）" }),
+	newText: Type.String({ description: "用于替换旧文本的新文本" }),
 });
 
 export type EditToolInput = Static<typeof editSchema>;
@@ -72,7 +72,7 @@ export function createEditTool(cwd: string, options?: EditToolOptions): AgentToo
 				content: Array<{ type: "text"; text: string }>;
 				details: EditToolDetails | undefined;
 			}>((resolve, reject) => {
-				// Check if already aborted
+				// 检查是否已中止
 				if (signal?.aborted) {
 					reject(new Error("Operation aborted"));
 					return;
@@ -80,7 +80,7 @@ export function createEditTool(cwd: string, options?: EditToolOptions): AgentToo
 
 				let aborted = false;
 
-				// Set up abort handler
+				// 设置中止处理程序
 				const onAbort = () => {
 					aborted = true;
 					reject(new Error("Operation aborted"));
@@ -90,10 +90,10 @@ export function createEditTool(cwd: string, options?: EditToolOptions): AgentToo
 					signal.addEventListener("abort", onAbort, { once: true });
 				}
 
-				// Perform the edit operation
+				// 执行编辑操作
 				(async () => {
 					try {
-						// Check if file exists
+						// 检查文件是否存在
 						try {
 							await ops.access(absolutePath);
 						} catch {
@@ -104,21 +104,21 @@ export function createEditTool(cwd: string, options?: EditToolOptions): AgentToo
 							return;
 						}
 
-						// Check if aborted before reading
+						// 读取前检查是否中止
 						if (aborted) {
 							return;
 						}
 
-						// Read the file
+						// 读取文件
 						const buffer = await ops.readFile(absolutePath);
 						const rawContent = buffer.toString("utf-8");
 
-						// Check if aborted after reading
+						// 读取后检查是否中止
 						if (aborted) {
 							return;
 						}
 
-						// Strip BOM before matching (LLM won't include invisible BOM in oldText)
+						// 在匹配之前去除 BOM（LLM 不会在 oldText 中包含不可见的 BOM）
 						const { bom, text: content } = stripBom(rawContent);
 
 						const originalEnding = detectLineEnding(content);
@@ -126,7 +126,7 @@ export function createEditTool(cwd: string, options?: EditToolOptions): AgentToo
 						const normalizedOldText = normalizeToLF(oldText);
 						const normalizedNewText = normalizeToLF(newText);
 
-						// Find the old text using fuzzy matching (tries exact match first, then fuzzy)
+						// 使用模糊匹配查找旧文本（先尝试精确匹配，然后模糊匹配）
 						const matchResult = fuzzyFindText(normalizedContent, normalizedOldText);
 
 						if (!matchResult.found) {
@@ -141,7 +141,7 @@ export function createEditTool(cwd: string, options?: EditToolOptions): AgentToo
 							return;
 						}
 
-						// Count occurrences using fuzzy-normalized content for consistency
+						// 使用模糊归一化的内容计算出现次数以保持一致性
 						const fuzzyContent = normalizeForFuzzyMatch(normalizedContent);
 						const fuzzyOldText = normalizeForFuzzyMatch(normalizedOldText);
 						const occurrences = fuzzyContent.split(fuzzyOldText).length - 1;
@@ -158,20 +158,20 @@ export function createEditTool(cwd: string, options?: EditToolOptions): AgentToo
 							return;
 						}
 
-						// Check if aborted before writing
+						// 写入前检查是否中止
 						if (aborted) {
 							return;
 						}
 
-						// Perform replacement using the matched text position
-						// When fuzzy matching was used, contentForReplacement is the normalized version
+						// 使用匹配的文本位置执行替换
+						// 当使用模糊匹配时，contentForReplacement 是归一化版本
 						const baseContent = matchResult.contentForReplacement;
 						const newContent =
 							baseContent.substring(0, matchResult.index) +
 							normalizedNewText +
 							baseContent.substring(matchResult.index + matchResult.matchLength);
 
-						// Verify the replacement actually changed something
+						// 验证替换实际上是否更改了某些内容
 						if (baseContent === newContent) {
 							if (signal) {
 								signal.removeEventListener("abort", onAbort);
@@ -187,12 +187,12 @@ export function createEditTool(cwd: string, options?: EditToolOptions): AgentToo
 						const finalContent = bom + restoreLineEndings(newContent, originalEnding);
 						await ops.writeFile(absolutePath, finalContent);
 
-						// Check if aborted after writing
+						// 写入后检查是否中止
 						if (aborted) {
 							return;
 						}
 
-						// Clean up abort handler
+						// 清理中止处理程序
 						if (signal) {
 							signal.removeEventListener("abort", onAbort);
 						}
@@ -208,7 +208,7 @@ export function createEditTool(cwd: string, options?: EditToolOptions): AgentToo
 							details: { diff: diffResult.diff, firstChangedLine: diffResult.firstChangedLine },
 						});
 					} catch (error: any) {
-						// Clean up abort handler
+						// 清理中止处理程序
 						if (signal) {
 							signal.removeEventListener("abort", onAbort);
 						}

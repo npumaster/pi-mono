@@ -5,8 +5,8 @@ import { dirname } from "path";
 import { resolveToCwd } from "./path-utils.js";
 
 const writeSchema = Type.Object({
-	path: Type.String({ description: "Path to the file to write (relative or absolute)" }),
-	content: Type.String({ description: "Content to write to the file" }),
+	path: Type.String({ description: "要写入的文件路径（相对或绝对）" }),
+	content: Type.String({ description: "要写入文件的内容" }),
 });
 
 export type WriteToolInput = Static<typeof writeSchema>;
@@ -114,5 +114,5 @@ export function createWriteTool(cwd: string, options?: WriteToolOptions): AgentT
 	};
 }
 
-/** Default write tool using process.cwd() - for backwards compatibility */
+/** 使用 process.cwd() 的默认 write 工具 - 为了向后兼容 */
 export const writeTool = createWriteTool(process.cwd());

@@ -1,5 +1,5 @@
 /**
- * Model resolution, scoping, and initial selection
+ * 模型解析、范围界定和初始选择
  */
 
 import type { ThinkingLevel } from "@mariozechner/pi-agent-core";
@@ -10,7 +10,7 @@ import { isValidThinkingLevel } from "../cli/args.js";
 import { DEFAULT_THINKING_LEVEL } from "./defaults.js";
 import type { ModelRegistry } from "./model-registry.js";
 
-/** Default model IDs for each known provider */
+/** 每个已知提供商的默认模型 ID */
 export const defaultModelPerProvider: Record<KnownProvider, string> = {
 	"amazon-bedrock": "us.anthropic.claude-opus-4-6-v1",
 	anthropic: "claude-opus-4-6",
@@ -38,29 +38,29 @@ export const defaultModelPerProvider: Record<KnownProvider, string> = {
 
 export interface ScopedModel {
 	model: Model<Api>;
-	/** Thinking level if explicitly specified in pattern (e.g., "model:high"), undefined otherwise */
+	/** 如果在模式中明确指定（例如 "model:high"），则为思考级别，否则为 undefined */
 	thinkingLevel?: ThinkingLevel;
 }
 
 /**
- * Helper to check if a model ID looks like an alias (no date suffix)
- * Dates are typically in format: -20241022 or -20250929
+ * 检查模型 ID 是否看起来像别名（没有日期后缀）的辅助函数
+ * 日期通常采用格式：-20241022 或 -20250929
  */
 function isAlias(id: string): boolean {
-	// Check if ID ends with -latest
+	// 检查 ID 是否以 -latest 结尾
 	if (id.endsWith("-latest")) return true;
 
-	// Check if ID ends with a date pattern (-YYYYMMDD)
+	// 检查 ID 是否以日期模式 (-YYYYMMDD) 结尾
 	const datePattern = /-\d{8}$/;
 	return !datePattern.test(id);
 }
 
 /**
- * Try to match a pattern to a model from the available models list.
- * Returns the matched model or undefined if no match found.
+ * 尝试将模式匹配到可用模型列表中的模型。
+ * 返回匹配的模型，如果未找到匹配项则返回 undefined。
  */
 function tryMatchModel(modelPattern: string, availableModels: Model<Api>[]): Model<Api> | undefined {
-	// Check for provider/modelId format (provider is everything before the first /)
+	// 检查 provider/modelId 格式（provider 是第一个 / 之前的所有内容）
 	const slashIndex = modelPattern.indexOf("/");
 	if (slashIndex !== -1) {
 		const provider = modelPattern.substring(0, slashIndex);
@@ -71,16 +71,16 @@ function tryMatchModel(modelPattern: string, availableModels: Model<Api>[]): Mod
 		if (providerMatch) {
 			return providerMatch;
 		}
-		// No exact provider/model match - fall through to other matching
+		// 没有确切的 provider/model 匹配 - 继续其他匹配
 	}
 
-	// Check for exact ID match (case-insensitive)
+	// 检查确切的 ID 匹配（不区分大小写）
 	const exactMatch = availableModels.find((m) => m.id.toLowerCase() === modelPattern.toLowerCase());
 	if (exactMatch) {
 		return exactMatch;
 	}
 
-	// No exact match - fall back to partial matching
+	// 没有确切匹配 - 回退到部分匹配
 	const matches = availableModels.filter(
 		(m) =>
 			m.id.toLowerCase().includes(modelPattern.toLowerCase()) ||
@@ -91,12 +91,12 @@ function tryMatchModel(modelPattern: string, availableModels: Model<Api>[]): Mod
 		return undefined;
 	}
 
-	// Separate into aliases and dated versions
+	// 分为别名和带日期的版本
 	const aliases = matches.filter((m) => isAlias(m.id));
 	const datedVersions = matches.filter((m) => !isAlias(m.id));
 
 	if (aliases.length > 0) {
-		// Prefer alias - if multiple aliases, pick the one that sorts highest
+		// 首选别名 - 如果有多个别名，选择排序最高的一个
 		aliases.sort((a, b) => b.id.localeCompare(a.id));
 		return aliases[0];
 	} else {

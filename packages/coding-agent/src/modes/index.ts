@@ -1,5 +1,5 @@
 /**
- * Run modes for the coding agent.
+ * 编码 Agent 的运行模式。
  */
 
 export { InteractiveMode, type InteractiveModeOptions } from "./interactive/interactive-mode.js";

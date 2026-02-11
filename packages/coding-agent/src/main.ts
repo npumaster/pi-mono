@@ -1,8 +1,8 @@
 /**
- * Main entry point for the coding agent CLI.
+ * 编码代理 CLI 的主入口点。
  *
- * This file handles CLI argument parsing and translates them into
- * createAgentSession() options. The SDK does the heavy lifting.
+ * 此文件处理 CLI 参数解析并将它们转换为 createAgentSession() 选项。
+ * SDK 负责繁重的工作。
  */
 
 import { type ImageContent, modelsAreEqual, supportsXhigh } from "@mariozechner/pi-ai";
@@ -33,11 +33,11 @@ import { InteractiveMode, runPrintMode, runRpcMode } from "./modes/index.js";
 import { initTheme, stopThemeWatcher } from "./modes/interactive/theme/theme.js";
 
 /**
- * Read all content from piped stdin.
- * Returns undefined if stdin is a TTY (interactive terminal).
+ * 从管道 stdin 读取所有内容。
+ * 如果 stdin 是 TTY（交互式终端），则返回 undefined。
  */
 async function readPipedStdin(): Promise<string | undefined> {
-	// If stdin is a TTY, we're running interactively - don't read stdin
+	// 如果 stdin 是 TTY，则我们正在交互式运行 - 不要读取 stdin
 	if (process.stdin.isTTY) {
 		return undefined;
 	}
@@ -84,10 +84,10 @@ function printPackageCommandHelp(command: PackageCommand): void {
 			console.log(`${chalk.bold("Usage:")}
   ${getPackageCommandUsage("install")}
 
-Install a package and add it to settings.
+安装包并将其添加到设置中。
 
 Options:
-  -l, --local    Install project-locally (.pi/settings.json)
+  -l, --local    在项目本地安装 (.pi/settings.json)
 
 Examples:
   ${APP_NAME} install npm:@foo/bar
@@ -102,10 +102,10 @@ Examples:
 			console.log(`${chalk.bold("Usage:")}
   ${getPackageCommandUsage("remove")}
 
-Remove a package and its source from settings.
+从设置中移除包及其源。
 
 Options:
-  -l, --local    Remove from project settings (.pi/settings.json)
+  -l, --local    从项目设置中移除 (.pi/settings.json)
 
 Example:
   ${APP_NAME} remove npm:@foo/bar
@@ -116,8 +116,8 @@ Example:
 			console.log(`${chalk.bold("Usage:")}
   ${getPackageCommandUsage("update")}
 
-Update installed packages.
-If <source> is provided, only that package is updated.
+更新已安装的包。
+如果提供了 <source>，则仅更新该包。
 `);
 			return;
 
@@ -125,7 +125,7 @@ If <source> is provided, only that package is updated.
 			console.log(`${chalk.bold("Usage:")}
   ${getPackageCommandUsage("list")}
 
-List installed packages from user and project settings.
+列出用户和项目设置中已安装的包。
 `);
 			return;
 	}
@@ -311,24 +311,24 @@ async function prepareInitialMessage(
 	};
 }
 
-/** Result from resolving a session argument */
+/** 解析会话参数的结果 */
 type ResolvedSession =
-	| { type: "path"; path: string } // Direct file path
-	| { type: "local"; path: string } // Found in current project
-	| { type: "global"; path: string; cwd: string } // Found in different project
-	| { type: "not_found"; arg: string }; // Not found anywhere
+	| { type: "path"; path: string } // 直接文件路径
+	| { type: "local"; path: string } // 在当前项目中找到
+	| { type: "global"; path: string; cwd: string } // 在不同项目中找到
+	| { type: "not_found"; arg: string }; // 未在任何地方找到
 
 /**
- * Resolve a session argument to a file path.
- * If it looks like a path, use as-is. Otherwise try to match as session ID prefix.
+ * 将会话参数解析为文件路径。
+ * 如果它看起来像路径，则按原样使用。否则尝试匹配会话 ID 前缀。
  */
 async function resolveSessionPath(sessionArg: string, cwd: string, sessionDir?: string): Promise<ResolvedSession> {
-	// If it looks like a file path, use as-is
+	// 如果它看起来像文件路径，则按原样使用
 	if (sessionArg.includes("/") || sessionArg.includes("\\") || sessionArg.endsWith(".jsonl")) {
 		return { type: "path", path: sessionArg };
 	}
 
-	// Try to match as session ID in current project first
+	// 首先尝试在当前项目中匹配会话 ID
 	const localSessions = await SessionManager.list(cwd, sessionDir);
 	const localMatches = localSessions.filter((s) => s.id.startsWith(sessionArg));
 
@@ -336,7 +336,7 @@ async function resolveSessionPath(sessionArg: string, cwd: string, sessionDir?: 
 		return { type: "local", path: localMatches[0].path };
 	}
 
-	// Try global search across all projects
+	// 尝试跨所有项目进行全局搜索
 	const allSessions = await SessionManager.listAll();
 	const globalMatches = allSessions.filter((s) => s.id.startsWith(sessionArg));
 
@@ -345,11 +345,11 @@ async function resolveSessionPath(sessionArg: string, cwd: string, sessionDir?: 
 		return { type: "global", path: match.path, cwd: match.cwd };
 	}
 
-	// Not found anywhere
+	// 未在任何地方找到
 	return { type: "not_found", arg: sessionArg };
 }
 
-/** Prompt user for yes/no confirmation */
+/** 提示用户进行是/否确认 */
 async function promptConfirm(message: string): Promise<boolean> {
 	return new Promise((resolve) => {
 		const rl = createInterface({
@@ -376,7 +376,7 @@ async function createSessionManager(parsed: Args, cwd: string): Promise<SessionM
 				return SessionManager.open(resolved.path, parsed.sessionDir);
 
 			case "global": {
-				// Session found in different project - ask user if they want to fork
+				// 在不同项目中找到会话 - 询问用户是否要 fork
 				console.log(chalk.yellow(`Session found in different project: ${resolved.cwd}`));
 				const shouldFork = await promptConfirm("Fork this session into current directory?");
 				if (!shouldFork) {
@@ -394,12 +394,12 @@ async function createSessionManager(parsed: Args, cwd: string): Promise<SessionM
 	if (parsed.continue) {
 		return SessionManager.continueRecent(cwd, parsed.sessionDir);
 	}
-	// --resume is handled separately (needs picker UI)
-	// If --session-dir provided without --continue/--resume, create new session there
+	// --resume 单独处理（需要选择器 UI）
+	// 如果提供了 --session-dir 但没有 --continue/--resume，则在那里创建新会话
 	if (parsed.sessionDir) {
 		return SessionManager.create(cwd, parsed.sessionDir);
 	}
-	// Default case (new session) returns undefined, SDK will create one
+	// 默认情况（新会话）返回 undefined，SDK 将创建一个
 	return undefined;
 }
 
@@ -416,7 +416,7 @@ function buildSessionOptions(
 		options.sessionManager = sessionManager;
 	}
 
-	// Model from CLI
+	// 来自 CLI 的模型
 	if (parsed.provider && parsed.model) {
 		const model = modelRegistry.find(parsed.provider, parsed.model);
 		if (!model) {
@@ -425,7 +425,7 @@ function buildSessionOptions(
 		}
 		options.model = model;
 	} else if (scopedModels.length > 0 && !parsed.continue && !parsed.resume) {
-		// Check if saved default is in scoped models - use it if so, otherwise first scoped model
+		// 检查保存的默认值是否在作用域模型中 - 如果在则使用它，否则使用第一个作用域模型
 		const savedProvider = settingsManager.getDefaultProvider();
 		const savedModelId = settingsManager.getDefaultModel();
 		const savedModel = savedProvider && savedModelId ? modelRegistry.find(savedProvider, savedModelId) : undefined;
@@ -433,25 +433,25 @@ function buildSessionOptions(
 
 		if (savedInScope) {
 			options.model = savedInScope.model;
-			// Use thinking level from scoped model config if explicitly set
+			// 如果显式设置，则使用作用域模型配置中的思考级别
 			if (!parsed.thinking && savedInScope.thinkingLevel) {
 				options.thinkingLevel = savedInScope.thinkingLevel;
 			}
 		} else {
 			options.model = scopedModels[0].model;
-			// Use thinking level from first scoped model if explicitly set
+			// 如果显式设置，则使用第一个作用域模型中的思考级别
 			if (!parsed.thinking && scopedModels[0].thinkingLevel) {
 				options.thinkingLevel = scopedModels[0].thinkingLevel;
 			}
 		}
 	}
 
-	// Thinking level from CLI (takes precedence over scoped model thinking levels set above)
+	// 来自 CLI 的思考级别（优先于上面设置的作用域模型思考级别）
 	if (parsed.thinking) {
 		options.thinkingLevel = parsed.thinking;
 	}
 
-	// Scoped models for Ctrl+P cycling - fill in default thinking level for models without explicit level
+	// 用于 Ctrl+P 循环的作用域模型 - 为没有显式级别的模型填充默认思考级别
 	if (scopedModels.length > 0) {
 		const defaultThinkingLevel = settingsManager.getDefaultThinkingLevel() ?? DEFAULT_THINKING_LEVEL;
 		options.scopedModels = scopedModels.map((sm) => ({
@@ -460,13 +460,13 @@ function buildSessionOptions(
 		}));
 	}
 
-	// API key from CLI - set in authStorage
-	// (handled by caller before createAgentSession)
+	// 来自 CLI 的 API 密钥 - 在 authStorage 中设置
+	// （在 createAgentSession 之前由调用者处理）
 
-	// Tools
+	// 工具
 	if (parsed.noTools) {
-		// --no-tools: start with no built-in tools
-		// --tools can still add specific ones back
+		// --no-tools: 启动时不带任何内置工具
+		// --tools 仍然可以添加特定的工具
 		if (parsed.tools && parsed.tools.length > 0) {
 			options.tools = parsed.tools.map((name) => allTools[name]);
 		} else {
@@ -510,13 +510,13 @@ export async function main(args: string[]) {
 		return;
 	}
 
-	// Run migrations (pass cwd for project-local migrations)
+	// 运行迁移（传递 cwd 以进行项目本地迁移）
 	const { migratedAuthProviders: migratedProviders, deprecationWarnings } = runMigrations(process.cwd());
 
-	// First pass: parse args to get --extension paths
+	// 第一遍：解析参数以获取 --extension 路径
 	const firstPass = parseArgs(args);
 
-	// Early load extensions to discover their CLI flags
+	// 尽早加载扩展以发现它们的 CLI 标志
 	const cwd = process.cwd();
 	const agentDir = getAgentDir();
 	const settingsManager = SettingsManager.create(cwd, agentDir);
@@ -546,8 +546,8 @@ export async function main(args: string[]) {
 		console.error(chalk.red(`Failed to load extension "${path}": ${error}`));
 	}
 
-	// Apply pending provider registrations from extensions immediately
-	// so they're available for model resolution before AgentSession is created
+	// 立即应用扩展中待处理的提供商注册
+	// 以便在创建 AgentSession 之前可用于模型解析
 	for (const { name, config } of extensionsResult.runtime.pendingProviderRegistrations) {
 		modelRegistry.registerProvider(name, config);
 	}
@@ -560,10 +560,10 @@ export async function main(args: string[]) {
 		}
 	}
 
-	// Second pass: parse args with extension flags
+	// 第二遍：使用扩展标志解析参数
 	const parsed = parseArgs(args, extensionFlags);
 
-	// Pass flag values to extensions via runtime
+	// 通过运行时将标志值传递给扩展
 	for (const [name, value] of parsed.unknownFlags) {
 		extensionsResult.runtime.flagValues.set(name, value);
 	}
@@ -584,13 +584,13 @@ export async function main(args: string[]) {
 		process.exit(0);
 	}
 
-	// Read piped stdin content (if any) - skip for RPC mode which uses stdin for JSON-RPC
+	// 读取管道 stdin 内容（如果有）- RPC 模式跳过，因为它使用 stdin 进行 JSON-RPC
 	if (parsed.mode !== "rpc") {
 		const stdinContent = await readPipedStdin();
 		if (stdinContent !== undefined) {
-			// Force print mode since interactive mode requires a TTY for keyboard input
+			// 强制打印模式，因为交互式模式需要 TTY 进行键盘输入
 			parsed.print = true;
-			// Prepend stdin content to messages
+			// 将 stdin 内容添加到消息前面
 			parsed.messages.unshift(stdinContent);
 		}
 	}
@@ -619,7 +619,7 @@ export async function main(args: string[]) {
 	const mode = parsed.mode || "text";
 	initTheme(settingsManager.getTheme(), isInteractive);
 
-	// Show deprecation warnings in interactive mode
+	// 在交互式模式下显示弃用警告
 	if (isInteractive && deprecationWarnings.length > 0) {
 		await showDeprecationWarnings(deprecationWarnings);
 	}
@@ -630,12 +630,12 @@ export async function main(args: string[]) {
 		scopedModels = await resolveModelScope(modelPatterns, modelRegistry);
 	}
 
-	// Create session manager based on CLI flags
+	// 根据 CLI 标志创建会话管理器
 	let sessionManager = await createSessionManager(parsed, cwd);
 
-	// Handle --resume: show session picker
+	// 处理 --resume：显示会话选择器
 	if (parsed.resume) {
-		// Initialize keybindings so session picker respects user config
+		// 初始化按键绑定，以便会话选择器遵循用户配置
 		KeybindingsManager.create();
 
 		const selectedPath = await selectSession(
@@ -655,7 +655,7 @@ export async function main(args: string[]) {
 	sessionOptions.modelRegistry = modelRegistry;
 	sessionOptions.resourceLoader = resourceLoader;
 
-	// Handle CLI --api-key as runtime override (not persisted)
+	// 将 CLI --api-key 处理为运行时覆盖（不持久化）
 	if (parsed.apiKey) {
 		if (!sessionOptions.model) {
 			console.error(chalk.red("--api-key requires a model to be specified via --provider/--model or -m/--models"));
@@ -674,7 +674,7 @@ export async function main(args: string[]) {
 		process.exit(1);
 	}
 
-	// Clamp thinking level to model capabilities (for CLI override case)
+	// 将思考级别限制为模型能力（针对 CLI 覆盖情况）
 	if (session.model && parsed.thinking) {
 		let effectiveThinking = parsed.thinking;
 		if (!session.model.reasoning) {
