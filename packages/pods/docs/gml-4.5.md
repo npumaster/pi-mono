@@ -6,113 +6,97 @@
 <img src=resources/logo.svg width="15%"/>
 </div>
 <p align="center">
-    👋 Join our <a href="resources/WECHAT.md" target="_blank">WeChat</a> or <a href="https://discord.gg/QR7SARHRxK" target="_blank">Discord</a> community.
+    👋 加入我们的 <a href="resources/WECHAT.md" target="_blank">微信</a> 或 <a href="https://discord.gg/QR7SARHRxK" target="_blank">Discord</a> 社区。
     <br>
-    📖 Check out the GLM-4.5 <a href="https://z.ai/blog/glm-4.5" target="_blank">technical blog</a>.
+    📖 查看 GLM-4.5 <a href="https://z.ai/blog/glm-4.5" target="_blank">技术博客</a>。
     <br>
-    📍 Use GLM-4.5 API services on <a href="https://docs.z.ai/guides/llm/glm-4.5">Z.ai API Platform (Global)</a> or <br> <a href="https://docs.bigmodel.cn/cn/guide/models/text/glm-4.5">Zhipu AI Open Platform (Mainland China)</a>.
+    📍 在 <a href="https://docs.z.ai/guides/llm/glm-4.5">Z.ai API 平台 (全球)</a> 或 <br> <a href="https://docs.bigmodel.cn/cn/guide/models/text/glm-4.5">智谱 AI 开放平台 (中国大陆)</a> 上使用 GLM-4.5 API 服务。
     <br>
-    👉 One click to <a href="https://chat.z.ai">GLM-4.5</a>.
+    👉 一键直达 <a href="https://chat.z.ai">GLM-4.5</a>。
 </p>
 
-## Model Introduction
+## 模型介绍
 
-The **GLM-4.5** series models are foundation models designed for intelligent agents. GLM-4.5 has **355** billion total
-parameters with **32** billion active parameters, while GLM-4.5-Air adopts a more compact design with **106** billion
-total parameters and **12** billion active parameters. GLM-4.5 models unify reasoning, coding, and intelligent agent
-capabilities to meet the complex demands of intelligent agent applications.
+**GLM-4.5** 系列模型是为智能体设计的基础模型。GLM-4.5 总共有 **355** 亿参数，其中 **32** 亿激活参数，而 GLM-4.5-Air 采用更紧凑的设计，总共有 **106** 亿参数，其中 **12** 亿激活参数。GLM-4.5 模型统一了推理、编码和智能体能力，以满足智能体应用的复杂需求。
 
-Both GLM-4.5 and GLM-4.5-Air are hybrid reasoning models that provide two modes: thinking mode for complex reasoning and
-tool usage, and non-thinking mode for immediate responses.
+GLM-4.5 和 GLM-4.5-Air 都是混合推理模型，提供两种模式：用于复杂推理和工具使用的思考模式，以及用于立即响应的非思考模式。
 
-We have open-sourced the base models, hybrid reasoning models, and FP8 versions of the hybrid reasoning models for both
-GLM-4.5 and GLM-4.5-Air. They are released under the MIT open-source license and can be used commercially and for
-secondary development.
+我们已经开源了 GLM-4.5 和 GLM-4.5-Air 的基础模型、混合推理模型以及混合推理模型的 FP8 版本。它们在 MIT 开源许可证下发布，可以进行商业使用和二次开发。
 
-As demonstrated in our comprehensive evaluation across 12 industry-standard benchmarks, GLM-4.5 achieves exceptional
-performance with a score of **63.2**, in the **3rd** place among all the proprietary and open-source models. Notably,
-GLM-4.5-Air delivers competitive results at **59.8** while maintaining superior efficiency.
+正如我们在 12 个行业标准基准测试中的综合评估所示，GLM-4.5 取得了 **63.2** 的优异成绩，在所有专有和开源模型中排名 **第 3**。值得注意的是，GLM-4.5-Air 在保持卓越效率的同时，也提供了极具竞争力的结果，得分为 **59.8**。
 
 ![bench](resources/bench.png)
 
-For more eval results, show cases, and technical details, please visit
-our [technical blog](https://z.ai/blog/glm-4.5). The technical report will be released soon.
+有关更多评估结果、展示案例和技术细节，请访问我们的 [技术博客](https://z.ai/blog/glm-4.5)。技术报告即将发布。
 
-The model code, tool parser and reasoning parser can be found in the implementation
-of [transformers](https://github.com/huggingface/transformers/tree/main/src/transformers/models/glm4_moe), [vLLM](https://github.com/vllm-project/vllm/blob/main/vllm/model_executor/models/glm4_moe_mtp.py)
-and [SGLang](https://github.com/sgl-project/sglang/blob/main/python/sglang/srt/models/glm4_moe.py).
+模型代码、工具解析器和推理解析器可以在 [transformers](https://github.com/huggingface/transformers/tree/main/src/transformers/models/glm4_moe)、[vLLM](https://github.com/vllm-project/vllm/blob/main/vllm/model_executor/models/glm4_moe_mtp.py) 和 [SGLang](https://github.com/sgl-project/sglang/blob/main/python/sglang/srt/models/glm4_moe.py) 的实现中找到。
 
-## Model Downloads
+## 模型下载
 
-You can directly experience the model on [Hugging Face](https://huggingface.co/spaces/zai-org/GLM-4.5-Space)
-or [ModelScope](https://modelscope.cn/studios/ZhipuAI/GLM-4.5-Demo) or download the model by following the links below.
+你可以直接在 [Hugging Face](https://huggingface.co/spaces/zai-org/GLM-4.5-Space) 或 [ModelScope](https://modelscope.cn/studios/ZhipuAI/GLM-4.5-Demo) 上体验该模型，或者通过以下链接下载模型。
 
-| Model            | Download Links                                                                                                                                | Model Size | Precision |
-|------------------|-----------------------------------------------------------------------------------------------------------------------------------------------|------------|-----------|
-| GLM-4.5          | [🤗 Hugging Face](https://huggingface.co/zai-org/GLM-4.5)<br> [🤖 ModelScope](https://modelscope.cn/models/ZhipuAI/GLM-4.5)                   | 355B-A32B  | BF16      |
-| GLM-4.5-Air      | [🤗 Hugging Face](https://huggingface.co/zai-org/GLM-4.5-Air)<br> [🤖 ModelScope](https://modelscope.cn/models/ZhipuAI/GLM-4.5-Air)           | 106B-A12B  | BF16      |
-| GLM-4.5-FP8      | [🤗 Hugging Face](https://huggingface.co/zai-org/GLM-4.5-FP8)<br> [🤖 ModelScope](https://modelscope.cn/models/ZhipuAI/GLM-4.5-FP8)           | 355B-A32B  | FP8       |
-| GLM-4.5-Air-FP8  | [🤗 Hugging Face](https://huggingface.co/zai-org/GLM-4.5-Air-FP8)<br> [🤖 ModelScope](https://modelscope.cn/models/ZhipuAI/GLM-4.5-Air-FP8)   | 106B-A12B  | FP8       |
-| GLM-4.5-Base     | [🤗 Hugging Face](https://huggingface.co/zai-org/GLM-4.5-Base)<br> [🤖 ModelScope](https://modelscope.cn/models/ZhipuAI/GLM-4.5-Base)         | 355B-A32B  | BF16      |
-| GLM-4.5-Air-Base | [🤗 Hugging Face](https://huggingface.co/zai-org/GLM-4.5-Air-Base)<br> [🤖 ModelScope](https://modelscope.cn/models/ZhipuAI/GLM-4.5-Air-Base) | 106B-A12B  | BF16      |
+| 模型 | 下载链接 | 模型大小 | 精度 |
+|---|---|---|---|
+| GLM-4.5 | [🤗 Hugging Face](https://huggingface.co/zai-org/GLM-4.5)<br> [🤖 ModelScope](https://modelscope.cn/models/ZhipuAI/GLM-4.5) | 355B-A32B | BF16 |
+| GLM-4.5-Air | [🤗 Hugging Face](https://huggingface.co/zai-org/GLM-4.5-Air)<br> [🤖 ModelScope](https://modelscope.cn/models/ZhipuAI/GLM-4.5-Air) | 106B-A12B | BF16 |
+| GLM-4.5-FP8 | [🤗 Hugging Face](https://huggingface.co/zai-org/GLM-4.5-FP8)<br> [🤖 ModelScope](https://modelscope.cn/models/ZhipuAI/GLM-4.5-FP8) | 355B-A32B | FP8 |
+| GLM-4.5-Air-FP8 | [🤗 Hugging Face](https://huggingface.co/zai-org/GLM-4.5-Air-FP8)<br> [🤖 ModelScope](https://modelscope.cn/models/ZhipuAI/GLM-4.5-Air-FP8) | 106B-A12B | FP8 |
+| GLM-4.5-Base | [🤗 Hugging Face](https://huggingface.co/zai-org/GLM-4.5-Base)<br> [🤖 ModelScope](https://modelscope.cn/models/ZhipuAI/GLM-4.5-Base) | 355B-A32B | BF16 |
+| GLM-4.5-Air-Base | [🤗 Hugging Face](https://huggingface.co/zai-org/GLM-4.5-Air-Base)<br> [🤖 ModelScope](https://modelscope.cn/models/ZhipuAI/GLM-4.5-Air-Base) | 106B-A12B | BF16 |
 
-## System Requirements
+## 系统要求
 
-### Inference
+### 推理
 
-We provide minimum and recommended configurations for "full-featured" model inference. The data in the table below is
-based on the following conditions:
+我们为“全功能”模型推理提供最低和推荐配置。下表中的数据基于以下条件：
 
-1. All models use MTP layers and specify
-   `--speculative-num-steps 3 --speculative-eagle-topk 1 --speculative-num-draft-tokens 4` to ensure competitive
-   inference speed.
-2. The `cpu-offload` parameter is not used.
-3. Inference batch size does not exceed `8`.
-4. All are executed on devices that natively support FP8 inference, ensuring both weights and cache are in FP8 format.
-5. Server memory must exceed `1T` to ensure normal model loading and operation.
+1. 所有模型使用 MTP 层并指定 `--speculative-num-steps 3 --speculative-eagle-topk 1 --speculative-num-draft-tokens 4` 以确保具有竞争力的推理速度。
+2. 不使用 `cpu-offload` 参数。
+3. 推理批处理大小不超过 `8`。
+4. 全部在原生支持 FP8 推理的设备上执行，确保权重和缓存均为 FP8 格式。
+5. 服务器内存必须超过 `1T` 以确保模型正常加载和运行。
 
-The models can run under the configurations in the table below:
+模型可以在下表中的配置下运行：
 
-| Model       | Precision | GPU Type and Count   | Test Framework |
-|-------------|-----------|----------------------|----------------|
-| GLM-4.5     | BF16      | H100 x 16 / H200 x 8 | sglang         |
-| GLM-4.5     | FP8       | H100 x 8 / H200 x 4  | sglang         |
-| GLM-4.5-Air | BF16      | H100 x 4 / H200 x 2  | sglang         |
-| GLM-4.5-Air | FP8       | H100 x 2 / H200 x 1  | sglang         |
+| 模型 | 精度 | GPU 类型和数量 | 测试框架 |
+|---|---|---|---|
+| GLM-4.5 | BF16 | H100 x 16 / H200 x 8 | sglang |
+| GLM-4.5 | FP8 | H100 x 8 / H200 x 4 | sglang |
+| GLM-4.5-Air | BF16 | H100 x 4 / H200 x 2 | sglang |
+| GLM-4.5-Air | FP8 | H100 x 2 / H200 x 1 | sglang |
 
-Under the configurations in the table below, the models can utilize their full 128K context length:
+在下表中的配置下，模型可以利用其完整的 128K 上下文长度：
 
-| Model       | Precision | GPU Type and Count    | Test Framework |
-|-------------|-----------|-----------------------|----------------|
-| GLM-4.5     | BF16      | H100 x 32 / H200 x 16 | sglang         |
-| GLM-4.5     | FP8       | H100 x 16 / H200 x 8  | sglang         |
-| GLM-4.5-Air | BF16      | H100 x 8 / H200 x 4   | sglang         |
-| GLM-4.5-Air | FP8       | H100 x 4 / H200 x 2   | sglang         |
+| 模型 | 精度 | GPU 类型和数量 | 测试框架 |
+|---|---|---|---|
+| GLM-4.5 | BF16 | H100 x 32 / H200 x 16 | sglang |
+| GLM-4.5 | FP8 | H100 x 16 / H200 x 8 | sglang |
+| GLM-4.5-Air | BF16 | H100 x 8 / H200 x 4 | sglang |
+| GLM-4.5-Air | FP8 | H100 x 4 / H200 x 2 | sglang |
 
-### Fine-tuning
+### 微调
 
-The code can run under the configurations in the table below
-using [Llama Factory](https://github.com/hiyouga/LLaMA-Factory):
+代码可以在下表中的配置下使用 [Llama Factory](https://github.com/hiyouga/LLaMA-Factory) 运行：
 
-| Model       | GPU Type and Count | Strategy | Batch Size (per GPU) |
-|-------------|--------------------|----------|----------------------|
-| GLM-4.5     | H100 x 16          | Lora     | 1                    |
-| GLM-4.5-Air | H100 x 4           | Lora     | 1                    |
+| 模型 | GPU 类型和数量 | 策略 | 批处理大小 (每个 GPU) |
+|---|---|---|---|
+| GLM-4.5 | H100 x 16 | Lora | 1 |
+| GLM-4.5-Air | H100 x 4 | Lora | 1 |
 
-The code can run under the configurations in the table below using [Swift](https://github.com/modelscope/ms-swift):
+代码可以在下表中的配置下使用 [Swift](https://github.com/modelscope/ms-swift) 运行：
 
-| Model       | GPU Type and Count | Strategy | Batch Size (per GPU) |
-|-------------|--------------------|----------|----------------------|
-| GLM-4.5     | H20 (96GiB) x 16   | Lora     | 1                    |
-| GLM-4.5-Air | H20 (96GiB) x 4    | Lora     | 1                    |
-| GLM-4.5     | H20 (96GiB) x 128  | SFT      | 1                    |
-| GLM-4.5-Air | H20 (96GiB) x 32   | SFT      | 1                    |
-| GLM-4.5     | H20 (96GiB) x 128  | RL       | 1                    |
-| GLM-4.5-Air | H20 (96GiB) x 32   | RL       | 1                    |
+| 模型 | GPU 类型和数量 | 策略 | 批处理大小 (每个 GPU) |
+|---|---|---|---|
+| GLM-4.5 | H20 (96GiB) x 16 | Lora | 1 |
+| GLM-4.5-Air | H20 (96GiB) x 4 | Lora | 1 |
+| GLM-4.5 | H20 (96GiB) x 128 | SFT | 1 |
+| GLM-4.5-Air | H20 (96GiB) x 32 | SFT | 1 |
+| GLM-4.5 | H20 (96GiB) x 128 | RL | 1 |
+| GLM-4.5-Air | H20 (96GiB) x 32 | RL | 1 |
 
-## Quick Start
+## 快速开始
 
-Please install the required packages according to `requirements.txt`.
+请根据 `requirements.txt` 安装所需的包。
 
 ```shell
 pip install -r requirements.txt
@@ -120,11 +104,11 @@ pip install -r requirements.txt
 
 ### transformers
 
-Please refer to the `trans_infer_cli.py` code in the `inference` folder.
+请参考 `inference` 文件夹中的 `trans_infer_cli.py` 代码。
 
 ### vLLM
 
-+ Both BF16 and FP8 can be started with the following code:
++ BF16 和 FP8 都可以使用以下代码启动：
 
 ```shell
 vllm serve zai-org/GLM-4.5-Air \
@@ -135,12 +119,9 @@ vllm serve zai-org/GLM-4.5-Air \
     --served-model-name glm-4.5-air
 ```
 
-If you're using 8x H100 GPUs and encounter insufficient memory when running the GLM-4.5 model, you'll need
-`--cpu-offload-gb 16` (only applicable to vLLM).
+如果你使用的是 8x H100 GPU 并在运行 GLM-4.5 模型时遇到内存不足，你将需要 `--cpu-offload-gb 16`（仅适用于 vLLM）。
 
-If you encounter `flash infer` issues, use `VLLM_ATTENTION_BACKEND=XFORMERS` as a temporary replacement. You can also
-specify `TORCH_CUDA_ARCH_LIST='9.0+PTX'` to use `flash infer` (different GPUs have different TORCH_CUDA_ARCH_LIST
-values, please check accordingly).
+如果你遇到 `flash infer` 问题，请使用 `VLLM_ATTENTION_BACKEND=XFORMERS` 作为临时替换。你也可以指定 `TORCH_CUDA_ARCH_LIST='9.0+PTX'` 来使用 `flash infer`（不同的 GPU 有不同的 TORCH_CUDA_ARCH_LIST 值，请相应检查）。
 
 ### SGLang
 
@@ -181,9 +162,8 @@ python3 -m sglang.launch_server \
   --port 8000
 ```
 
-### Request Parameter Instructions
+### 请求参数说明
 
-+ When using `vLLM` and `SGLang`, thinking mode is enabled by default when sending requests. If you want to disable the
-  thinking switch, you need to add the `extra_body={"chat_template_kwargs": {"enable_thinking": False}}` parameter.
-+ Both support tool calling. Please use OpenAI-style tool description format for calls.
-+ For specific code, please refer to `api_request.py` in the `inference` folder.
++ 当使用 `vLLM` 和 `SGLang` 时，发送请求时默认启用思考模式。如果你想禁用思考开关，你需要添加 `extra_body={"chat_template_kwargs": {"enable_thinking": False}}` 参数。
++ 两者都支持工具调用。请使用 OpenAI 风格的工具描述格式进行调用。
++ 具体代码，请参考 `inference` 文件夹中的 `api_request.py`。

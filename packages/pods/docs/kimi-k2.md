@@ -1,18 +1,18 @@
-# Kimi-K2 Deployment Guide
+# Kimi-K2 部署指南
 
 > [!Note]
-> This guide only provides some examples of deployment commands for Kimi-K2, which may not be the optimal configuration. Since inference engines are still being updated frequently,  please continue to follow the guidance from their homepage if you want to achieve better inference performance.
+> 本指南仅提供 Kimi-K2 的一些部署命令示例，这可能不是最佳配置。由于推理引擎仍在频繁更新，如果你想获得更好的推理性能，请继续关注其主页的指导。
 
 
-## vLLM Deployment
-vLLM version v0.10.0rc1 or later is required.
+## vLLM 部署
+需要 vLLM 版本 v0.10.0rc1 或更高版本。
 
-The smallest deployment unit for Kimi-K2 FP8 weights with 128k seqlen on mainstream H200 or H20 platform is a cluster with 16 GPUs with either Tensor Parallel (TP) or "data parallel + expert parallel" (DP+EP).
-Running parameters for this environment are provided below. You may scale up to more nodes and increase expert-parallelism to enlarge the inference batch size and overall throughput.
+在主流 H200 或 H20 平台上，具有 128k seqlen 的 Kimi-K2 FP8 权重的最小部署单元是具有 16 个 GPU 的集群，使用张量并行 (TP) 或“数据并行 + 专家并行” (DP+EP)。
+下面提供了此环境的运行参数。你可以扩展到更多节点并增加专家并行度以扩大推理批处理大小和整体吞吐量。
 
-### Tensor Parallelism
+### 张量并行 (Tensor Parallelism)
 
-When the parallelism degree ≤ 16, you can run inference with pure Tensor Parallelism. A sample launch command is:
+当并行度 ≤ 16 时，你可以使用纯张量并行运行推理。示例启动命令如下：
 
 ``` bash
 # start ray on node 0 and node 1
@@ -27,14 +27,14 @@ vllm serve $MODEL_PATH \
   --tool-call-parser kimi_k2
 ```
 
-**Key parameter notes:**
-- `--tensor-parallel-size 16`: If using more than 16 GPUs, combine with pipeline-parallelism.
-- `--enable-auto-tool-choice`: Required when enabling tool usage.
-- `--tool-call-parser kimi_k2`: Required when enabling tool usage.
+**关键参数说明：**
+- `--tensor-parallel-size 16`：如果使用超过 16 个 GPU，请结合管道并行。
+- `--enable-auto-tool-choice`：启用工具使用时需要。
+- `--tool-call-parser kimi_k2`：启用工具使用时需要。
 
-### Data Parallelism + Expert Parallelism
+### 数据并行 + 专家并行 (Data Parallelism + Expert Parallelism)
 
-You can install libraries like DeepEP and DeepGEMM as needed. Then run the command (example on H200):
+你可以根据需要安装 DeepEP 和 DeepGEMM 等库。然后运行命令（H200 上的示例）：
 
 ``` bash
 # node 0
@@ -44,14 +44,14 @@ vllm serve $MODEL_PATH --port 8000 --served-model-name kimi-k2 --trust-remote-co
 vllm serve $MODEL_PATH --headless --data-parallel-start-rank 8 --port 8000 --served-model-name kimi-k2 --trust-remote-code --data-parallel-size 16 --data-parallel-size-local 8 --data-parallel-address $MASTER_IP --data-parallel-rpc-port $PORT --enable-expert-parallel --max-num-batched-tokens 8192 --max-num-seqs 256 --gpu-memory-utilization 0.85 --enable-auto-tool-choice --tool-call-parser kimi_k2
 ```
 
-## SGLang Deployment
+## SGLang 部署
 
-Similarly, we can use TP or DP+EP in SGLang for Deployment, here are the examples.
+同样，我们可以在 SGLang 中使用 TP 或 DP+EP 进行部署，以下是示例。
 
 
-### Tensor Parallelism
+### 张量并行 (Tensor Parallelism)
 
-Here is the simple example code to run TP16 with two nodes on H200:
+这是在 H200 上使用两个节点运行 TP16 的简单示例代码：
 
 ``` bash
 # Node 0
@@ -61,12 +61,12 @@ python -m sglang.launch_server --model-path $MODEL_PATH --tp 16 --dist-init-addr
 python -m sglang.launch_server --model-path $MODEL_PATH --tp 16 --dist-init-addr $MASTER_IP:50000 --nnodes 2 --node-rank 1 --trust-remote-code --tool-call-parser kimi_k2
 ```
 
-**Key parameter notes:**
-- `--tool-call-parser kimi_k2`: Required when enabling tool usage.
+**关键参数说明：**
+- `--tool-call-parser kimi_k2`：启用工具使用时需要。
 
-### Data Parallelism + Expert Parallelism
+### 数据并行 + 专家并行 (Data Parallelism + Expert Parallelism)
 
-Here is an example for large scale Prefill-Decode Disaggregation (4P12D H200) with DP+EP in SGLang:
+这是在 SGLang 中使用 DP+EP 进行大规模预填充-解码分离 (4P12D H200) 的示例：
 
 ``` bash
 # for prefill node
@@ -83,32 +83,32 @@ python -m sglang.launch_server --model-path $MODEL_PATH --trust-remote-code --di
 PYTHONUNBUFFERED=1 python -m sglang.srt.disaggregation.launch_lb --prefill http://${PREFILL_NODE0}:30000 --decode http://${DECODE_NODE0}:30000
 ```
 
-## KTransformers Deployment
+## KTransformers 部署
 
-Please copy all configuration files (i.e., everything except the .safetensors files) into the GGUF checkpoint folder at /path/to/K2. Then run:
+请将所有配置文件（即除 .safetensors 文件之外的所有文件）复制到 /path/to/K2 的 GGUF 检查点文件夹中。然后运行：
 ``` bash
 python ktransformers/server/main.py  --model_path /path/to/K2 --gguf_path /path/to/K2 --cache_lens 30000
 ```
 
-To enable AMX optimization, run:
+要启用 AMX 优化，请运行：
 
 ``` bash
 python ktransformers/server/main.py  --model_path /path/to/K2 --gguf_path /path/to/K2 --cache_lens 30000 --optimize_config_path ktransformers/optimize/optimize_rules/DeepSeek-V3-Chat-fp8-linear-ggml-experts-serve-amx.yaml
 ```
 
-## TensorRT-LLM Deployment
-### Prerequisite
-Please refer to [this guide](https://nvidia.github.io/TensorRT-LLM/installation/build-from-source-linux.html) to build TensorRT-LLM v1.0.0-rc2 from source and start a TRT-LLM docker container.
+## TensorRT-LLM 部署
+### 先决条件
+请参考 [本指南](https://nvidia.github.io/TensorRT-LLM/installation/build-from-source-linux.html) 从源代码构建 TensorRT-LLM v1.0.0-rc2 并启动 TRT-LLM docker 容器。
 
-install blobfile by:
+通过以下方式安装 blobfile：
 ```bash
 pip install blobfile
 ```
-### Multi-node Serving
-TensorRT-LLM supports multi-node inference. You can use mpirun to launch Kimi-K2 with multi-node jobs. We will use two nodes for this example.
+### 多节点服务
+TensorRT-LLM 支持多节点推理。你可以使用 mpirun 启动具有多节点作业的 Kimi-K2。我们将使用两个节点作为此示例。
 
 #### mpirun
-mpirun requires each node to have passwordless ssh access to the other node. We need to setup the environment inside the docker container. Run the container with host network and mount the current directory as well as model directory to the container.
+mpirun 要求每个节点都具有对另一个节点的无密码 ssh 访问权限。我们需要在 docker 容器内设置环境。使用主机网络运行容器，并将当前目录以及模型目录挂载到容器。
 
 ```bash
 # use host network
@@ -120,7 +120,7 @@ docker run -it --name ${NAME}_host1 --ipc=host --gpus=all --network host --privi
 docker run -it --name ${NAME}_host2 --ipc=host --gpus=all --network host --privileged --ulimit memlock=-1 --ulimit stack=67108864 -v ${PWD}:/workspace -v <YOUR_MODEL_DIR>:/models/DeepSeek-V3 -w /workspace ${IMAGE}
 ```
 
-Set up ssh inside the container
+在容器内设置 ssh
 
 ```bash
 apt-get update && apt-get install -y openssh-server
@@ -134,7 +134,7 @@ port 2233
 # modify /etc/ssh
 ```
 
-Generate ssh key on host1 and copy to host2, vice versa.
+在 host1 上生成 ssh 密钥并复制到 host2，反之亦然。
 
 ```bash
 # on host1
@@ -150,7 +150,7 @@ service ssh restart # or
 systemctl restart ssh
 ```
 
-Generate additional config for trtllm serve.
+为 trtllm serve 生成额外的配置。
 ```bash
 cat >/path/to/TensorRT-LLM/extra-llm-api-config.yml <<EOF
 cuda_graph_config:
@@ -170,7 +170,7 @@ EOF
 ```
 
 
-After the preparations,you can run the trtllm-serve on two nodes using mpirun:
+准备工作完成后，你可以使用 mpirun 在两个节点上运行 trtllm-serve：
 
 ```bash
 mpirun -np 16 \
@@ -190,8 +190,8 @@ trtllm-llmapi-launch trtllm-serve serve \
 <YOUR_MODEL_DIR>
 ```
 
-## Others
+## 其他
 
-Kimi-K2 reuses the `DeepSeekV3CausalLM` architecture and convert it's weight into proper shape to save redevelopment effort. To let inference engines distinguish it from DeepSeek-V3 and apply the best optimizations, we set `"model_type": "kimi_k2"` in `config.json`.
+Kimi-K2 重用了 `DeepSeekV3CausalLM` 架构，并将其权重转换为适当的形状以节省重新开发的精力。为了让推理引擎将其与 DeepSeek-V3 区分开来并应用最佳优化，我们在 `config.json` 中设置 `"model_type": "kimi_k2"`。
 
-If you are using a framework that is not on the recommended list, you can still run the model by manually changing `model_type` to "deepseek_v3" in `config.json` as a temporary workaround. You may need to manually parse tool calls in case no tool call parser is available in your framework.
+如果你使用的框架不在推荐列表中，你仍然可以通过在 `config.json` 中手动将 `model_type` 更改为 "deepseek_v3" 来运行模型，以此作为临时解决方法。你可能需要手动解析工具调用，以防你的框架中没有可用的工具调用解析器。

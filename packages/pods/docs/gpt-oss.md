@@ -1,21 +1,21 @@
-## `gpt-oss` vLLM Usage Guide
+# `gpt-oss` vLLM 使用指南
 
-`gpt-oss-20b` and `gpt-oss-120b` are powerful reasoning models open-sourced by OpenAI.
-In vLLM, you can run it on NVIDIA H100, H200, B200 as well as MI300x, MI325x, MI355x and Radeon AI PRO R9700.
-We are actively working on ensuring this model can work on Ampere, Ada Lovelace, and RTX 5090.
-Specifically, vLLM optimizes for `gpt-oss` family of models with
+`gpt-oss-20b` 和 `gpt-oss-120b` 是 OpenAI 开源的强大推理模型。
+在 vLLM 中，你可以在 NVIDIA H100、H200、B200 以及 MI300x、MI325x、MI355x 和 Radeon AI PRO R9700 上运行它。
+我们正在积极努力确保此模型可以在 Ampere、Ada Lovelace 和 RTX 5090 上运行。
+具体来说，vLLM 针对 `gpt-oss` 系列模型进行了优化，包括：
 
-* **Flexible parallelism options**: the model can be sharded across 2, 4, 8 GPUs, scaling throughput.
-* **High performance attention and MoE kernels**: attention kernel is specifically optimized for the attention sinks mechanism and sliding window shapes.
-* **Asynchronous scheduling**: optimizing for maximum utilization and high throughput by overlapping CPU operations with GPU operations.
+* **灵活的并行选项**：模型可以分片到 2、4、8 个 GPU 上，从而扩展吞吐量。
+* **高性能注意力机制和 MoE 内核**：注意力内核专门针对注意力汇（attention sinks）机制和滑动窗口形状进行了优化。
+* **异步调度**：通过重叠 CPU 操作与 GPU 操作，优化最大利用率和高吞吐量。
 
-This is a living document and we welcome contributions, corrections, and creation of new recipes!
+这是一份动态文档，我们欢迎贡献、更正和创建新的配方！
 
-## Quickstart
+## 快速入门
 
-### Installation
+### 安装
 
-We highly recommend using a new virtual environment, as the first iteration of the release requires cutting edge kernels from various dependencies, these might not work with other models. In particular, we will be installing: a prerelease version of vLLM, PyTorch nightly, Triton nightly, FlashInfer prerelease, HuggingFace prerelease, Harmony, and gpt-oss library tools.
+我们强烈建议使用新的虚拟环境，因为发布的第一次迭代需要来自各种依赖项的尖端内核，这些内核可能无法与其他模型一起工作。特别是，我们将安装：vLLM 的预发布版本、PyTorch nightly、Triton nightly、FlashInfer 预发布版本、HuggingFace 预发布版本、Harmony 和 gpt-oss 库工具。
 
 ```
 uv venv
@@ -27,7 +27,7 @@ uv pip install --pre vllm==0.10.1+gptoss \
     --index-strategy unsafe-best-match
 ```
 
-We also provide a docker container with all the dependencies built in
+我们还提供了一个内置所有依赖项的 docker 容器
 
 ```
 docker run --gpus all \
@@ -39,16 +39,16 @@ docker run --gpus all \
 
 ### H100 & H200
 
-You can serve the model with its default parameters:
+你可以使用默认参数为模型提供服务：
 
-* `--async-scheduling` can be enabled for higher performance. Currently it is not compatible with structured output.
-* We recommend TP=2 for H100 and H200 as the best performance tradeoff point.
+* `--async-scheduling` 可以启用以获得更高的性能。目前它与结构化输出不兼容。
+* 我们建议对于 H100 和 H200，使用 TP=2 作为最佳性能权衡点。
 
 ```
-# openai/gpt-oss-20b should run in single GPU
+# openai/gpt-oss-20b 应该在单 GPU 上运行
 vllm serve openai/gpt-oss-20b --async-scheduling
 
-# gpt-oss-120b will fit in a single H100/H200, but scaling it to higher TP sizes can help with throughput
+# gpt-oss-120b 可以适应单个 H100/H200，但将其扩展到更高的 TP 大小有助于提高吞吐量
 vllm serve openai/gpt-oss-120b --async-scheduling
 vllm serve openai/gpt-oss-120b --tensor-parallel-size 2 --async-scheduling
 vllm serve openai/gpt-oss-120b --tensor-parallel-size 4 --async-scheduling
@@ -56,18 +56,18 @@ vllm serve openai/gpt-oss-120b --tensor-parallel-size 4 --async-scheduling
 
 ### B200
 
-NVIDIA Blackwell requires installation of FlashInfer library and several environments to enable the necessary kernels. We recommend TP=1 as a starting point for a performant option. We are actively working on the performance of vLLM on Blackwell.
+NVIDIA Blackwell 需要安装 FlashInfer 库和几个环境来启用必要的内核。我们建议使用 TP=1 作为高性能选项的起点。我们正在积极致力于 vLLM 在 Blackwell 上的性能。
 
 ```
-# All 3 of these are required
+# 这 3 个都是必需的
 export VLLM_USE_TRTLLM_ATTENTION=1
 export VLLM_USE_TRTLLM_DECODE_ATTENTION=1
 export VLLM_USE_TRTLLM_CONTEXT_ATTENTION=1
 
-# Pick only one out of the two.
-# mxfp8 activation for MoE. faster, but higher risk for accuracy.
+# 只能选其中一个。
+# mxfp8 激活用于 MoE。更快，但准确性风险更高。
 export VLLM_USE_FLASHINFER_MXFP4_MOE=1
-# bf16 activation for MoE. matching reference precision.
+# bf16 激活用于 MoE。匹配参考精度。
 export VLLM_USE_FLASHINFER_MXFP4_BF16_MOE=1
 
 # openai/gpt-oss-20b
@@ -81,13 +81,13 @@ vllm serve openai/gpt-oss-120b --tensor-parallel-size 4 --async-scheduling
 
 ### AMD
 
-ROCm supports OpenAI gpt-oss-120b or gpt-oss-20b models on these 3 different GPUs on day one, along with the pre-built docker containers:
+ROCm 在这 3 种不同的 GPU 上支持 OpenAI gpt-oss-120b 或 gpt-oss-20b 模型，以及预构建的 docker 容器：
 
-* gfx950: MI350x series, `rocm/vllm-dev:open-mi355-08052025`
-* gfx942: MI300x/MI325 series, `rocm/vllm-dev:open-mi300-08052025`
+* gfx950: MI350x 系列, `rocm/vllm-dev:open-mi355-08052025`
+* gfx942: MI300x/MI325 系列, `rocm/vllm-dev:open-mi300-08052025`
 * gfx1201: Radeon AI PRO R9700, `rocm/vllm-dev:open-r9700-08052025`
 
-To run the container:
+运行容器：
 
 ```
 alias drun='sudo docker run -it --network=host --device=/dev/kfd --device=/dev/dri --group-add=video --ipc=host --cap-add=SYS_PTRACE --security-opt seccomp=unconfined --shm-size 32G -v /data:/data -v $HOME:/myhome -w /myhome'
@@ -95,7 +95,7 @@ alias drun='sudo docker run -it --network=host --device=/dev/kfd --device=/dev/d
 drun rocm/vllm-dev:open-mi300-08052025
 ```
 
-For MI300x and R9700:
+对于 MI300x 和 R9700：
 
 ```
 export VLLM_ROCM_USE_AITER=1
@@ -105,10 +105,10 @@ export VLLM_ROCM_USE_AITER_MHA=0
 vllm serve openai/gpt-oss-120b --compilation-config '{"full_cuda_graph": true}'
 ```
 
-For MI355x:
+对于 MI355x：
 
 ```
-# MoE preshuffle, fusion and Triton GEMM flags
+# MoE 预洗牌、融合和 Triton GEMM 标志
 export VLLM_USE_AITER_TRITON_FUSED_SPLIT_QKV_ROPE=1
 export VLLM_USE_AITER_TRITON_FUSED_ADD_RMSNORM_PAD=1
 export VLLM_USE_AITER_TRITON_GEMM=1
@@ -120,21 +120,21 @@ export TRITON_HIP_PRESHUFFLE_SCALES=1
 vllm serve openai/gpt-oss-120b --compilation-config '{"compile_sizes": [1, 2, 4, 8, 16, 24, 32, 64, 128, 256, 4096, 8192], "full_cuda_graph": true}' --block-size 64
 ```
 
-## Usage
+## 用法
 
-Once the `vllm serve` runs and `INFO: Application startup complete` has been displayed, you can send requests using HTTP request or OpenAI SDK to the following endpoints:
+一旦 `vllm serve` 运行并且显示 `INFO: Application startup complete`，你可以使用 HTTP 请求或 OpenAI SDK 向以下端点发送请求：
 
-* `/v1/responses` endpoint can perform tool use (browsing, python, mcp) in between chain-of-thought and deliver a final response. This endpoint leverages the `openai-harmony` library for input rendering and output parsing. Stateful operation and full streaming API are work in progress. Responses API is recommended by OpenAI as the way to interact with this model.
-* `/v1/chat/completions` endpoint offers a familiar interface to this model. No tool will be invoked but reasoning and final text output will be returned structurally. Function calling is work in progress. You can also set the parameter `include_reasoning: false` in request parameter to skip CoT being part of the output.
-* `/v1/completions` endpoint is the endpoint for a simple input output interface without any sorts of template rendering.
+* `/v1/responses` 端点可以在思维链之间执行工具使用（浏览、python、mcp）并提供最终响应。此端点利用 `openai-harmony` 库进行输入渲染和输出解析。有状态操作和完整的流式 API 正在开发中。OpenAI 推荐 Responses API 作为与此模型交互的方式。
+* `/v1/chat/completions` 端点为此模型提供了一个熟悉的接口。不会调用任何工具，但会结构化地返回推理和最终文本输出。函数调用正在开发中。你也可以在请求参数中设置 `include_reasoning: false` 参数以跳过作为输出一部分的 CoT。
+* `/v1/completions` 端点是一个简单的输入输出接口的端点，没有任何形式的模板渲染。
 
-All endpoints accept `stream: true` as part of the operations to enable incremental token streaming. Please note that vLLM currently does not cover the full scope of responses API, for more detail, please see Limitation section below.
+所有端点都接受 `stream: true` 作为操作的一部分，以启用增量令牌流式传输。请注意，vLLM 目前并未涵盖 responses API 的全部范围，有关更多详细信息，请参阅下面的限制部分。
 
-### Tool Use
+### 工具使用
 
-One premier feature of gpt-oss is the ability to call tools directly, called "built-in tools". In vLLM, we offer several options:
+gpt-oss 的一个主要特性是能够直接调用工具，称为“内置工具”。在 vLLM 中，我们提供几个选项：
 
-* By default, we integrate with the reference library's browser (with `ExaBackend`) and demo Python interpreter via docker container. In order to use the search backend, you need to get access to [exa.ai](http://exa.ai) and put `EXA_API_KEY=` as an environment variable. For Python, either have docker available, or set `PYTHON_EXECUTION_BACKEND=UV` to dangerously allow execution of model generated code snippets to be executed on the same machine.
+* 默认情况下，我们集成了参考库的浏览器（使用 `ExaBackend`）和通过 docker 容器的演示 Python 解释器。为了使用搜索后端，你需要获得 [exa.ai](http://exa.ai) 的访问权限并将 `EXA_API_KEY=` 作为环境变量。对于 Python，要么有可用的 docker，要么设置 `PYTHON_EXECUTION_BACKEND=UV` 以危险地允许模型生成的代码片段在同一台机器上执行。
 
 ```
 uv pip install gpt-oss
@@ -142,8 +142,8 @@ uv pip install gpt-oss
 vllm serve ... --tool-server demo
 ```
 
-* Please note that the default options are simply for demo purposes. For production usage, vLLM itself can act as MCP client to multiple services.
-Here is an [example tool server](https://github.com/openai/gpt-oss/tree/main/gpt-oss-mcp-server) that vLLM can work with, they wrap the demo tools:
+* 请注意，默认选项仅用于演示目的。对于生产用途，vLLM 本身可以作为多个服务的 MCP 客户端。
+这是一个 [示例工具服务器](https://github.com/openai/gpt-oss/tree/main/gpt-oss-mcp-server)，vLLM 可以与之配合使用，它们包装了演示工具：
 
 ```
 mcp run -t sse browser_server.py:mcp
@@ -152,22 +152,22 @@ mcp run -t sse python_server.py:mcp
 vllm serve ... --tool-server ip-1:port-1,ip-2:port-2
 ```
 
-The URLs are expected to be MCP SSE servers that implement `instructions` in server info and well documented tools. The tools will be injected into the system prompt for the model to enable them.
+URL 应该是实现了服务器信息中的 `instructions` 和文档完善的工具的 MCP SSE 服务器。这些工具将被注入到模型的系统提示中以启用它们。
 
-## Accuracy Evaluation Panels
+## 准确性评估面板
 
-OpenAI recommends using the gpt-oss reference library to perform evaluation. For example,
+OpenAI 建议使用 gpt-oss 参考库来执行评估。例如，
 
 ```
 python -m gpt_oss.evals --model 120b-low --eval gpqa --n-threads 128
 python -m gpt_oss.evals --model 120b --eval gpqa --n-threads 128
 python -m gpt_oss.evals --model 120b-high --eval gpqa --n-threads 128
 ```
-To eval on AIME2025, change `gpqa` to `aime25`.
-With vLLM deployed:
+要在 AIME2025 上评估，请将 `gpqa` 更改为 `aime25`。
+部署 vLLM 后：
 
 ```
-# Example deployment on 8xH100
+# 在 8xH100 上部署的示例
 vllm serve openai/gpt-oss-120b \
   --tensor_parallel_size 8 \
   --max-model-len 131072 \
@@ -177,47 +177,47 @@ vllm serve openai/gpt-oss-120b \
   --no-enable-prefix-caching
 ```
 
-Here is the score we were able to reproduce without tool use, and we encourage you to try reproducing it as well!
-We’ve observed that the numbers may vary slightly across runs, so feel free to run the evaluation multiple times to get a sense of the variance.
-For a quick correctness check, we recommend starting with the low reasoning effort setting (120b-low), which should complete within minutes.
+这是我们在没有使用工具的情况下能够重现的分数，我们也鼓励你也尝试重现它！
+我们观察到这些数字在不同的运行中可能会略有不同，所以请随意运行评估多次以了解方差。
+为了快速进行正确性检查，我们建议从低推理工作量设置（120b-low）开始，这应该在几分钟内完成。
 
-Model: 120B
+模型: 120B
 
-| Reasoning Effort | GPQA | AIME25 |
+| 推理工作量 | GPQA | AIME25 |
 | :---- | :---- | :---- |
-| Low  | 65.3 | 51.2 |
-| Mid  | 72.4 | 79.6 |
-| High  | 79.4 | 93.0 |
+| 低  | 65.3 | 51.2 |
+| 中  | 72.4 | 79.6 |
+| 高  | 79.4 | 93.0 |
 
-Model: 20B
+模型: 20B
 
-| Reasoning Effort | GPQA | AIME25 |
+| 推理工作量 | GPQA | AIME25 |
 | :---- | :---- | :---- |
-| Low  | 56.8 | 38.8 |
-| Mid  | 67.5 | 75.0 |
-| High  | 70.9 | 85.8  |
+| 低  | 56.8 | 38.8 |
+| 中  | 67.5 | 75.0 |
+| 高  | 70.9 | 85.8  |
 
-## Known Limitations
+## 已知限制
 
-* On H100 using tensor parallel size 1, default gpu memory utilization, and batched token will cause CUDA Out-of-memory. When running tp1, please increase your gpu memory utilization or lower batched token
+* 在 H100 上使用张量并行大小 1，默认 gpu 内存利用率和批处理令牌会导致 CUDA 内存不足。当运行 tp1 时，请增加你的 gpu 内存利用率或降低批处理令牌
 
 ```
 vllm serve openai/gpt-oss-120b --gpu-memory-utilization 0.95 --max-num-batched-tokens 1024
 ```
 
-* When running TP2 on H100, set your gpu memory utilization below 0.95 as that will also cause OOM
-* Responses API has several limitations at the current moment; we strongly welcome contribution and maintenance of this service in vLLM
-* Usage accounting is currently broken and only returns all zeros.
-* Annotations (citing URLs from search results) are not supported.
-* Truncation by `max_tokens` might not be able to preserve partial chunks.
-* Streaming is fairly barebone at the moment, for example:
-  * Item id and indexing needs more work
-  * Tool invocation and output are not properly streamed, rather batched.
-  * Proper error handling is missing.
+* 当在 H100 上运行 TP2 时，将你的 gpu 内存利用率设置在 0.95 以下，因为这也可能会导致 OOM
+* Responses API 目前有几个限制；我们强烈欢迎在 vLLM 中贡献和维护此服务
+* 使用量核算目前已损坏，仅返回全零。
+* 不支持注释（引用搜索结果中的 URL）。
+* 通过 `max_tokens` 截断可能无法保留部分块。
+* 目前流式传输相当基础，例如：
+  * 项目 ID 和索引需要更多工作
+  * 工具调用和输出没有正确地流式传输，而是批处理的。
+  * 缺少正确的错误处理。
 
-## Troubleshooting
+## 故障排除
 
-- Attention sink dtype error on Blackwell:
+- Blackwell 上的注意力汇 dtype 错误：
 
 ```
   ERROR 08-05 07:31:10 [multiproc_executor.py:559]     assert sinks.dtype == torch.float32, "Sinks must be of type float32"
@@ -225,9 +225,8 @@ vllm serve openai/gpt-oss-120b --gpu-memory-utilization 0.95 --max-num-batched-t
   **(VllmWorker TP0 pid=174579)** ERROR 08-05 07:31:10 [multiproc_executor.py:559] AssertionError: Sinks must be of type float32
 ```
 
-**Solution: Please refer to Blackwell section to check if related environment variables are added.**
+**解决方案：请参阅 Blackwell 部分以检查是否添加了相关的环境变量。**
 
-- Triton issue related to `tl.language` not defined:
+- 与 `tl.language` 未定义相关的 Triton 问题：
 
-**Solution: Make sure there's no other triton installed in your environment (pytorch-triton, etc).**
-
+**解决方案：确保你的环境中没有安装其他 triton（pytorch-triton 等）。**

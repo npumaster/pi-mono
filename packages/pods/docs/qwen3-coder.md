@@ -1,8 +1,8 @@
-# Qwen3-Coder Usage Guide
+# Qwen3-Coder 使用指南
 
-[Qwen3-Coder](https://github.com/QwenLM/Qwen3-Coder) is an advanced large language model created by the Qwen team from Alibaba Cloud. vLLM already supports Qwen3-Coder, and `tool-call` functionality will be available in vLLM v0.10.0 and higher You can install vLLM with `tool-call` support using the following method:
+[Qwen3-Coder](https://github.com/QwenLM/Qwen3-Coder) 是由阿里云 Qwen 团队创建的高级大型语言模型。vLLM 已经支持 Qwen3-Coder，并且 `tool-call` 功能将在 vLLM v0.10.0 及更高版本中可用。你可以使用以下方法安装支持 `tool-call` 的 vLLM：
 
-## Installing vLLM
+## 安装 vLLM
 
 ```bash
 uv venv
@@ -10,11 +10,11 @@ source .venv/bin/activate
 uv pip install -U vllm --torch-backend auto
 ```
 
-## Launching Qwen3-Coder with vLLM
+## 使用 vLLM 启动 Qwen3-Coder
 
-### Serving on 8xH200 (or H20) GPUs (141GB × 8)
+### 在 8xH200 (或 H20) GPU 上服务 (141GB × 8)
 
-**BF16 Model**
+**BF16 模型**
 
 ```bash
 vllm serve Qwen/Qwen3-Coder-480B-A35B-Instruct \
@@ -24,7 +24,7 @@ vllm serve Qwen/Qwen3-Coder-480B-A35B-Instruct \
   --tool-call-parser qwen3_coder
 ```
 
-**FP8 Model**
+**FP8 模型**
 
 ```bash
 VLLM_USE_DEEP_GEMM=1 vllm serve Qwen/Qwen3-Coder-480B-A35B-Instruct-FP8 \
@@ -35,20 +35,20 @@ VLLM_USE_DEEP_GEMM=1 vllm serve Qwen/Qwen3-Coder-480B-A35B-Instruct-FP8 \
   --tool-call-parser qwen3_coder
 ```
 
-## Performance Metrics
+## 性能指标
 
-### Evaluation
-We launched `Qwen3-Coder-480B-A35B-Instruct-FP8` using vLLM and evaluated its performance using  [EvalPlus](https://github.com/evalplus/evalplus). The results are displayed below:
+### 评估
+我们使用 vLLM 启动了 `Qwen3-Coder-480B-A35B-Instruct-FP8` 并使用 [EvalPlus](https://github.com/evalplus/evalplus) 评估了其性能。结果显示如下：
 
-| Dataset | Test Type | Pass@1 Score |
+| 数据集 | 测试类型 | Pass@1 分数 |
 |-----------|-----------|--------------|
 | HumanEval | Base tests | 0.939 |
 | HumanEval+ | Base + extra tests | 0.902 |
 | MBPP | Base tests | 0.918 |
 | MBPP+ | Base + extra tests | 0.794 |
 
-### Benchmarking
-We used the following script to benchmark `Qwen/Qwen3-Coder-480B-A35B-Instruct-FP8`
+### 基准测试
+我们使用以下脚本对 `Qwen/Qwen3-Coder-480B-A35B-Instruct-FP8` 进行了基准测试
 
 ```bash
 vllm bench serve \
@@ -61,7 +61,7 @@ vllm bench serve \
   --max-concurrency 10 \
   --num-prompt 100 \
 ```
-If successful, you will see the following output.
+如果成功，你将看到以下输出。
 
 ```shell
 ============ Serving Benchmark Result ============
@@ -89,16 +89,16 @@ P99 ITL (ms):                            69.38
 ```
 
 
-## Using Tips
+## 使用技巧
 
-### BF16 Models
-- **Context Length Limitation**: A single H20 node cannot serve the original context length (262144). You can reduce the `max-model-len` or increase `gpu-memory-utilization` to work within memory constraints.
+### BF16 模型
+- **上下文长度限制**：单个 H20 节点无法提供原始上下文长度 (262144)。你可以减少 `max-model-len` 或增加 `gpu-memory-utilization` 以在内存限制内工作。
 
-### FP8 Models
-- **Context Length Limitation**: A single H20 node cannot serve the original context length (262144). You can reduce the `max-model-len` or increase `gpu-memory-utilization` to work within memory constraints.
-- **DeepGEMM Usage**: To use [DeepGEMM](https://github.com/deepseek-ai/DeepGEMM), set `VLLM_USE_DEEP_GEMM=1`. Follow the [setup instructions](https://github.com/vllm-project/vllm/blob/main/benchmarks/kernels/deepgemm/README.md#setup) to install it.
-- **Tensor Parallelism Issue**: When using `tensor-parallel-size 8`, the following failures are expected. Switch to data-parallel mode using `--data-parallel-size`.
-- **Additional Resources**: Refer to the [Data Parallel Deployment documentation](https://docs.vllm.ai/en/latest/serving/data_parallel_deployment.html) for more parallelism groups.
+### FP8 模型
+- **上下文长度限制**：单个 H20 节点无法提供原始上下文长度 (262144)。你可以减少 `max-model-len` 或增加 `gpu-memory-utilization` 以在内存限制内工作。
+- **DeepGEMM 使用**：要使用 [DeepGEMM](https://github.com/deepseek-ai/DeepGEMM)，请设置 `VLLM_USE_DEEP_GEMM=1`。按照 [设置说明](https://github.com/vllm-project/vllm/blob/main/benchmarks/kernels/deepgemm/README.md#setup) 进行安装。
+- **张量并行问题**：当使用 `tensor-parallel-size 8` 时，预计会出现以下故障。使用 `--data-parallel-size` 切换到数据并行模式。
+- **其他资源**：有关更多并行组，请参阅 [数据并行部署文档](https://docs.vllm.ai/en/latest/serving/data_parallel_deployment.html)。
 
 ```shell
 ERROR [multiproc_executor.py:511]   File "/vllm/vllm/model_executor/models/qwen3_moe.py", line 336, in <lambda>
@@ -117,16 +117,16 @@ ERROR [multiproc_executor.py:511]     raise ValueError(
 ERROR [multiproc_executor.py:511] ValueError: The output_size of gate's and up's weight = 320 is not divisible by weight quantization block_n = 128.
 ```
 
-### Tool Calling
-- **Enable Tool Calls**: Add `--tool-call-parser qwen3_coder` to enable tool call parsing functionality, please refer to: [tool_calling](https://docs.vllm.ai/en/latest/features/tool_calling.html)
+### 工具调用
+- **启用工具调用**：添加 `--tool-call-parser qwen3_coder` 以启用工具调用解析功能，请参阅：[tool_calling](https://docs.vllm.ai/en/latest/features/tool_calling.html)
 
-## Roadmap
+## 路线图
 
-- [x] Add benchmark results
+- [x] 添加基准测试结果
 
 
-## Additional Resources
+## 其他资源
 
 - [EvalPlus](https://github.com/evalplus/evalplus)
 - [Qwen3-Coder](https://github.com/QwenLM/Qwen3-Coder)
-- [vLLM Documentation](https://docs.vllm.ai/)
+- [vLLM 文档](https://docs.vllm.ai/)
