@@ -1,8 +1,8 @@
 # 🏖️ OSS Vacation
 
-**Issue tracker and PRs reopen February 16, 2026.**
+**问题追踪器和 PR 将于 2026 年 2 月 16 日重新开放。**
 
-All PRs will be auto-closed until then. Approved contributors can submit PRs after vacation without reapproval. For support, join [Discord](https://discord.com/invite/3cU7Bz4UPx).
+在此之前，所有 PR 都将被自动关闭。获批准的贡献者可以在假期后提交 PR 而无需重新批准。如需支持，请加入 [Discord](https://discord.com/invite/3cU7Bz4UPx)。
 
 ---
 
@@ -17,81 +17,81 @@ All PRs will be auto-closed until then. Approved contributors can submit PRs aft
   <a href="https://github.com/badlogic/pi-mono/actions/workflows/ci.yml"><img alt="Build status" src="https://img.shields.io/github/actions/workflow/status/badlogic/pi-mono/ci.yml?style=flat-square&branch=main" /></a>
 </p>
 <p align="center">
-  <a href="https://pi.dev">pi.dev</a> domain graciously donated by
+  <a href="https://pi.dev">pi.dev</a> 域名由以下机构慷慨捐赠
   <br /><br />
   <a href="https://exe.dev"><img src="docs/images/exy.png" alt="Exy mascot" width="48" /><br />exe.dev</a>
 </p>
 
-Pi is a minimal terminal coding harness. Adapt pi to your workflows, not the other way around, without having to fork and modify pi internals. Extend it with TypeScript [Extensions](#extensions), [Skills](#skills), [Prompt Templates](#prompt-templates), and [Themes](#themes). Put your extensions, skills, prompt templates, and themes in [Pi Packages](#pi-packages) and share them with others via npm or git.
+Pi 是一个极简的终端编码工具。让 Pi 适应你的工作流，而不是反过来，无需 fork 和修改 Pi 的内部结构。通过 TypeScript [扩展](#扩展)、[技能](#技能)、[提示词模板](#提示词模板)和[主题](#主题)来扩展它。将你的扩展、技能、提示词模板和主题放在 [Pi 包](#pi-包)中，并通过 npm 或 git 与他人分享。
 
-Pi ships with powerful defaults but skips features like sub agents and plan mode. Instead, you can ask pi to build what you want or install a third party pi package that matches your workflow.
+Pi 附带强大的默认设置，但跳过了子智能体和计划模式等功能。相反，你可以要求 Pi 构建你想要的东西，或者安装符合你工作流的第三方 Pi 包。
 
-Pi runs in four modes: interactive, print or JSON, RPC for process integration, and an SDK for embedding in your own apps. See [openclaw/openclaw](https://github.com/openclaw/openclaw) for a real-world SDK integration.
+Pi 在四种模式下运行：交互式、打印或 JSON、用于进程集成的 RPC，以及用于嵌入到你自己的应用程序中的 SDK。查看 [openclaw/openclaw](https://github.com/openclaw/openclaw) 了解真实的 SDK 集成案例。
 
-## Table of Contents
+## 目录
 
-- [Quick Start](#quick-start)
-- [Providers & Models](#providers--models)
-- [Interactive Mode](#interactive-mode)
-  - [Editor](#editor)
-  - [Commands](#commands)
-  - [Keyboard Shortcuts](#keyboard-shortcuts)
-  - [Message Queue](#message-queue)
-- [Sessions](#sessions)
-  - [Branching](#branching)
-  - [Compaction](#compaction)
-- [Settings](#settings)
-- [Context Files](#context-files)
-- [Customization](#customization)
-  - [Prompt Templates](#prompt-templates)
-  - [Skills](#skills)
-  - [Extensions](#extensions)
-  - [Themes](#themes)
-  - [Pi Packages](#pi-packages)
-- [Programmatic Usage](#programmatic-usage)
-- [Philosophy](#philosophy)
-- [CLI Reference](#cli-reference)
+- [快速开始](#快速开始)
+- [提供者与模型](#提供者与模型)
+- [交互模式](#交互模式)
+  - [编辑器](#编辑器)
+  - [命令](#命令)
+  - [键盘快捷键](#键盘快捷键)
+  - [消息队列](#消息队列)
+- [会话](#会话)
+  - [分支](#分支)
+  - [压缩](#压缩)
+- [设置](#设置)
+- [上下文文件](#上下文文件)
+- [自定义](#自定义)
+  - [提示词模板](#提示词模板)
+  - [技能](#技能)
+  - [扩展](#扩展)
+  - [主题](#主题)
+  - [Pi 包](#pi-包)
+- [编程用法](#编程用法)
+- [理念](#理念)
+- [CLI 参考](#cli-参考)
 
 ---
 
-## Quick Start
+## 快速开始
 
 ```bash
 npm install -g @mariozechner/pi-coding-agent
 ```
 
-Authenticate with an API key:
+使用 API 密钥进行身份验证：
 
 ```bash
 export ANTHROPIC_API_KEY=sk-ant-...
 pi
 ```
 
-Or use your existing subscription:
+或者使用你现有的订阅：
 
 ```bash
 pi
-/login  # Then select provider
+/login  # 然后选择提供者
 ```
 
-Then just talk to pi. By default, pi gives the model four tools: `read`, `write`, `edit`, and `bash`. The model uses these to fulfill your requests. Add capabilities via [skills](#skills), [prompt templates](#prompt-templates), [extensions](#extensions), or [pi packages](#pi-packages).
+然后直接与 Pi 交谈。默认情况下，Pi 为模型提供四个工具：`read`、`write`、`edit` 和 `bash`。模型使用这些工具来完成你的请求。通过 [技能](#技能)、[提示词模板](#提示词模板)、[扩展](#扩展) 或 [Pi 包](#pi-包) 添加功能。
 
-**Platform notes:** [Windows](docs/windows.md) | [Termux (Android)](docs/termux.md) | [Terminal setup](docs/terminal-setup.md) | [Shell aliases](docs/shell-aliases.md)
+**平台说明：** [Windows](docs/windows.md) | [Termux (Android)](docs/termux.md) | [终端设置](docs/terminal-setup.md) | [Shell 别名](docs/shell-aliases.md)
 
 ---
 
-## Providers & Models
+## 提供者与模型
 
-For each built-in provider, pi maintains a list of tool-capable models, updated with every release. Authenticate via subscription (`/login`) or API key, then select any model from that provider via `/model` (or Ctrl+L).
+对于每个内置提供者，Pi 维护一个支持工具的模型列表，随每个版本更新。通过订阅 (`/login`) 或 API 密钥进行身份验证，然后通过 `/model` (或 Ctrl+L) 选择该提供者的任何模型。
 
-**Subscriptions:**
+**订阅：**
 - Anthropic Claude Pro/Max
 - OpenAI ChatGPT Plus/Pro (Codex)
 - GitHub Copilot
 - Google Gemini CLI
 - Google Antigravity
 
-**API keys:**
+**API 密钥：**
 - Anthropic
 - OpenAI
 - Azure OpenAI
@@ -110,165 +110,165 @@ For each built-in provider, pi maintains a list of tool-capable models, updated 
 - Kimi For Coding
 - MiniMax
 
-See [docs/providers.md](docs/providers.md) for detailed setup instructions.
+有关详细的设置说明，请参阅 [docs/providers.md](docs/providers.md)。
 
-**Custom providers & models:** Add providers via `~/.pi/agent/models.json` if they speak a supported API (OpenAI, Anthropic, Google). For custom APIs or OAuth, use extensions. See [docs/models.md](docs/models.md) and [docs/custom-provider.md](docs/custom-provider.md).
+**自定义提供者与模型：** 如果它们支持受支持的 API (OpenAI, Anthropic, Google)，可以通过 `~/.pi/agent/models.json` 添加提供者。对于自定义 API 或 OAuth，请使用扩展。参见 [docs/models.md](docs/models.md) 和 [docs/custom-provider.md](docs/custom-provider.md)。
 
 ---
 
-## Interactive Mode
+## 交互模式
 
 <p align="center"><img src="docs/images/interactive-mode.png" alt="Interactive Mode" width="600"></p>
 
-The interface from top to bottom:
+界面从上到下：
 
-- **Startup header** - Shows shortcuts (`/hotkeys` for all), loaded AGENTS.md files, prompt templates, skills, and extensions
-- **Messages** - Your messages, assistant responses, tool calls and results, notifications, errors, and extension UI
-- **Editor** - Where you type; border color indicates thinking level
-- **Footer** - Working directory, session name, total token/cache usage, cost, context usage, current model
+- **启动标题** - 显示快捷键（`/hotkeys` 查看所有）、加载的 AGENTS.md 文件、提示词模板、技能和扩展
+- **消息** - 你的消息、助手响应、工具调用和结果、通知、错误和扩展 UI
+- **编辑器** - 你输入的地方；边框颜色指示思考级别
+- **页脚** - 工作目录、会话名称、总 Token/缓存使用量、成本、上下文使用量、当前模型
 
-The editor can be temporarily replaced by other UI, like built-in `/settings` or custom UI from extensions (e.g., a Q&A tool that lets the user answer model questions in a structured format). [Extensions](#extensions) can also replace the editor, add widgets above/below it, a status line, custom footer, or overlays.
+编辑器可以被其他 UI 临时替换，例如内置的 `/settings` 或来自扩展的自定义 UI（例如，允许用户以结构化格式回答模型问题的问答工具）。[扩展](#扩展) 还可以替换编辑器、在其上方/下方添加小部件、状态行、自定义页脚或覆盖层。
 
-### Editor
+### 编辑器
 
-| Feature | How |
+| 功能 | 方法 |
 |---------|-----|
-| File reference | Type `@` to fuzzy-search project files |
-| Path completion | Tab to complete paths |
-| Multi-line | Shift+Enter (or Ctrl+Enter on Windows Terminal) |
-| Images | Ctrl+V to paste, or drag onto terminal |
-| Bash commands | `!command` runs and sends output to LLM, `!!command` runs without sending |
+| 文件引用 | 输入 `@` 模糊搜索项目文件 |
+| 路径补全 | Tab 键补全路径 |
+| 多行 | Shift+Enter (Windows Terminal 上为 Ctrl+Enter) |
+| 图像 | Ctrl+V 粘贴，或拖拽到终端 |
+| Bash 命令 | `!command` 运行并将输出发送给 LLM，`!!command` 运行但不发送 |
 
-Standard editing keybindings for delete word, undo, etc. See [docs/keybindings.md](docs/keybindings.md).
+标准的编辑快捷键用于删除单词、撤消等。参见 [docs/keybindings.md](docs/keybindings.md)。
 
-### Commands
+### 命令
 
-Type `/` in the editor to trigger commands. [Extensions](#extensions) can register custom commands, [skills](#skills) are available as `/skill:name`, and [prompt templates](#prompt-templates) expand via `/templatename`.
+在编辑器中输入 `/` 触发命令。[扩展](#扩展) 可以注册自定义命令，[技能](#技能) 可作为 `/skill:name` 使用，[提示词模板](#提示词模板) 通过 `/templatename` 展开。
 
-| Command | Description |
+| 命令 | 描述 |
 |---------|-------------|
-| `/login`, `/logout` | OAuth authentication |
-| `/model` | Switch models |
-| `/scoped-models` | Enable/disable models for Ctrl+P cycling |
-| `/settings` | Thinking level, theme, message delivery |
-| `/resume` | Pick from previous sessions |
-| `/new` | Start a new session |
-| `/name <name>` | Set session display name |
-| `/session` | Show session info (path, tokens, cost) |
-| `/tree` | Jump to any point in the session and continue from there |
-| `/fork` | Create a new session from the current branch |
-| `/compact [prompt]` | Manually compact context, optional custom instructions |
-| `/copy` | Copy last assistant message to clipboard |
-| `/export [file]` | Export session to HTML file |
-| `/share` | Upload as private GitHub gist with shareable HTML link |
-| `/reload` | Reload extensions, skills, prompts, context files (themes hot-reload automatically) |
-| `/hotkeys` | Show all keyboard shortcuts |
-| `/changelog` | Display version history |
-| `/quit`, `/exit` | Quit pi |
+| `/login`, `/logout` | OAuth 身份验证 |
+| `/model` | 切换模型 |
+| `/scoped-models` | 启用/禁用 Ctrl+P 循环的模型 |
+| `/settings` | 思考级别、主题、消息传递 |
+| `/resume` | 从以前的会话中选择 |
+| `/new` | 开始新会话 |
+| `/name <name>` | 设置会话显示名称 |
+| `/session` | 显示会话信息（路径、Token、成本） |
+| `/tree` | 跳转到会话中的任何点并从那里继续 |
+| `/fork` | 从当前分支创建一个新会话 |
+| `/compact [prompt]` | 手动压缩上下文，可选自定义指令 |
+| `/copy` | 将最后一条助手消息复制到剪贴板 |
+| `/export [file]` | 将会话导出为 HTML 文件 |
+| `/share` | 上传为带有可共享 HTML 链接的私有 GitHub gist |
+| `/reload` | 重新加载扩展、技能、提示词、上下文文件（主题会自动热重载） |
+| `/hotkeys` | 显示所有键盘快捷键 |
+| `/changelog` | 显示版本历史 |
+| `/quit`, `/exit` | 退出 Pi |
 
-### Keyboard Shortcuts
+### 键盘快捷键
 
-See `/hotkeys` for the full list. Customize via `~/.pi/agent/keybindings.json`. See [docs/keybindings.md](docs/keybindings.md).
+查看 `/hotkeys` 获取完整列表。通过 `~/.pi/agent/keybindings.json` 自定义。参见 [docs/keybindings.md](docs/keybindings.md)。
 
-**Commonly used:**
+**常用：**
 
-| Key | Action |
+| 按键 | 动作 |
 |-----|--------|
-| Ctrl+C | Clear editor |
-| Ctrl+C twice | Quit |
-| Escape | Cancel/abort |
-| Escape twice | Open `/tree` |
-| Ctrl+L | Open model selector |
-| Ctrl+P / Shift+Ctrl+P | Cycle scoped models forward/backward |
-| Shift+Tab | Cycle thinking level |
-| Ctrl+O | Collapse/expand tool output |
-| Ctrl+T | Collapse/expand thinking blocks |
+| Ctrl+C | 清除编辑器 |
+| Ctrl+C 两次 | 退出 |
+| Escape | 取消/中止 |
+| Escape 两次 | 打开 `/tree` |
+| Ctrl+L | 打开模型选择器 |
+| Ctrl+P / Shift+Ctrl+P | 向前/向后循环范围内的模型 |
+| Shift+Tab | 循环思考级别 |
+| Ctrl+O | 折叠/展开工具输出 |
+| Ctrl+T | 折叠/展开思考块 |
 
-### Message Queue
+### 消息队列
 
-Submit messages while the agent is working:
+在智能体工作时提交消息：
 
-- **Enter** queues a *steering* message, delivered after current tool execution (interrupts remaining tools)
-- **Alt+Enter** queues a *follow-up* message, delivered only after the agent finishes all work
-- **Escape** aborts and restores queued messages to editor
-- **Alt+Up** retrieves queued messages back to editor
+- **Enter** 排队一条 *导向* 消息，在当前工具执行后传递（中断剩余工具）
+- **Alt+Enter** 排队一条 *后续* 消息，仅在智能体完成所有工作后传递
+- **Escape** 中止并将排队的消息恢复到编辑器
+- **Alt+Up** 将排队的消息检索回编辑器
 
-Configure delivery in [settings](docs/settings.md): `steeringMode` and `followUpMode` can be `"one-at-a-time"` (default, waits for response) or `"all"` (delivers all queued at once).
+在 [设置](docs/settings.md) 中配置传递：`steeringMode` 和 `followUpMode` 可以是 `"one-at-a-time"`（默认，等待响应）或 `"all"`（一次性传递所有排队消息）。
 
 ---
 
-## Sessions
+## 会话
 
-Sessions are stored as JSONL files with a tree structure. Each entry has an `id` and `parentId`, enabling in-place branching without creating new files. See [docs/session.md](docs/session.md) for file format.
+会话存储为具有树结构的 JSONL 文件。每个条目都有 `id` 和 `parentId`，允许在不创建新文件的情况下进行就地分支。有关文件格式，请参阅 [docs/session.md](docs/session.md)。
 
-### Management
+### 管理
 
-Sessions auto-save to `~/.pi/agent/sessions/` organized by working directory.
+会话自动保存到 `~/.pi/agent/sessions/`，按工作目录组织。
 
 ```bash
-pi -c                  # Continue most recent session
-pi -r                  # Browse and select from past sessions
-pi --no-session        # Ephemeral mode (don't save)
-pi --session <path>    # Use specific session file or ID
+pi -c                  # 继续最近的会话
+pi -r                  # 浏览并选择过去的会话
+pi --no-session        # 临时模式（不保存）
+pi --session <path>    # 使用特定会话文件或 ID
 ```
 
-### Branching
+### 分支
 
-**`/tree`** - Navigate the session tree in-place. Select any previous point, continue from there, and switch between branches. All history preserved in a single file.
+**`/tree`** - 就地导航会话树。选择任何以前的点，从那里继续，并在分支之间切换。所有历史记录保存在单个文件中。
 
 <p align="center"><img src="docs/images/tree-view.png" alt="Tree View" width="600"></p>
 
-- Search by typing, page with ←/→
-- Filter modes (Ctrl+O): default → no-tools → user-only → labeled-only → all
-- Press `l` to label entries as bookmarks
+- 通过输入搜索，用 ←/→ 翻页
+- 过滤模式 (Ctrl+O): 默认 → 无工具 → 仅用户 → 仅标记 → 全部
+- 按 `l` 将条目标记为书签
 
-**`/fork`** - Create a new session file from the current branch. Opens a selector, copies history up to the selected point, and places that message in the editor for modification.
+**`/fork`** - 从当前分支创建一个新的会话文件。打开选择器，复制到选定点的历史记录，并将该消息放在编辑器中进行修改。
 
-### Compaction
+### 压缩
 
-Long sessions can exhaust context windows. Compaction summarizes older messages while keeping recent ones.
+长会话可能会耗尽上下文窗口。压缩总结旧消息，同时保留最近的消息。
 
-**Manual:** `/compact` or `/compact <custom instructions>`
+**手动：** `/compact` 或 `/compact <custom instructions>`
 
-**Automatic:** Enabled by default. Triggers on context overflow (recovers and retries) or when approaching the limit (proactive). Configure via `/settings` or `settings.json`.
+**自动：** 默认启用。在上下文溢出（恢复并重试）或接近限制（主动）时触发。通过 `/settings` 或 `settings.json` 配置。
 
-Compaction is lossy. The full history remains in the JSONL file; use `/tree` to revisit. Customize compaction behavior via [extensions](#extensions). See [docs/compaction.md](docs/compaction.md) for internals.
+压缩是有损的。完整的历史记录保留在 JSONL 文件中；使用 `/tree` 重新访问。通过 [扩展](#扩展) 自定义压缩行为。有关内部结构，请参阅 [docs/compaction.md](docs/compaction.md)。
 
 ---
 
-## Settings
+## 设置
 
-Use `/settings` to modify common options, or edit JSON files directly:
+使用 `/settings` 修改常用选项，或直接编辑 JSON 文件：
 
-| Location | Scope |
+| 位置 | 范围 |
 |----------|-------|
-| `~/.pi/agent/settings.json` | Global (all projects) |
-| `.pi/settings.json` | Project (overrides global) |
+| `~/.pi/agent/settings.json` | 全局（所有项目） |
+| `.pi/settings.json` | 项目（覆盖全局） |
 
-See [docs/settings.md](docs/settings.md) for all options.
-
----
-
-## Context Files
-
-Pi loads `AGENTS.md` (or `CLAUDE.md`) at startup from:
-- `~/.pi/agent/AGENTS.md` (global)
-- Parent directories (walking up from cwd)
-- Current directory
-
-Use for project instructions, conventions, common commands. All matching files are concatenated.
-
-### System Prompt
-
-Replace the default system prompt with `.pi/SYSTEM.md` (project) or `~/.pi/agent/SYSTEM.md` (global). Append without replacing via `APPEND_SYSTEM.md`.
+有关所有选项，请参阅 [docs/settings.md](docs/settings.md)。
 
 ---
 
-## Customization
+## 上下文文件
 
-### Prompt Templates
+Pi 在启动时从以下位置加载 `AGENTS.md`（或 `CLAUDE.md`）：
+- `~/.pi/agent/AGENTS.md`（全局）
+- 父目录（从 cwd 向上查找）
+- 当前目录
 
-Reusable prompts as Markdown files. Type `/name` to expand.
+用于项目说明、约定、常用命令。所有匹配的文件都会被连接起来。
+
+### 系统提示词
+
+使用 `.pi/SYSTEM.md`（项目）或 `~/.pi/agent/SYSTEM.md`（全局）替换默认系统提示词。通过 `APPEND_SYSTEM.md` 追加而不替换。
+
+---
+
+## 自定义
+
+### 提示词模板
+
+作为 Markdown 文件的可重用提示词。输入 `/name` 展开。
 
 ```markdown
 <!-- ~/.pi/agent/prompts/review.md -->
@@ -276,11 +276,11 @@ Review this code for bugs, security issues, and performance problems.
 Focus on: {{focus}}
 ```
 
-Place in `~/.pi/agent/prompts/`, `.pi/prompts/`, or a [pi package](#pi-packages) to share with others. See [docs/prompt-templates.md](docs/prompt-templates.md).
+放置在 `~/.pi/agent/prompts/`、`.pi/prompts/` 或 [Pi 包](#pi-包) 中以与他人共享。参见 [docs/prompt-templates.md](docs/prompt-templates.md)。
 
-### Skills
+### 技能
 
-On-demand capability packages following the [Agent Skills standard](https://agentskills.io). Invoke via `/skill:name` or let the agent load them automatically.
+遵循 [Agent Skills 标准](https://agentskills.io) 的按需功能包。通过 `/skill:name` 调用或让智能体自动加载它们。
 
 ```markdown
 <!-- ~/.pi/agent/skills/my-skill/SKILL.md -->
@@ -292,13 +292,13 @@ Use this skill when the user asks about X.
 2. Then that
 ```
 
-Place in `~/.pi/agent/skills/`, `.pi/skills/`, or a [pi package](#pi-packages) to share with others. See [docs/skills.md](docs/skills.md).
+放置在 `~/.pi/agent/skills/`、`.pi/skills/` 或 [Pi 包](#pi-包) 中以与他人共享。参见 [docs/skills.md](docs/skills.md)。
 
-### Extensions
+### 扩展
 
 <p align="center"><img src="docs/images/doom-extension.png" alt="Doom Extension" width="600"></p>
 
-TypeScript modules that extend pi with custom tools, commands, keyboard shortcuts, event handlers, and UI components.
+TypeScript 模块，使用自定义工具、命令、键盘快捷键、事件处理程序和 UI 组件扩展 Pi。
 
 ```typescript
 export default function (pi: ExtensionAPI) {
@@ -308,49 +308,49 @@ export default function (pi: ExtensionAPI) {
 }
 ```
 
-**What's possible:**
-- Custom tools (or replace built-in tools entirely)
-- Sub-agents and plan mode
-- Custom compaction and summarization
-- Permission gates and path protection
-- Custom editors and UI components
-- Status lines, headers, footers
-- Git checkpointing and auto-commit
-- SSH and sandbox execution
-- MCP server integration
-- Make pi look like Claude Code
-- Games while waiting (yes, Doom runs)
-- ...anything you can dream up
+**可能实现的功能：**
+- 自定义工具（或完全替换内置工具）
+- 子智能体和计划模式
+- 自定义压缩和总结
+- 权限门控和路径保护
+- 自定义编辑器和 UI 组件
+- 状态行、页眉、页脚
+- Git 检查点和自动提交
+- SSH 和沙箱执行
+- MCP 服务器集成
+- 让 Pi 看起来像 Claude Code
+- 等待时的游戏（是的，可以运行 Doom）
+- ...你能想到的任何东西
 
-Place in `~/.pi/agent/extensions/`, `.pi/extensions/`, or a [pi package](#pi-packages) to share with others. See [docs/extensions.md](docs/extensions.md) and [examples/extensions/](examples/extensions/).
+放置在 `~/.pi/agent/extensions/`、`.pi/extensions/` 或 [Pi 包](#pi-包) 中以与他人共享。参见 [docs/extensions.md](docs/extensions.md) 和 [examples/extensions/](examples/extensions/)。
 
-### Themes
+### 主题
 
-Built-in: `dark`, `light`. Themes hot-reload: modify the active theme file and pi immediately applies changes.
+内置：`dark`、`light`。主题热重载：修改活动主题文件，Pi 会立即应用更改。
 
-Place in `~/.pi/agent/themes/`, `.pi/themes/`, or a [pi package](#pi-packages) to share with others. See [docs/themes.md](docs/themes.md).
+放置在 `~/.pi/agent/themes/`、`.pi/themes/` 或 [Pi 包](#pi-包) 中以与他人共享。参见 [docs/themes.md](docs/themes.md)。
 
-### Pi Packages
+### Pi 包
 
-Bundle and share extensions, skills, prompts, and themes via npm or git. Find packages on [npmjs.com](https://www.npmjs.com/search?q=keywords%3Api-package) or [Discord](https://discord.com/channels/1456806362351669492/1457744485428629628).
+通过 npm 或 git 捆绑和共享扩展、技能、提示词和主题。在 [npmjs.com](https://www.npmjs.com/search?q=keywords%3Api-package) 或 [Discord](https://discord.com/channels/1456806362351669492/1457744485428629628) 上查找包。
 
-> **Security:** Pi packages run with full system access. Extensions execute arbitrary code, and skills can instruct the model to perform any action including running executables. Review source code before installing third-party packages.
+> **安全：** Pi 包以完整的系统访问权限运行。扩展执行任意代码，技能可以指示模型执行任何操作，包括运行可执行文件。在安装第三方包之前，请检查源代码。
 
 ```bash
 pi install npm:@foo/pi-tools
-pi install npm:@foo/pi-tools@1.2.3      # pinned version
+pi install npm:@foo/pi-tools@1.2.3      # 固定版本
 pi install git:github.com/user/repo
-pi install git:github.com/user/repo@v1  # tag or commit
+pi install git:github.com/user/repo@v1  # 标签或提交
 pi install https://github.com/user/repo
 pi remove npm:@foo/pi-tools
 pi list
-pi update                               # skips pinned packages
-pi config                               # enable/disable extensions, skills, prompts, themes
+pi update                               # 更新包（跳过固定版本）
+pi config                               # 启用/禁用扩展、技能、提示词、主题
 ```
 
-Packages install to `~/.pi/agent/git/` (git) or global npm. Use `-l` for project-local installs (`.pi/git/`, `.pi/npm/`).
+包安装到 `~/.pi/agent/git/` (git) 或全局 npm。使用 `-l` 进行项目本地安装 (`.pi/git/`、`.pi/npm/`)。
 
-Create a package by adding a `pi` key to `package.json`:
+通过在 `package.json` 中添加 `pi` 键来创建包：
 
 ```json
 {
@@ -365,13 +365,13 @@ Create a package by adding a `pi` key to `package.json`:
 }
 ```
 
-Without a `pi` manifest, pi auto-discovers from conventional directories (`extensions/`, `skills/`, `prompts/`, `themes/`).
+如果没有 `pi` 清单，Pi 会自动从常规目录（`extensions/`、`skills/`、`prompts/`、`themes/`）中发现。
 
-See [docs/packages.md](docs/packages.md).
+参见 [docs/packages.md](docs/packages.md)。
 
 ---
 
-## Programmatic Usage
+## 编程用法
 
 ### SDK
 
@@ -387,124 +387,124 @@ const { session } = await createAgentSession({
 await session.prompt("What files are in the current directory?");
 ```
 
-See [docs/sdk.md](docs/sdk.md) and [examples/sdk/](examples/sdk/).
+参见 [docs/sdk.md](docs/sdk.md) 和 [examples/sdk/](examples/sdk/)。
 
-### RPC Mode
+### RPC 模式
 
-For non-Node.js integrations, use RPC mode over stdin/stdout:
+对于非 Node.js 集成，请使用 stdin/stdout 上的 RPC 模式：
 
 ```bash
 pi --mode rpc
 ```
 
-See [docs/rpc.md](docs/rpc.md) for the protocol.
+有关协议，请参阅 [docs/rpc.md](docs/rpc.md)。
 
 ---
 
-## Philosophy
+## 理念
 
-Pi is aggressively extensible so it doesn't have to dictate your workflow. Features that other tools bake in can be built with [extensions](#extensions), [skills](#skills), or installed from third-party [pi packages](#pi-packages). This keeps the core minimal while letting you shape pi to fit how you work.
+Pi 具有极强的可扩展性，因此它不必强行规定你的工作流。其他工具内置的功能可以通过 [扩展](#扩展)、[技能](#技能) 构建，或从第三方 [Pi 包](#pi-包) 安装。这保持了核心的极简，同时让你能够塑造 Pi 以适应你的工作方式。
 
-**No MCP.** Build CLI tools with READMEs (see [Skills](#skills)), or build an extension that adds MCP support. [Why?](https://mariozechner.at/posts/2025-11-02-what-if-you-dont-need-mcp/)
+**无 MCP。** 使用 README 构建 CLI 工具（参见 [技能](#技能)），或构建添加 MCP 支持的扩展。[为什么？](https://mariozechner.at/posts/2025-11-02-what-if-you-dont-need-mcp/)
 
-**No sub-agents.** There's many ways to do this. Spawn pi instances via tmux, or build your own with [extensions](#extensions), or install a package that does it your way.
+**无子智能体。** 这样做有很多方法。通过 tmux 生成 Pi 实例，或使用 [扩展](#扩展) 构建你自己的，或安装以你的方式执行此操作的包。
 
-**No permission popups.** Run in a container, or build your own confirmation flow with [extensions](#extensions) inline with your environment and security requirements.
+**无权限弹窗。** 在容器中运行，或根据你的环境和安全要求使用 [扩展](#扩展) 构建你自己的确认流程。
 
-**No plan mode.** Write plans to files, or build it with [extensions](#extensions), or install a package.
+**无计划模式。** 将计划写入文件，或使用 [扩展](#扩展) 构建它，或安装一个包。
 
-**No built-in to-dos.** They confuse models. Use a TODO.md file, or build your own with [extensions](#extensions).
+**无内置待办事项。** 它们会使模型混淆。使用 TODO.md 文件，或使用 [扩展](#扩展) 构建你自己的。
 
-**No background bash.** Use tmux. Full observability, direct interaction.
+**无后台 bash。** 使用 tmux。完全的可观测性，直接交互。
 
-Read the [blog post](https://mariozechner.at/posts/2025-11-30-pi-coding-agent/) for the full rationale.
+阅读 [博客文章](https://mariozechner.at/posts/2025-11-30-pi-coding-agent/) 了解完整的理由。
 
 ---
 
-## CLI Reference
+## CLI 参考
 
 ```bash
 pi [options] [@files...] [messages...]
 ```
 
-### Package Commands
+### 包命令
 
 ```bash
-pi install <source> [-l]    # Install package, -l for project-local
-pi remove <source> [-l]     # Remove package
-pi update [source]          # Update packages (skips pinned)
-pi list                     # List installed packages
-pi config                   # Enable/disable package resources
+pi install <source> [-l]    # 安装包，-l 表示项目本地
+pi remove <source> [-l]     # 移除包
+pi update [source]          # 更新包（跳过固定版本）
+pi list                     # 列出已安装的包
+pi config                   # 启用/禁用包资源
 ```
 
-### Modes
+### 模式
 
-| Flag | Description |
+| 标志 | 描述 |
 |------|-------------|
-| (default) | Interactive mode |
-| `-p`, `--print` | Print response and exit |
-| `--mode json` | Output all events as JSON lines (see [docs/json.md](docs/json.md)) |
-| `--mode rpc` | RPC mode for process integration (see [docs/rpc.md](docs/rpc.md)) |
-| `--export <in> [out]` | Export session to HTML |
+| (默认) | 交互模式 |
+| `-p`, `--print` | 打印响应并退出 |
+| `--mode json` | 将所有事件输出为 JSON 行（参见 [docs/json.md](docs/json.md)） |
+| `--mode rpc` | 用于进程集成的 RPC 模式（参见 [docs/rpc.md](docs/rpc.md)） |
+| `--export <in> [out]` | 将会话导出为 HTML |
 
-### Model Options
+### 模型选项
 
-| Option | Description |
+| 选项 | 描述 |
 |--------|-------------|
-| `--provider <name>` | Provider (anthropic, openai, google, etc.) |
-| `--model <id>` | Model ID |
-| `--api-key <key>` | API key (overrides env vars) |
+| `--provider <name>` | 提供者 (anthropic, openai, google 等) |
+| `--model <id>` | 模型 ID |
+| `--api-key <key>` | API 密钥（覆盖环境变量） |
 | `--thinking <level>` | `off`, `minimal`, `low`, `medium`, `high`, `xhigh` |
-| `--models <patterns>` | Comma-separated patterns for Ctrl+P cycling |
-| `--list-models [search]` | List available models |
+| `--models <patterns>` | 用于 Ctrl+P 循环的逗号分隔模式 |
+| `--list-models [search]` | 列出可用模型 |
 
-### Session Options
+### 会话选项
 
-| Option | Description |
+| 选项 | 描述 |
 |--------|-------------|
-| `-c`, `--continue` | Continue most recent session |
-| `-r`, `--resume` | Browse and select session |
-| `--session <path>` | Use specific session file or partial UUID |
-| `--session-dir <dir>` | Custom session storage directory |
-| `--no-session` | Ephemeral mode (don't save) |
+| `-c`, `--continue` | 继续最近的会话 |
+| `-r`, `--resume` | 浏览并选择会话 |
+| `--session <path>` | 使用特定会话文件或部分 UUID |
+| `--session-dir <dir>` | 自定义会话存储目录 |
+| `--no-session` | 临时模式（不保存） |
 
-### Tool Options
+### 工具选项
 
-| Option | Description |
+| 选项 | 描述 |
 |--------|-------------|
-| `--tools <list>` | Enable specific built-in tools (default: `read,bash,edit,write`) |
-| `--no-tools` | Disable all built-in tools (extension tools still work) |
+| `--tools <list>` | 启用特定的内置工具（默认：`read,bash,edit,write`） |
+| `--no-tools` | 禁用所有内置工具（扩展工具仍然工作） |
 
-Available built-in tools: `read`, `bash`, `edit`, `write`, `grep`, `find`, `ls`
+可用的内置工具：`read`, `bash`, `edit`, `write`, `grep`, `find`, `ls`
 
-### Resource Options
+### 资源选项
 
-| Option | Description |
+| 选项 | 描述 |
 |--------|-------------|
-| `-e`, `--extension <source>` | Load extension from path, npm, or git (repeatable) |
-| `--no-extensions` | Disable extension discovery |
-| `--skill <path>` | Load skill (repeatable) |
-| `--no-skills` | Disable skill discovery |
-| `--prompt-template <path>` | Load prompt template (repeatable) |
-| `--no-prompt-templates` | Disable prompt template discovery |
-| `--theme <path>` | Load theme (repeatable) |
-| `--no-themes` | Disable theme discovery |
+| `-e`, `--extension <source>` | 从路径、npm 或 git 加载扩展（可重复） |
+| `--no-extensions` | 禁用扩展发现 |
+| `--skill <path>` | 加载技能（可重复） |
+| `--no-skills` | 禁用技能发现 |
+| `--prompt-template <path>` | 加载提示词模板（可重复） |
+| `--no-prompt-templates` | 禁用提示词模板发现 |
+| `--theme <path>` | 加载主题（可重复） |
+| `--no-themes` | 禁用主题发现 |
 
-Combine `--no-*` with explicit flags to load exactly what you need, ignoring settings.json (e.g., `--no-extensions -e ./my-ext.ts`).
+将 `--no-*` 与显式标志结合使用以仅加载你需要的资源，忽略 settings.json（例如，`--no-extensions -e ./my-ext.ts`）。
 
-### Other Options
+### 其他选项
 
-| Option | Description |
+| 选项 | 描述 |
 |--------|-------------|
-| `--system-prompt <text>` | Replace default prompt (context files and skills still appended) |
-| `--append-system-prompt <text>` | Append to system prompt |
-| `--verbose` | Force verbose startup |
-| `-h`, `--help` | Show help |
-| `-v`, `--version` | Show version |
+| `--system-prompt <text>` | 替换默认提示词（上下文文件和技能仍然追加） |
+| `--append-system-prompt <text>` | 追加到系统提示词 |
+| `--verbose` | 强制详细启动 |
+| `-h`, `--help` | 显示帮助 |
+| `-v`, `--version` | 显示版本 |
 
-### File Arguments
+### 文件参数
 
-Prefix files with `@` to include in the message:
+在文件前加上 `@` 以将其包含在消息中：
 
 ```bash
 pi @prompt.md "Answer this"
@@ -512,52 +512,52 @@ pi -p @screenshot.png "What's in this image?"
 pi @code.ts @test.ts "Review these files"
 ```
 
-### Examples
+### 示例
 
 ```bash
-# Interactive with initial prompt
+# 带初始提示词的交互模式
 pi "List all .ts files in src/"
 
-# Non-interactive
+# 非交互模式
 pi -p "Summarize this codebase"
 
-# Different model
+# 不同模型
 pi --provider openai --model gpt-4o "Help me refactor"
 
-# Limit model cycling
+# 限制模型循环
 pi --models "claude-*,gpt-4o"
 
-# Read-only mode
+# 只读模式
 pi --tools read,grep,find,ls -p "Review the code"
 
-# High thinking level
+# 高思考级别
 pi --thinking high "Solve this complex problem"
 ```
 
-### Environment Variables
+### 环境变量
 
-| Variable | Description |
+| 变量 | 描述 |
 |----------|-------------|
-| `PI_CODING_AGENT_DIR` | Override config directory (default: `~/.pi/agent`) |
-| `PI_PACKAGE_DIR` | Override package directory (useful for Nix/Guix where store paths tokenize poorly) |
-| `PI_SKIP_VERSION_CHECK` | Skip version check at startup |
-| `PI_CACHE_RETENTION` | Set to `long` for extended prompt cache (Anthropic: 1h, OpenAI: 24h) |
-| `VISUAL`, `EDITOR` | External editor for Ctrl+G |
+| `PI_CODING_AGENT_DIR` | 覆盖配置目录（默认：`~/.pi/agent`） |
+| `PI_PACKAGE_DIR` | 覆盖包目录（对于存储路径分词效果不佳的 Nix/Guix 很有用） |
+| `PI_SKIP_VERSION_CHECK` | 启动时跳过版本检查 |
+| `PI_CACHE_RETENTION` | 设置为 `long` 以延长提示缓存（Anthropic: 1h, OpenAI: 24h） |
+| `VISUAL`, `EDITOR` | Ctrl+G 的外部编辑器 |
 
 ---
 
-## Contributing & Development
+## 贡献与开发
 
-See [CONTRIBUTING.md](../../CONTRIBUTING.md) for guidelines and [docs/development.md](docs/development.md) for setup, forking, and debugging.
+有关指南，请参阅 [CONTRIBUTING.md](../../CONTRIBUTING.md)；有关设置、复刻和调试，请参阅 [docs/development.md](docs/development.md)。
 
 ---
 
-## License
+## 许可证
 
 MIT
 
-## See Also
+## 另请参阅
 
-- [@mariozechner/pi-ai](https://www.npmjs.com/package/@mariozechner/pi-ai): Core LLM toolkit
-- [@mariozechner/pi-agent](https://www.npmjs.com/package/@mariozechner/pi-agent): Agent framework
-- [@mariozechner/pi-tui](https://www.npmjs.com/package/@mariozechner/pi-tui): Terminal UI components
+- [@mariozechner/pi-ai](https://www.npmjs.com/package/@mariozechner/pi-ai): 核心 LLM 工具包
+- [@mariozechner/pi-agent](https://www.npmjs.com/package/@mariozechner/pi-agent): 智能体框架
+- [@mariozechner/pi-tui](https://www.npmjs.com/package/@mariozechner/pi-tui): 终端 UI 组件

@@ -1,278 +1,278 @@
 # pi
 
-Deploy and manage LLMs on GPU pods with automatic vLLM configuration for agentic workloads.
+在 GPU Pod 上部署和管理 LLM，并为智能体工作负载自动配置 vLLM。
 
-## Installation
+## 安装
 
 ```bash
 npm install -g @mariozechner/pi
 ```
 
-## What is pi?
+## 什么是 pi?
 
-`pi` simplifies running large language models on remote GPU pods. It automatically:
-- Sets up vLLM on fresh Ubuntu pods
-- Configures tool calling for agentic models (Qwen, GPT-OSS, GLM, etc.)
-- Manages multiple models on the same pod with "smart" GPU allocation
-- Provides OpenAI-compatible API endpoints for each model
-- Includes an interactive agent with file system tools for testing
+`pi` 简化了在远程 GPU Pod 上运行大语言模型的过程。它自动执行以下操作：
+- 在新的 Ubuntu Pod 上设置 vLLM
+- 为智能体模型（Qwen, GPT-OSS, GLM 等）配置工具调用
+- 通过“智能”GPU 分配在同一 Pod 上管理多个模型
+- 为每个模型提供 OpenAI 兼容的 API 端点
+- 包含一个带有文件系统工具的交互式智能体以进行测试
 
-## Quick Start
+## 快速开始
 
 ```bash
-# Set required environment variables
-export HF_TOKEN=your_huggingface_token      # Get from https://huggingface.co/settings/tokens
-export PI_API_KEY=your_api_key              # Any string you want for API authentication
+# 设置所需的环境变量
+export HF_TOKEN=your_huggingface_token      # 从 https://huggingface.co/settings/tokens 获取
+export PI_API_KEY=your_api_key              # 用于 API 身份验证的任意字符串
 
-# Setup a DataCrunch pod with NFS storage (models path auto-extracted)
+# 设置具有 NFS 存储的 DataCrunch Pod（自动提取模型路径）
 pi pods setup dc1 "ssh root@1.2.3.4" \
   --mount "sudo mount -t nfs -o nconnect=16 nfs.fin-02.datacrunch.io:/your-pseudo /mnt/hf-models"
 
-# Start a model (automatic configuration for known models)
+# 启动模型（针对已知模型的自动配置）
 pi start Qwen/Qwen2.5-Coder-32B-Instruct --name qwen
 
-# Send a single message to the model
+# 向模型发送单条消息
 pi agent qwen "What is the Fibonacci sequence?"
 
-# Interactive chat mode with file system tools
+# 带有文件系统工具的交互式聊天模式
 pi agent qwen -i
 
-# Use with any OpenAI-compatible client
+# 与任何 OpenAI 兼容的客户端一起使用
 export OPENAI_BASE_URL='http://1.2.3.4:8001/v1'
 export OPENAI_API_KEY=$PI_API_KEY
 ```
 
-## Prerequisites
+## 先决条件
 
 - Node.js 18+
-- HuggingFace token (for model downloads)
-- GPU pod with:
-  - Ubuntu 22.04 or 24.04
-  - SSH root access
-  - NVIDIA drivers installed
-  - Persistent storage for models
+- HuggingFace 令牌（用于下载模型）
+- 具有以下条件的 GPU Pod：
+  - Ubuntu 22.04 或 24.04
+  - SSH root 访问权限
+  - 已安装 NVIDIA 驱动程序
+  - 用于模型的持久存储
 
-## Supported Providers
+## 支持的提供者
 
-### Primary Support
+### 主要支持
 
-**DataCrunch** - Best for shared model storage
-- NFS volumes sharable across multiple pods in same region
-- Models download once, use everywhere
-- Ideal for teams or multiple experiments
+**DataCrunch** - 最适合共享模型存储
+- NFS 卷可在同一区域的多个 Pod 之间共享
+- 模型下载一次，随处使用
+- 非常适合团队或多个实验
 
-**RunPod** - Good persistent storage
-- Network volumes persist independently
-- Cannot share between running pods simultaneously
-- Good for single-pod workflows
+**RunPod** - 良好的持久存储
+- 网络卷独立持久化
+- 无法同时在运行的 Pod 之间共享
+- 适合单 Pod 工作流
 
-### Also Works With
-- Vast.ai (volumes locked to specific machine)
-- Prime Intellect (no persistent storage)
-- AWS EC2 (with EFS setup)
-- Any Ubuntu machine with NVIDIA GPUs, CUDA driver, and SSH
+### 也适用于
+- Vast.ai (卷锁定到特定机器)
+- Prime Intellect (无持久存储)
+- AWS EC2 (配合 EFS 设置)
+- 任何带有 NVIDIA GPU、CUDA 驱动程序和 SSH 的 Ubuntu 机器
 
-## Commands
+## 命令
 
-### Pod Management
+### Pod 管理
 
 ```bash
-pi pods setup <name> "<ssh>" [options]        # Setup new pod
-  --mount "<mount_command>"                   # Run mount command during setup
-  --models-path <path>                        # Override extracted path (optional)
-  --vllm release|nightly|gpt-oss              # vLLM version (default: release)
+pi pods setup <name> "<ssh>" [options]        # 设置新 Pod
+  --mount "<mount_command>"                   # 在设置期间运行挂载命令
+  --models-path <path>                        # 覆盖提取的路径（可选）
+  --vllm release|nightly|gpt-oss              # vLLM 版本（默认：release）
 
-pi pods                                       # List all configured pods
-pi pods active <name>                         # Switch active pod
-pi pods remove <name>                         # Remove pod from local config
-pi shell [<name>]                             # SSH into pod
-pi ssh [<name>] "<command>"                   # Run command on pod
+pi pods                                       # 列出所有配置的 Pod
+pi pods active <name>                         # 切换活动 Pod
+pi pods remove <name>                         # 从本地配置中移除 Pod
+pi shell [<name>]                             # SSH 进入 Pod
+pi ssh [<name>] "<command>"                   # 在 Pod 上运行命令
 ```
 
-**Note**: When using `--mount`, the models path is automatically extracted from the mount command's target directory. You only need `--models-path` if not using `--mount` or to override the extracted path.
+**注意**：使用 `--mount` 时，模型路径会自动从挂载命令的目标目录中提取。仅当不使用 `--mount` 或要覆盖提取的路径时才需要 `--models-path`。
 
-#### vLLM Version Options
+#### vLLM 版本选项
 
-- `release` (default): Stable vLLM release, recommended for most users
-- `nightly`: Latest vLLM features, needed for newest models like GLM-4.5
-- `gpt-oss`: Special build for OpenAI's GPT-OSS models only
+- `release` (默认): 稳定的 vLLM 版本，推荐大多数用户使用
+- `nightly`: 最新的 vLLM 功能，最新的模型（如 GLM-4.5）需要
+- `gpt-oss`: 仅适用于 OpenAI 的 GPT-OSS 模型的特殊构建
 
-### Model Management
+### 模型管理
 
 ```bash
-pi start <model> --name <name> [options]  # Start a model
-  --memory <percent>      # GPU memory: 30%, 50%, 90% (default: 90%)
-  --context <size>        # Context window: 4k, 8k, 16k, 32k, 64k, 128k
-  --gpus <count>          # Number of GPUs to use (predefined models only)
-  --pod <name>            # Target specific pod (overrides active)
-  --vllm <args...>        # Pass custom args directly to vLLM
+pi start <model> --name <name> [options]  # 启动模型
+  --memory <percent>      # GPU 显存: 30%, 50%, 90% (默认: 90%)
+  --context <size>        # 上下文窗口: 4k, 8k, 16k, 32k, 64k, 128k
+  --gpus <count>          # 使用的 GPU 数量（仅限预定义模型）
+  --pod <name>            # 目标特定 Pod（覆盖活动 Pod）
+  --vllm <args...>        # 将自定义参数直接传递给 vLLM
 
-pi stop [<name>]          # Stop model (or all if no name given)
-pi list                   # List running models with status
-pi logs <name>            # Stream model logs (tail -f)
+pi stop [<name>]          # 停止模型（如果未指定名称则停止所有）
+pi list                   # 列出正在运行的模型及其状态
+pi logs <name>            # 流式传输模型日志 (tail -f)
 ```
 
-### Agent & Chat Interface
+### 智能体与聊天界面
 
 ```bash
-pi agent <name> "<message>"               # Single message to model
-pi agent <name> "<msg1>" "<msg2>"         # Multiple messages in sequence
-pi agent <name> -i                        # Interactive chat mode
-pi agent <name> -i -c                     # Continue previous session
+pi agent <name> "<message>"               # 向模型发送单条消息
+pi agent <name> "<msg1>" "<msg2>"         # 按顺序发送多条消息
+pi agent <name> -i                        # 交互式聊天模式
+pi agent <name> -i -c                     # 继续上一次会话
 
-# Standalone OpenAI-compatible agent (works with any API)
+# 独立的 OpenAI 兼容智能体（适用于任何 API）
 pi-agent --base-url http://localhost:8000/v1 --model llama-3.1 "Hello"
-pi-agent --api-key sk-... "What is 2+2?"  # Uses OpenAI by default
-pi-agent --json "What is 2+2?"            # Output event stream as JSONL
-pi-agent -i                                # Interactive mode
+pi-agent --api-key sk-... "What is 2+2?"  # 默认使用 OpenAI
+pi-agent --json "What is 2+2?"            # 将事件流输出为 JSONL
+pi-agent -i                                # 交互模式
 ```
 
-The agent includes tools for file operations (read, list, bash, glob, rg) to test agentic capabilities, particularly useful for code navigation and analysis tasks.
+该智能体包含用于文件操作（read, list, bash, glob, rg）的工具，以测试智能体能力，对于代码导航和分析任务特别有用。
 
-## Predefined Model Configurations
+## 预定义模型配置
 
-`pi` includes predefined configurations for popular agentic models, so you do not have to specify `--vllm` arguments manually. `pi` will also check if the model you selected can actually run on your pod with respect to the number of GPUs and available VRAM. Run `pi start` without additional arguments to see a list of predefined models that can run on the active pod.
+`pi` 包含针对流行智能体模型的预定义配置，因此你无需手动指定 `--vllm` 参数。`pi` 还会根据 GPU 数量和可用显存检查你选择的模型是否真的可以在你的 Pod 上运行。运行不带额外参数的 `pi start` 可以查看可以在活动 Pod 上运行的预定义模型列表。
 
-### Qwen Models
+### Qwen 模型
 ```bash
-# Qwen2.5-Coder-32B - Excellent coding model, fits on single H100/H200
+# Qwen2.5-Coder-32B - 出色的编码模型，适合单个 H100/H200
 pi start Qwen/Qwen2.5-Coder-32B-Instruct --name qwen
 
-# Qwen3-Coder-30B - Advanced reasoning with tool use
+# Qwen3-Coder-30B - 具有工具使用的高级推理
 pi start Qwen/Qwen3-Coder-30B-A3B-Instruct --name qwen3
 
-# Qwen3-Coder-480B - State-of-the-art on 8xH200 (data-parallel mode)
+# Qwen3-Coder-480B - 8xH200 上的最先进模型（数据并行模式）
 pi start Qwen/Qwen3-Coder-480B-A35B-Instruct-FP8 --name qwen-480b
 ```
 
-### GPT-OSS Models
+### GPT-OSS 模型
 ```bash
-# Requires special vLLM build during setup
+# 需要在设置期间使用特殊的 vLLM 构建
 pi pods setup gpt-pod "ssh root@1.2.3.4" --models-path /workspace --vllm gpt-oss
 
-# GPT-OSS-20B - Fits on 16GB+ VRAM
+# GPT-OSS-20B - 适合 16GB+ 显存
 pi start openai/gpt-oss-20b --name gpt20
 
-# GPT-OSS-120B - Needs 60GB+ VRAM
+# GPT-OSS-120B - 需要 60GB+ 显存
 pi start openai/gpt-oss-120b --name gpt120
 ```
 
-### GLM Models
+### GLM 模型
 ```bash
-# GLM-4.5 - Requires 8-16 GPUs, includes thinking mode
+# GLM-4.5 - 需要 8-16 个 GPU，包含思考模式
 pi start zai-org/GLM-4.5 --name glm
 
-# GLM-4.5-Air - Smaller version, 1-2 GPUs
+# GLM-4.5-Air - 较小版本，1-2 个 GPU
 pi start zai-org/GLM-4.5-Air --name glm-air
 ```
 
-### Custom Models with --vllm
+### 使用 --vllm 的自定义模型
 
-For models not in the predefined list, use `--vllm` to pass arguments directly to vLLM:
+对于不在预定义列表中的模型，使用 `--vllm` 将参数直接传递给 vLLM：
 
 ```bash
-# DeepSeek with custom settings
+# 具有自定义设置的 DeepSeek
 pi start deepseek-ai/DeepSeek-V3 --name deepseek --vllm \
   --tensor-parallel-size 4 --trust-remote-code
 
-# Mistral with pipeline parallelism
+# 具有流水线并行的 Mistral
 pi start mistralai/Mixtral-8x22B-Instruct-v0.1 --name mixtral --vllm \
   --tensor-parallel-size 8 --pipeline-parallel-size 2
 
-# Any model with specific tool parser
+# 具有特定工具解析器的任何模型
 pi start some/model --name mymodel --vllm \
   --tool-call-parser hermes --enable-auto-tool-choice
 ```
 
-## DataCrunch Setup
+## DataCrunch 设置
 
-DataCrunch offers the best experience with shared NFS storage across pods:
+DataCrunch 通过跨 Pod 的共享 NFS 存储提供最佳体验：
 
-### 1. Create Shared Filesystem (SFS)
-- Go to DataCrunch dashboard → Storage → Create SFS
-- Choose size and datacenter
-- Note the mount command (e.g., `sudo mount -t nfs -o nconnect=16 nfs.fin-02.datacrunch.io:/hf-models-fin02-8ac1bab7 /mnt/hf-models-fin02`)
+### 1. 创建共享文件系统 (SFS)
+- 转到 DataCrunch 仪表板 → Storage → Create SFS
+- 选择大小和数据中心
+- 记下挂载命令（例如 `sudo mount -t nfs -o nconnect=16 nfs.fin-02.datacrunch.io:/hf-models-fin02-8ac1bab7 /mnt/hf-models-fin02`）
 
-### 2. Create GPU Instance
-- Create instance in same datacenter as SFS
-- Share the SFS with the instance
-- Get SSH command from dashboard
+### 2. 创建 GPU 实例
+- 在与 SFS 相同的数据中心创建实例
+- 与实例共享 SFS
+- 从仪表板获取 SSH 命令
 
-### 3. Setup with pi
+### 3. 使用 pi 设置
 ```bash
-# Get mount command from DataCrunch dashboard
+# 从 DataCrunch 仪表板获取挂载命令
 pi pods setup dc1 "ssh root@instance.datacrunch.io" \
   --mount "sudo mount -t nfs -o nconnect=16 nfs.fin-02.datacrunch.io:/your-pseudo /mnt/hf-models"
 
-# Models automatically stored in /mnt/hf-models (extracted from mount command)
+# 模型自动存储在 /mnt/hf-models（从挂载命令中提取）
 ```
 
-### 4. Benefits
-- Models persist across instance restarts
-- Share models between multiple instances in same datacenter
-- Download once, use everywhere
-- Pay only for storage, not compute time during downloads
+### 4. 优势
+- 模型在实例重启后持久存在
+- 在同一数据中心的多个实例之间共享模型
+- 下载一次，随处使用
+- 仅支付存储费用，无需支付下载期间的计算时间
 
-## RunPod Setup
+## RunPod 设置
 
-RunPod offers good persistent storage with network volumes:
+RunPod 通过网络卷提供良好的持久存储：
 
-### 1. Create Network Volume (optional)
-- Go to RunPod dashboard → Storage → Create Network Volume
-- Choose size and region
+### 1. 创建网络卷（可选）
+- 转到 RunPod 仪表板 → Storage → Create Network Volume
+- 选择大小和区域
 
-### 2. Create GPU Pod
-- Select "Network Volume" during pod creation (if using)
-- Attach your volume to `/runpod-volume`
-- Get SSH command from pod details
+### 2. 创建 GPU Pod
+- 在 Pod 创建期间选择 "Network Volume"（如果使用）
+- 将卷挂载到 `/runpod-volume`
+- 从 Pod 详情获取 SSH 命令
 
-### 3. Setup with pi
+### 3. 使用 pi 设置
 ```bash
-# With network volume
+# 使用网络卷
 pi pods setup runpod "ssh root@pod.runpod.io" --models-path /runpod-volume
 
-# Or use workspace (persists with pod but not shareable)
+# 或者使用工作区（随 Pod 持久化但不可共享）
 pi pods setup runpod "ssh root@pod.runpod.io" --models-path /workspace
 ```
 
 
-## Multi-GPU Support
+## 多 GPU 支持
 
-### Automatic GPU Assignment
-When running multiple models, pi automatically assigns them to different GPUs:
+### 自动 GPU 分配
+当运行多个模型时，pi 自动将它们分配给不同的 GPU：
 ```bash
-pi start model1 --name m1  # Auto-assigns to GPU 0
-pi start model2 --name m2  # Auto-assigns to GPU 1
-pi start model3 --name m3  # Auto-assigns to GPU 2
+pi start model1 --name m1  # 自动分配给 GPU 0
+pi start model2 --name m2  # 自动分配给 GPU 1
+pi start model3 --name m3  # 自动分配给 GPU 2
 ```
 
-### Specify GPU Count for Predefined Models
-For predefined models with multiple configurations, use `--gpus` to control GPU usage:
+### 为预定义模型指定 GPU 数量
+对于具有多种配置的预定义模型，使用 `--gpus` 控制 GPU 使用：
 ```bash
-# Run Qwen on 1 GPU instead of all available
+# 在 1 个 GPU 上运行 Qwen，而不是所有可用 GPU
 pi start Qwen/Qwen2.5-Coder-32B-Instruct --name qwen --gpus 1
 
-# Run GLM-4.5 on 8 GPUs (if it has an 8-GPU config)
+# 在 8 个 GPU 上运行 GLM-4.5（如果它有 8-GPU 配置）
 pi start zai-org/GLM-4.5 --name glm --gpus 8
 ```
 
-If the model doesn't have a configuration for the requested GPU count, you'll see available options.
+如果模型没有针对请求的 GPU 数量的配置，你将看到可用选项。
 
-### Tensor Parallelism for Large Models
-For models that don't fit on a single GPU:
+### 大型模型的张量并行
+对于无法放入单个 GPU 的模型：
 ```bash
-# Use all available GPUs
+# 使用所有可用 GPU
 pi start meta-llama/Llama-3.1-70B-Instruct --name llama70b --vllm \
   --tensor-parallel-size 4
 
-# Specific GPU count
+# 特定 GPU 数量
 pi start Qwen/Qwen3-Coder-480B-A35B-Instruct-FP8 --name qwen480 --vllm \
   --data-parallel-size 8 --enable-expert-parallel
 ```
 
-## API Integration
+## API 集成
 
-All models expose OpenAI-compatible endpoints:
+所有模型都公开 OpenAI 兼容的端点：
 
 ```python
 from openai import OpenAI
@@ -282,7 +282,7 @@ client = OpenAI(
     api_key="your-pi-api-key"
 )
 
-# Chat completion with tool calling
+# 带有工具调用的聊天完成
 response = client.chat.completions.create(
     model="Qwen/Qwen2.5-Coder-32B-Instruct",
     messages=[
@@ -306,115 +306,115 @@ response = client.chat.completions.create(
 )
 ```
 
-## Standalone Agent CLI
+## 独立智能体 CLI
 
-`pi` includes a standalone OpenAI-compatible agent that can work with any API:
+`pi` 包含一个独立的 OpenAI 兼容智能体，可以与任何 API 一起使用：
 
 ```bash
-# Install globally to get pi-agent command
+# 全局安装以获取 pi-agent 命令
 npm install -g @mariozechner/pi
 
-# Use with OpenAI
+# 与 OpenAI 一起使用
 pi-agent --api-key sk-... "What is machine learning?"
 
-# Use with local vLLM
+# 与本地 vLLM 一起使用
 pi-agent --base-url http://localhost:8000/v1 \
          --model meta-llama/Llama-3.1-8B-Instruct \
          --api-key dummy \
          "Explain quantum computing"
 
-# Interactive mode
+# 交互模式
 pi-agent -i
 
-# Continue previous session
+# 继续上一次会话
 pi-agent --continue "Follow up question"
 
-# Custom system prompt
+# 自定义系统提示词
 pi-agent --system-prompt "You are a Python expert" "Write a web scraper"
 
-# Use responses API (for GPT-OSS models)
+# 使用 responses API（用于 GPT-OSS 模型）
 pi-agent --api responses --model openai/gpt-oss-20b "Hello"
 ```
 
-The agent supports:
-- Session persistence across conversations
-- Interactive TUI mode with syntax highlighting
-- File system tools (read, list, bash, glob, rg) for code navigation
-- Both Chat Completions and Responses API formats
-- Custom system prompts
+该智能体支持：
+- 跨对话的会话持久化
+- 带有语法高亮的交互式 TUI 模式
+- 用于代码导航的文件系统工具 (read, list, bash, glob, rg)
+- Chat Completions 和 Responses API 格式
+- 自定义系统提示词
 
-## Tool Calling Support
+## 工具调用支持
 
-`pi` automatically configures appropriate tool calling parsers for known models:
+`pi` 为已知模型自动配置适当的工具调用解析器：
 
-- **Qwen models**: `hermes` parser (Qwen3-Coder uses `qwen3_coder`)
-- **GLM models**: `glm4_moe` parser with reasoning support
-- **GPT-OSS models**: Uses `/v1/responses` endpoint, as tool calling (function calling in OpenAI parlance) is currently a [WIP with the `v1/chat/completions` endpoint](https://docs.vllm.ai/projects/recipes/en/latest/OpenAI/GPT-OSS.html#tool-use).
-- **Custom models**: Specify with `--vllm --tool-call-parser <parser> --enable-auto-tool-choice`
+- **Qwen 模型**: `hermes` 解析器 (Qwen3-Coder 使用 `qwen3_coder`)
+- **GLM 模型**: 带有推理支持的 `glm4_moe` 解析器
+- **GPT-OSS 模型**: 使用 `/v1/responses` 端点，因为工具调用（在 OpenAI 术语中为函数调用）目前在 [`v1/chat/completions` 端点中是 WIP](https://docs.vllm.ai/projects/recipes/en/latest/OpenAI/GPT-OSS.html#tool-use)。
+- **自定义模型**: 使用 `--vllm --tool-call-parser <parser> --enable-auto-tool-choice` 指定
 
-To disable tool calling:
+要禁用工具调用：
 ```bash
 pi start model --name mymodel --vllm --disable-tool-call-parser
 ```
 
-## Memory and Context Management
+## 内存和上下文管理
 
-### GPU Memory Allocation
-Controls how much GPU memory vLLM pre-allocates:
-- `--memory 30%`: High concurrency, limited context
-- `--memory 50%`: Balanced (default)
-- `--memory 90%`: Maximum context, low concurrency
+### GPU 显存分配
+控制 vLLM 预分配多少 GPU 显存：
+- `--memory 30%`: 高并发，有限上下文
+- `--memory 50%`: 平衡（默认）
+- `--memory 90%`: 最大上下文，低并发
 
-### Context Window
-Sets maximum input + output tokens:
-- `--context 4k`: 4,096 tokens total
-- `--context 32k`: 32,768 tokens total
-- `--context 128k`: 131,072 tokens total
+### 上下文窗口
+设置最大输入 + 输出 Token：
+- `--context 4k`: 总共 4,096 Token
+- `--context 32k`: 总共 32,768 Token
+- `--context 128k`: 总共 131,072 Token
 
-Example for coding workload:
+编码工作负载示例：
 ```bash
-# Large context for code analysis, moderate concurrency
+# 用于代码分析的大上下文，中等并发
 pi start Qwen/Qwen2.5-Coder-32B-Instruct --name coder \
   --context 64k --memory 70%
 ```
 
-**Note**: When using `--vllm`, the `--memory`, `--context`, and `--gpus` parameters are ignored. You'll see a warning if you try to use them together.
+**注意**：使用 `--vllm` 时，`--memory`, `--context`, 和 `--gpus` 参数将被忽略。如果你尝试同时使用它们，将会看到警告。
 
-## Session Persistence
+## 会话持久化
 
-The interactive agent mode (`-i`) saves sessions for each project directory:
+交互式智能体模式 (`-i`) 为每个项目目录保存会话：
 
 ```bash
-# Start new session
+# 开始新会话
 pi agent qwen -i
 
-# Continue previous session (maintains chat history)
+# 继续上一次会话（保留聊天历史）
 pi agent qwen -i -c
 ```
 
-Sessions are stored in `~/.pi/sessions/` organized by project path and include:
-- Complete conversation history
-- Tool call results
-- Token usage statistics
+会话存储在 `~/.pi/sessions/` 中，按项目路径组织，包括：
+- 完整的对话历史记录
+- 工具调用结果
+- Token 使用统计
 
-## Architecture & Event System
+## 架构与事件系统
 
-The agent uses a unified event-based architecture where all interactions flow through `AgentEvent` types. This enables:
-- Consistent UI rendering across console and TUI modes
-- Session recording and replay
-- Clean separation between API calls and UI updates
-- JSON output mode for programmatic integration
+该智能体使用统一的基于事件的架构，所有交互都通过 `AgentEvent` 类型进行。这使得：
+- 跨控制台和 TUI 模式的一致 UI 渲染
+- 会话录制和回放
+- API 调用和 UI 更新之间的清晰分离
+- 用于编程集成的 JSON 输出模式
 
-Events are automatically converted to the appropriate API format (Chat Completions or Responses) based on the model type.
+事件会根据模型类型自动转换为适当的 API 格式（Chat Completions 或 Responses）。
 
-### JSON Output Mode
+### JSON 输出模式
 
-Use `--json` flag to output the event stream as JSONL (JSON Lines) for programmatic consumption:
+使用 `--json` 标志将事件流输出为 JSONL (JSON Lines) 以供编程使用：
 ```bash
 pi-agent --api-key sk-... --json "What is 2+2?"
 ```
 
-Each line is a complete JSON object representing an event:
+每一行都是一个表示事件的完整 JSON 对象：
 ```jsonl
 {"type":"user_message","text":"What is 2+2?"}
 {"type":"assistant_start"}
@@ -422,61 +422,61 @@ Each line is a complete JSON object representing an event:
 {"type":"token_usage","inputTokens":10,"outputTokens":5,"totalTokens":15,"cacheReadTokens":0,"cacheWriteTokens":0}
 ```
 
-## Troubleshooting
+## 故障排除
 
-### OOM (Out of Memory) Errors
-- Reduce `--memory` percentage
-- Use smaller model or quantized version (FP8)
-- Reduce `--context` size
+### 内存溢出 (OOM) 错误
+- 降低 `--memory` 百分比
+- 使用较小的模型或量化版本 (FP8)
+- 减小 `--context` 大小
 
-### Model Won't Start
+### 模型无法启动
 ```bash
-# Check GPU usage
+# 检查 GPU 使用情况
 pi ssh "nvidia-smi"
 
-# Check if port is in use
+# 检查端口是否被占用
 pi list
 
-# Force stop all models
+# 强制停止所有模型
 pi stop
 ```
 
-### Tool Calling Issues
-- Not all models support tool calling reliably
-- Try different parser: `--vllm --tool-call-parser mistral`
-- Or disable: `--vllm --disable-tool-call-parser`
+### 工具调用问题
+- 并非所有模型都可靠地支持工具调用
+- 尝试不同的解析器：`--vllm --tool-call-parser mistral`
+- 或者禁用：`--vllm --disable-tool-call-parser`
 
-### Access Denied for Models
-Some models (Llama, Mistral) require HuggingFace access approval. Visit the model page and click "Request access".
+### 模型访问被拒绝
+某些模型 (Llama, Mistral) 需要 HuggingFace 访问批准。访问模型页面并点击 "Request access"。
 
-### vLLM Build Issues
-If using `--vllm nightly` fails, try:
-- Use `--vllm release` for stable version
-- Check CUDA compatibility with `pi ssh "nvidia-smi"`
+### vLLM 构建问题
+如果使用 `--vllm nightly` 失败，请尝试：
+- 使用 `--vllm release` 获取稳定版本
+- 使用 `pi ssh "nvidia-smi"` 检查 CUDA 兼容性
 
-### Agent Not Finding Messages
-If the agent shows configuration instead of your message, ensure quotes around messages with special characters:
+### 智能体未找到消息
+如果智能体显示配置而不是你的消息，请确保使用引号将包含特殊字符的消息括起来：
 ```bash
-# Good
+# 好
 pi agent qwen "What is this file about?"
 
-# Bad (shell might interpret special chars)
+# 坏（shell 可能会解释特殊字符）
 pi agent qwen What is this file about?
 ```
 
-## Advanced Usage
+## 高级用法
 
-### Working with Multiple Pods
+### 使用多个 Pod
 ```bash
-# Override active pod for any command
+# 为任何命令覆盖活动 Pod
 pi start model --name test --pod dev-pod
 pi list --pod prod-pod
 pi stop test --pod dev-pod
 ```
 
-### Custom vLLM Arguments
+### 自定义 vLLM 参数
 ```bash
-# Pass any vLLM argument after --vllm
+# 在 --vllm 之后传递任何 vLLM 参数
 pi start model --name custom --vllm \
   --quantization awq \
   --enable-prefix-caching \
@@ -484,28 +484,28 @@ pi start model --name custom --vllm \
   --gpu-memory-utilization 0.95
 ```
 
-### Monitoring
+### 监控
 ```bash
-# Watch GPU utilization
+# 监视 GPU 利用率
 pi ssh "watch -n 1 nvidia-smi"
 
-# Check model downloads
+# 检查模型下载
 pi ssh "du -sh ~/.cache/huggingface/hub/*"
 
-# View all logs
+# 查看所有日志
 pi ssh "ls -la ~/.vllm_logs/"
 
-# Check agent session history
+# 检查智能体会话历史
 ls -la ~/.pi/sessions/
 ```
 
-## Environment Variables
+## 环境变量
 
-- `HF_TOKEN` - HuggingFace token for model downloads
-- `PI_API_KEY` - API key for vLLM endpoints
-- `PI_CONFIG_DIR` - Config directory (default: `~/.pi`)
-- `OPENAI_API_KEY` - Used by `pi-agent` when no `--api-key` provided
+- `HF_TOKEN` - 用于下载模型的 HuggingFace 令牌
+- `PI_API_KEY` - 用于 vLLM 端点的 API 密钥
+- `PI_CONFIG_DIR` - 配置目录（默认：`~/.pi`）
+- `OPENAI_API_KEY` - 当未提供 `--api-key` 时由 `pi-agent` 使用
 
-## License
+## 许可证
 
 MIT
