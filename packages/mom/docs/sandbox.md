@@ -1,66 +1,67 @@
-# Mom Docker Sandbox
+# Mom Docker 沙箱
 
-## Overview
+## 概览
 
-Mom can run tools either directly on the host or inside a Docker container for isolation.
+Mom 可以直接在主机上运行工具，也可以在 Docker 容器内运行以实现隔离。
 
-## Why Docker?
+## 为什么使用 Docker？
 
-When mom runs on your machine and is accessible via Slack, anyone in your workspace could potentially:
-- Execute arbitrary commands on your machine
-- Access your files, credentials, etc.
-- Cause damage via prompt injection
+当 Mom 在你的机器上运行并可通过 Slack 访问时，工作区中的任何人都有可能：
+- 在你的机器上执行任意命令
+- 访问你的文件、凭据等
+- 通过提示词注入造成损害
 
-The Docker sandbox isolates mom's tools to a container where she can only access what you explicitly mount.
+Docker 沙箱将 Mom 的工具隔离在一个容器中，她只能访问你显式挂载的内容。
 
-## Quick Start
+## 快速开始
 
 ```bash
-# 1. Create and start the container
+# 1. 创建并启动容器
 cd packages/mom
 ./docker.sh create ./data
 
-# 2. Run mom with Docker sandbox
+# 2. 使用 Docker 沙箱运行 mom
 mom --sandbox=docker:mom-sandbox ./data
 ```
 
-## How It Works
+## 工作原理
 
 ```
 ┌─────────────────────────────────────────────────────┐
-│  Host                                               │
+│  Host (主机)                                         │
 │                                                     │
-│  mom process (Node.js)                              │
-│  ├── Slack connection                               │
-│  ├── LLM API calls                                  │
-│  └── Tool execution ──────┐                         │
+│  mom process (Node.js 进程)                          │
+│  ├── Slack connection (Slack 连接)                   │
+│  ├── LLM API calls (LLM API 调用)                    │
+│  └── Tool execution (工具执行) ──────┐                │
 │                           ▼                         │
 │              ┌─────────────────────────┐            │
 │              │  Docker Container       │            │
 │              │  ├── bash, git, gh, etc │            │
-│              │  └── /workspace (mount) │            │
+│              │  └── /workspace (挂载)   │            │
 │              └─────────────────────────┘            │
+│                                                     │
 └─────────────────────────────────────────────────────┘
 ```
 
-- Mom process runs on host (handles Slack, LLM calls)
-- All tool execution (`bash`, `read`, `write`, `edit`) happens inside the container
-- Only `/workspace` (your data dir) is accessible to the container
+- Mom 进程在主机上运行（处理 Slack、LLM 调用）
+- 所有工具执行（`bash`、`read`、`write`、`edit`）都在容器内发生
+- 只有 `/workspace`（你的数据目录）可被容器访问
 
-## Container Setup
+## 容器设置
 
-Use the provided script:
+使用提供的脚本：
 
 ```bash
-./docker.sh create <data-dir>   # Create and start container
-./docker.sh start               # Start existing container
-./docker.sh stop                # Stop container
-./docker.sh remove              # Remove container
-./docker.sh status              # Check if running
-./docker.sh shell               # Open shell in container
+./docker.sh create <data-dir>   # 创建并启动容器
+./docker.sh start               # 启动现有容器
+./docker.sh stop                # 停止容器
+./docker.sh remove              # 删除容器
+./docker.sh status              # 检查是否运行中
+./docker.sh shell               # 在容器中打开 shell
 ```
 
-Or manually:
+或者手动操作：
 
 ```bash
 docker run -d --name mom-sandbox \
@@ -68,18 +69,18 @@ docker run -d --name mom-sandbox \
   alpine:latest tail -f /dev/null
 ```
 
-## Mom Manages Her Own Computer
+## Mom 管理她自己的电脑
 
-The container is treated as mom's personal computer. She can:
+容器被视为 Mom 的个人电脑。她可以：
 
-- Install tools: `apk add github-cli git curl`
-- Configure credentials: `gh auth login`
-- Create files and directories
-- Persist state across restarts
+- 安装工具：`apk add github-cli git curl`
+- 配置凭据：`gh auth login`
+- 创建文件和目录
+- 跨重启持久化状态
 
-When mom needs a tool, she installs it. When she needs credentials, she asks you.
+当 Mom 需要工具时，她会安装它。当她需要凭据时，她会询问你。
 
-### Example Flow
+### 示例流程
 
 ```
 User: "@mom check the spine-runtimes repo"
@@ -91,63 +92,63 @@ Mom:  (runs: echo "ghp_xxxx" | gh auth login --with-token)
 Mom:  "Done. Checking repo..."
 ```
 
-## Persistence
+## 持久化
 
-The container persists across:
+容器在以下情况下保持持久化：
 - `docker stop` / `docker start`
-- Host reboots
+- 主机重启
 
-Installed tools and configs remain until you `docker rm` the container.
+安装的工具和配置会一直保留，直到你 `docker rm` 该容器。
 
-To start fresh: `./docker.sh remove && ./docker.sh create ./data`
+要重新开始：`./docker.sh remove && ./docker.sh create ./data`
 
-## CLI Options
+## CLI 选项
 
 ```bash
-# Run on host (default, no isolation)
+# 在主机上运行（默认，无隔离）
 mom ./data
 
-# Run with Docker sandbox
+# 使用 Docker 沙箱运行
 mom --sandbox=docker:mom-sandbox ./data
 
-# Explicit host mode
+# 显式主机模式
 mom --sandbox=host ./data
 ```
 
-## Security Considerations
+## 安全注意事项
 
-**What the container CAN do:**
-- Read/write files in `/workspace` (your data dir)
-- Make network requests (for git, gh, curl, etc.)
-- Install packages
-- Run any commands
+**容器可以做什么：**
+- 读/写 `/workspace`（你的数据目录）中的文件
+- 发起网络请求（用于 git、gh、curl 等）
+- 安装包
+- 运行任何命令
 
-**What the container CANNOT do:**
-- Access files outside `/workspace`
-- Access your host's credentials
-- Affect your host system
+**容器不能做什么：**
+- 访问 `/workspace` 以外的文件
+- 访问主机的凭据
+- 影响你的主机系统
 
-**For maximum security:**
-1. Create a dedicated GitHub bot account with limited repo access
-2. Only share that bot's token with mom
-3. Don't mount sensitive directories
+**为了最大程度的安全性：**
+1. 创建一个具有有限仓库访问权限的专用 GitHub 机器人账户
+2. 仅与 Mom 共享该机器人的令牌
+3. 不要挂载敏感目录
 
-## Troubleshooting
+## 故障排除
 
-### Container not running
+### 容器未运行
 ```bash
-./docker.sh status  # Check status
-./docker.sh start   # Start it
+./docker.sh status  # 检查状态
+./docker.sh start   # 启动它
 ```
 
-### Reset container
+### 重置容器
 ```bash
 ./docker.sh remove
 ./docker.sh create ./data
 ```
 
-### Missing tools
-Ask mom to install them, or manually:
+### 缺少工具
+让 Mom 安装它们，或者手动安装：
 ```bash
 docker exec mom-sandbox apk add <package>
 ```

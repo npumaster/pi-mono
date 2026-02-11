@@ -1,16 +1,16 @@
-# Mom Redesign: Multi-Platform Chat Support
+# Mom 重设计：多平台聊天支持
 
-## Goals
+## 目标
 
-1. Support multiple chat platforms (Slack, Discord, WhatsApp, Telegram, etc.)
-2. Unified storage layer for all platforms
-3. Platform-agnostic agent that doesn't care where messages come from
-4. Adapters that are independently testable
-5. Agent that is independently testable
+1. 支持多种聊天平台（Slack, Discord, WhatsApp, Telegram 等）
+2. 所有平台的统一存储层
+3. 平台无关的代理，不关心消息来源
+4. 可独立测试的适配器
+5. 可独立测试的代理
 
-## Current Architecture Problems
+## 当前架构问题
 
-The current architecture tightly couples Slack-specific code throughout:
+当前架构在各处紧密耦合了 Slack 特定的代码：
 
 ```
 main.ts → SlackBot → handler.handleEvent() → agent.run(SlackContext)
@@ -21,20 +21,21 @@ main.ts → SlackBot → handler.handleEvent() → agent.run(SlackContext)
                                               etc.
 ```
 
-Problems:
-- `SlackContext` interface leaks Slack concepts (threads, typing indicators)
-- Agent code references Slack-specific formatting (mrkdwn, `<@user>` mentions)
-- Storage uses Slack timestamps (`ts`) as message IDs
-- Message logging assumes Slack's event structure
-- The PR's Discord implementation duplicated most of this logic in a separate package
+问题：
+- `SlackContext` 接口泄露了 Slack 概念（线程、输入指示器）
+- 代理代码引用了 Slack 特定的格式（mrkdwn, `<@user>` 提及）
+- 存储使用 Slack 时间戳 (`ts`) 作为消息 ID
+- 消息日志记录假设 Slack 的事件结构
+- PR 的 Discord 实现将大部分逻辑复制到了单独的包中
 
-## Proposed Architecture
+## 提议架构
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────┐
 │                              CLI / Entry Point                          │
 │  mom ./data                                                             │
 │  (reads config.json, starts all configured adapters)                    │
+│  (读取 config.json，启动所有配置的适配器)                                   │
 └───────────────────────────────────┬─────────────────────────────────────┘
                                     │
                                     ▼
@@ -58,43 +59,43 @@ Problems:
 │              │  - getChannelInfo()   │                                  │
 │              │  - getUserInfo()      │                                  │
 │              └───────────┬───────────┘                                  │
-└──────────────────────────┼──────────────────────────────────────────────┘
-                           │
-                           ▼
-┌─────────────────────────────────────────────────────────────────────────┐
-│                              MomAgent                                   │
-│  - Platform agnostic                                                    │
-│  - Receives messages via handleMessage(message, context, onEvent)       │
-│  - Forwards AgentSessionEvent to adapter via callback                   │
-│  - Provides: abort(), isRunning()                                       │
-└───────────────────────────────────┬─────────────────────────────────────┘
-                                    │
-                                    ▼
-┌─────────────────────────────────────────────────────────────────────────┐
-│                           ChannelStore                                  │
-│  - Unified storage schema for all platforms                             │
-│  - log.jsonl: channel history (messages only)                           │
-│  - context.jsonl: LLM context (messages + tool results)                 │
-│  - attachments/: downloaded files                                       │
-└─────────────────────────────────────────────────────────────────────────┘
-```
+61→└──────────────────────────┼──────────────────────────────────────────────┘
+62→                           │
+63→                           ▼
+64→┌─────────────────────────────────────────────────────────────────────────┐
+65→│                              MomAgent                                   │
+66→│  - Platform agnostic (平台无关)                                         │
+67→│  - Receives messages via handleMessage(message, context, onEvent)       │
+68→│  - Forwards AgentSessionEvent to adapter via callback                   │
+69→│  - Provides: abort(), isRunning()                                       │
+70→└───────────────────────────────────┬─────────────────────────────────────┘
+71→                                    │
+72→                                    ▼
+73→┌─────────────────────────────────────────────────────────────────────────┐
+74→│                           ChannelStore                                  │
+75→│  - Unified storage schema for all platforms (所有平台的统一存储模式)        │
+76→│  - log.jsonl: channel history (messages only)                           │
+77→│  - context.jsonl: LLM context (messages + tool results)                 │
+78→│  - attachments/: downloaded files                                       │
+79→└─────────────────────────────────────────────────────────────────────────┘
+80→```
 
-## Key Interfaces
+## 关键接口
 
-### 1. ChannelMessage (Unified Message Format)
+### 1. ChannelMessage (统一消息格式)
 
 ```typescript
 interface ChannelMessage {
-  /** Unique ID within the channel (platform-specific format preserved) */
+  /** 频道内的唯一 ID（保留特定于平台的格式） */
   id: string;
   
-  /** Channel/conversation ID */
+  /** 频道/会话 ID */
   channelId: string;
   
-  /** Timestamp (ISO 8601) */
+  /** 时间戳 (ISO 8601) */
   timestamp: string;
   
-  /** Sender info */
+  /** 发送者信息 */
   sender: {
     id: string;
     username: string;
@@ -102,59 +103,59 @@ interface ChannelMessage {
     isBot: boolean;
   };
   
-  /** Message content (as received from platform) */
+  /** 消息内容（从平台接收的原样） */
   text: string;
   
-  /** Optional: original platform-specific text (for debugging) */
+  /** 可选：原始特定于平台的文本（用于调试） */
   rawText?: string;
   
-  /** Attachments */
+  /** 附件 */
   attachments: ChannelAttachment[];
   
-  /** Is this a direct mention/trigger of the bot? */
+  /** 这是否是对机器人的直接提及/触发？ */
   isMention: boolean;
   
-  /** Optional: reply-to message ID (for threaded conversations) */
+  /** 可选：回复的消息 ID（用于线程对话） */
   replyTo?: string;
   
-  /** Platform-specific metadata (for platform-specific features) */
+  /** 特定于平台的元数据（用于特定于平台的功能） */
   metadata?: Record<string, unknown>;
 }
 
 interface ChannelAttachment {
-  /** Original filename */
+  /** 原始文件名 */
   filename: string;
   
-  /** Local path (relative to channel dir) */
+  /** 本地路径（相对于频道目录） */
   localPath: string;
   
-  /** MIME type if known */
+  /** MIME 类型（如果已知） */
   mimeType?: string;
   
-  /** File size in bytes */
+  /** 文件大小（字节） */
   size?: number;
 }
 ```
 
 ### 2. PlatformAdapter
 
-Adapters handle platform connection and UI. They receive events from MomAgent and render however they want.
+适配器处理平台连接和 UI。它们从 MomAgent 接收事件并以任何想要的方式渲染。
 
 ```typescript
 interface PlatformAdapter {
-  /** Adapter name (used in channel paths, e.g., "slack-acme") */
+  /** 适配器名称（用于频道路径，例如 "slack-acme"） */
   name: string;
   
-  /** Start the adapter (connect to platform) */
+  /** 启动适配器（连接到平台） */
   start(): Promise<void>;
   
-  /** Stop the adapter */
+  /** 停止适配器 */
   stop(): Promise<void>;
   
-  /** Get all known channels */
+  /** 获取所有已知频道 */
   getChannels(): ChannelInfo[];
   
-  /** Get all known users */
+  /** 获取所有已知用户 */
   getUsers(): UserInfo[];
 }
 
@@ -173,15 +174,15 @@ interface UserInfo {
 
 ### 3. MomAgent
 
-MomAgent wraps `AgentSession` from coding-agent. Agent is platform-agnostic; it just forwards events to the adapter.
+MomAgent 包装了来自 coding-agent 的 `AgentSession`。代理是平台无关的；它只是将事件转发给适配器。
 
 ```typescript
 import { type AgentSessionEvent } from "@mariozechner/pi-coding-agent";
 
 interface MomAgent {
   /**
-   * Handle an incoming message.
-   * Adapter receives events via callback and renders however it wants.
+   * 处理传入消息。
+   * 适配器通过回调接收事件并以任何想要的方式渲染。
    */
   handleMessage(
     message: ChannelMessage,
@@ -189,27 +190,27 @@ interface MomAgent {
     onEvent: (event: AgentSessionEvent) => Promise<void>
   ): Promise<{ stopReason: string; errorMessage?: string }>;
   
-  /** Abort the current run for a channel */
+  /** 中止频道的当前运行 */
   abort(channelId: string): void;
   
-  /** Check if a channel is currently running */
+  /** 检查频道是否正在运行 */
   isRunning(channelId: string): boolean;
 }
 
 interface ChannelContext {
-  /** Adapter name (for channel path: channels/<adapter>/<channelId>/) */
+  /** 适配器名称（用于频道路径：channels/<adapter>/<channelId>/） */
   adapter: string;
   users: UserInfo[];
   channels: ChannelInfo[];
 }
 ```
 
-## Event Handling
+## 事件处理
 
-Adapter receives `AgentSessionEvent` and renders however it wants:
+适配器接收 `AgentSessionEvent` 并以任何想要的方式渲染：
 
 ```typescript
-// Slack adapter example
+// Slack 适配器示例
 async function handleEvent(event: AgentSessionEvent, ctx: SlackContext) {
   switch (event.type) {
     case 'tool_execution_start': {
@@ -219,7 +220,7 @@ async function handleEvent(event: AgentSessionEvent, ctx: SlackContext) {
     }
     
     case 'tool_execution_end': {
-      // Format tool result for thread
+      // 为线程格式化工具结果
       const result = extractText(event.result);
       const formatted = `**${event.toolName}** (${event.durationMs}ms)\n\`\`\`\n${result}\n\`\`\``;
       await ctx.appendThread(this.toSlackFormat(formatted));
@@ -232,7 +233,7 @@ async function handleEvent(event: AgentSessionEvent, ctx: SlackContext) {
         await ctx.replaceMain(this.toSlackFormat(text));
         await ctx.appendThread(this.toSlackFormat(text));
         
-        // Usage from AssistantMessage
+        // AssistantMessage 的使用情况
         if (event.message.usage) {
           await ctx.appendThread(formatUsage(event.message.usage));
         }
@@ -247,26 +248,26 @@ async function handleEvent(event: AgentSessionEvent, ctx: SlackContext) {
 }
 ```
 
-Each adapter decides:
-- Message formatting (markdown → mrkdwn, embeds, etc.)
-- Message splitting for platform limits
-- What goes in main message vs thread
-- How to show tool results, usage, errors
+每个适配器决定：
+- 消息格式化（markdown → mrkdwn, embeds 等）
+- 针对平台限制的消息拆分
+- 什么进入主消息 vs 线程
+- 如何显示工具结果、使用情况、错误
 
-## Storage Format
+## 存储格式
 
-### log.jsonl (Channel History)
+### log.jsonl (频道历史)
 
-Messages stored as received from platform:
+按从平台接收的原样存储消息：
 
 ```jsonl
 {"id":"1734567890.123456","ts":"2024-12-20T10:00:00.000Z","sender":{"id":"U123","username":"mario","displayName":"Mario Z","isBot":false},"text":"<@U789> what's the weather?","attachments":[],"isMention":true}
 {"id":"1734567890.234567","ts":"2024-12-20T10:00:05.000Z","sender":{"id":"bot","username":"mom","isBot":true},"text":"The weather is sunny!","attachments":[]}
 ```
 
-### context.jsonl (LLM Context)
+### context.jsonl (LLM 上下文)
 
-Same format as current (coding-agent compatible):
+与当前格式相同（coding-agent 兼容）：
 
 ```jsonl
 {"type":"session","id":"uuid","timestamp":"...","provider":"anthropic","modelId":"claude-sonnet-4-5"}
@@ -274,12 +275,12 @@ Same format as current (coding-agent compatible):
 {"type":"message","timestamp":"...","message":{"role":"assistant","content":[{"type":"text","text":"The weather is sunny!"}]}}
 ```
 
-## Directory Structure
+## 目录结构
 
 ```
 data/
-├── config.json                    # Host only - tokens, adapters, access control
-└── workspace/                     # Mounted as /workspace in Docker
+├── config.json                    # 仅主机 - 令牌、适配器、访问控制
+└── workspace/                     # 在 Docker 中挂载为 /workspace
     ├── MEMORY.md
     ├── skills/
     ├── tools/
@@ -298,7 +299,7 @@ data/
                 └── ...
 ```
 
-**config.json** (not mounted, stays on host):
+**config.json**（未挂载，保留在主机上）：
 
 ```json
 {
@@ -320,25 +321,25 @@ data/
 }
 ```
 
-**Access control:**
-- `admins`: User IDs with admin privileges. Can always DM.
-- `dm`: Who else can DM. `"everyone"`, `"none"`, or `["U789", "U012"]`
+**访问控制：**
+- `admins`：具有管理员权限的用户 ID。可以随时 DM。
+- `dm`：谁还可以 DM。`"everyone"`, `"none"`, 或 `["U789", "U012"]`
 
-**Channels** are namespaced by adapter name: `channels/<adapter>/<channelId>/`
+**频道**按适配器名称命名空间：`channels/<adapter>/<channelId>/`
 
-**Events** use qualified channelId: `{"channelId": "slack-acme/C123", ...}`
+**事件**使用限定的 channelId：`{"channelId": "slack-acme/C123", ...}`
 
-**Security note:** Mom has bash access to all channel logs in the workspace. If mom is in a private channel, anyone who can talk to mom could potentially access that channel's history. For true isolation, run separate mom instances with separate data directories.
+**安全说明：** Mom 拥有对工作区中所有频道日志的 bash 访问权限。如果 Mom 在私有频道中，任何可以与 Mom 交谈的人都有可能访问该频道的历史记录。为了真正的隔离，请运行具有单独数据目录的单独 Mom 实例。
 
-### Channel Isolation via Bubblewrap (Linux/Docker)
+### 通过 Bubblewrap 进行频道隔离 (Linux/Docker)
 
-In Linux-based execution environments (Docker), we can use [bubblewrap](https://github.com/containers/bubblewrap) to enforce per-user channel access at the OS level.
+在基于 Linux 的执行环境（Docker）中，我们可以使用 [bubblewrap](https://github.com/containers/bubblewrap) 在操作系统级别强制执行每个用户的频道访问。
 
-**How it works:**
-1. Adapter knows which channels the requesting user has access to
-2. Before executing bash, wrap command with bwrap
-3. Mount entire filesystem, then overlay denied channels with empty tmpfs
-4. Sandboxed process can't see files in denied channels
+**工作原理：**
+1. 适配器知道请求用户有权访问哪些频道
+2. 在执行 bash 之前，用 bwrap 包装命令
+3. 挂载整个文件系统，然后用空的 tmpfs 覆盖被拒绝的频道
+4. 沙箱进程无法看到被拒绝频道中的文件
 
 ```typescript
 function wrapWithBwrap(command: string, deniedChannels: string[]): string {
@@ -354,27 +355,27 @@ function wrapWithBwrap(command: string, deniedChannels: string[]): string {
   return `bwrap ${args.join(' ')} -- ${command}`;
 }
 
-// Usage
+// 用法
 const userChannels = adapter.getUserChannels(userId);  // ["public", "team-a"]
 const allChannels = await fs.readdir('/workspace/channels/');
 const denied = allChannels.filter(ch => !userChannels.includes(ch));
 
 const sandboxedCmd = wrapWithBwrap('cat /workspace/channels/private/log.jsonl', denied);
-// Results in: "No such file or directory" - private channel hidden
+// 结果: "No such file or directory" - 私有频道隐藏
 ```
 
-**Requirements:**
-- Docker container needs `--cap-add=SYS_ADMIN` for bwrap to create namespaces
-- Install in Dockerfile: `apk add bubblewrap`
+**要求：**
+- Docker 容器需要 `--cap-add=SYS_ADMIN` 以便 bwrap 创建命名空间
+- 在 Dockerfile 中安装：`apk add bubblewrap`
 
-**Limitations:**
-- Linux only (not macOS host mode)
-- Requires SYS_ADMIN capability in Docker
-- Per-execution overhead (though minimal)
+**限制：**
+- 仅限 Linux（不是 macOS 主机模式）
+- 需要 Docker 中的 SYS_ADMIN 能力
+- 每次执行的开销（尽管很小）
 
-## System Prompt Changes
+## 系统提示变更
 
-The system prompt is platform-agnostic. Agent outputs standard markdown, adapter converts.
+系统提示是平台无关的。代理输出标准 markdown，适配器进行转换。
 
 ```typescript
 function buildSystemPrompt(
@@ -402,7 +403,7 @@ ${context.channels.map(c => `#${c.name}`).join('\n')}
 }
 ```
 
-The adapter converts markdown to platform format internally:
+适配器在内部将 markdown 转换为平台格式：
 
 ```typescript
 // Inside SlackAdapter
@@ -424,11 +425,10 @@ private formatForSlack(markdown: string): string {
   return text;
 }
 ```
-```
 
-## Testing Strategy
+## 测试策略
 
-### 1. Agent Tests (with temp Docker container)
+### 1. 代理测试（使用临时 Docker 容器）
 
 ```typescript
 // test/agent.test.ts
@@ -474,7 +474,7 @@ describe('MomAgent', () => {
 });
 ```
 
-### 2. Adapter Tests (no agent)
+### 2. 适配器测试（无代理）
 
 ```typescript
 // test/adapters/slack.test.ts
@@ -515,7 +515,7 @@ describe('SlackAdapter', () => {
 });
 ```
 
-### 3. Integration Tests
+### 3. 集成测试
 
 ```typescript
 // test/integration.test.ts
@@ -546,53 +546,53 @@ describe('Mom Integration', () => {
 });
 ```
 
-## Migration Path
+## 迁移路径
 
-1. **Phase 1: Refactor storage** (non-breaking)
-   - Unify log.jsonl schema (ChannelMessage format)
-   - Add migration for existing Slack-format logs
+1. **第一阶段：重构存储**（非破坏性）
+   - 统一 log.jsonl 模式（ChannelMessage 格式）
+   - 为现有的 Slack 格式日志添加迁移
 
-2. **Phase 2: Extract adapter interface** (non-breaking)
-   - Create SlackAdapter wrapping current SlackBot
-   - Agent emits events, adapter handles UI
+2. **第二阶段：提取适配器接口**（非破坏性）
+   - 创建包装当前 SlackBot 的 SlackAdapter
+   - 代理发出事件，适配器处理 UI
 
-3. **Phase 3: Decouple agent** (non-breaking)
-   - Remove Slack-specific code from agent.ts
-   - Agent becomes fully platform-agnostic
+3. **第三阶段：解耦代理**（非破坏性）
+   - 从 agent.ts 中删除 Slack 特定代码
+   - 代理变得完全平台无关
 
-4. **Phase 4: Add Discord** (new feature)
-   - Implement DiscordAdapter
-   - Share all storage and agent code
+4. **第四阶段：添加 Discord**（新功能）
+   - 实现 DiscordAdapter
+   - 共享所有存储和代理代码
 
-## Decisions
+## 决策
 
-1. **Channel ID collision**: Prefix with adapter name (`channels/slack-acme/C123/`).
+1. **频道 ID 冲突**：前缀适配器名称 (`channels/slack-acme/C123/`)。
 
-2. **Threads**: Adapter decides. Slack uses threads, Discord can use threads or embeds.
+2. **线程**：适配器决定。Slack 使用线程，Discord 可以使用线程或嵌入。
 
-3. **Mentions**: Store as-is from platform. Agent outputs `@username`, adapter converts.
+3. **提及**：按原样存储来自平台的内容。代理输出 `@username`，适配器转换。
 
-4. **Rate limiting**: Each adapter handles its own.
+4. **速率限制**：每个适配器处理自己的。
 
-5. **Config**: Single `config.json` with all adapter configs and tokens.
+5. **配置**：单个 `config.json` 包含所有适配器配置和令牌。
 
-## File Structure
+## 文件结构
 
 ```
 packages/mom/src/
-├── main.ts                    # CLI entry point
+├── main.ts                    # CLI 入口点
 ├── agent.ts                   # MomAgent
 ├── store.ts                   # ChannelStore
-├── context.ts                 # Session management
-├── sandbox.ts                 # Sandbox execution
-├── events.ts                  # Scheduled events
-├── log.ts                     # Console logging
+├── context.ts                 # 会话管理
+├── sandbox.ts                 # 沙箱执行
+├── events.ts                  # 计划事件
+├── log.ts                     # 控制台日志记录
 │
 ├── adapters/
-│   ├── types.ts              # PlatformAdapter, ChannelMessage interfaces
+│   ├── types.ts              # PlatformAdapter, ChannelMessage 接口
 │   ├── slack.ts              # SlackAdapter
 │   ├── discord.ts            # DiscordAdapter
-│   └── cli.ts                # CLIAdapter (for testing)
+│   └── cli.ts                # CLIAdapter (用于测试)
 │
 └── tools/
     ├── index.ts
@@ -603,11 +603,11 @@ packages/mom/src/
     └── attach.ts
 ```
 
-## Custom Tools (Host-Side Execution)
+## 自定义工具（主机端执行）
 
-Mom runs bash commands inside a sandbox (Docker container), but sometimes you need tools that run on the host machine (e.g., accessing host APIs, credentials, or services that can't run in the container).
+Mom 在沙箱（Docker 容器）内运行 bash 命令，但有时你需要运行在主机上的工具（例如，访问主机 API、凭据或无法在容器中运行的服务）。
 
-### Architecture
+### 架构
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────┐
@@ -641,7 +641,7 @@ Mom runs bash commands inside a sandbox (Docker container), but sometimes you ne
 └─────────────────────────────────────────────────────────────────────────┘
 ```
 
-### Custom Tool Interface
+### 自定义工具接口
 
 ```typescript
 // data/tools/gmail/index.ts
@@ -688,7 +688,7 @@ const tool: MomCustomTool = {
 export default tool;
 ```
 
-### MomCustomTool Type
+### MomCustomTool 类型
 
 ```typescript
 import type { TSchema, Static } from "@sinclair/typebox";
@@ -699,52 +699,52 @@ export interface MomToolResult<TDetails = any> {
 }
 
 export interface MomCustomTool<TParams extends TSchema = TSchema, TDetails = any> {
-  /** Tool name (must be unique) */
+  /** 工具名称（必须唯一） */
   name: string;
   
-  /** Human-readable description for system prompt */
+  /** 用于系统提示的人类可读描述 */
   description: string;
   
-  /** TypeBox schema for parameters */
+  /** 参数的 TypeBox 模式 */
   parameters: TParams;
   
-  /** Execute the tool */
+  /** 执行工具 */
   execute: (
     toolCallId: string,
     params: Static<TParams>,
     signal?: AbortSignal,
   ) => Promise<MomToolResult<TDetails>>;
   
-  /** Optional: called when mom starts (for initialization) */
+  /** 可选：当 Mom 启动时调用（用于初始化） */
   onStart?: () => Promise<void>;
   
-  /** Optional: called when mom stops (for cleanup) */
+  /** 可选：当 Mom 停止时调用（用于清理） */
   onStop?: () => Promise<void>;
 }
 
-/** Factory function for tools that need async initialization */
+/** 用于需要异步初始化的工具的工厂函数 */
 export type MomCustomToolFactory = (api: ToolAPI) => MomCustomTool | Promise<MomCustomTool>;
 
 export interface ToolAPI {
-  /** Path to mom's data directory */
+  /** mom 数据目录的路径 */
   dataDir: string;
   
-  /** Execute a command on the host (not in sandbox) */
+  /** 在主机上执行命令（不在沙箱中） */
   exec: (command: string, args: string[], options?: ExecOptions) => Promise<ExecResult>;
   
-  /** Read a file from the data directory */
+  /** 从数据目录读取文件 */
   readFile: (path: string) => Promise<string>;
   
-  /** Write a file to the data directory */
+  /** 将文件写入数据目录 */
   writeFile: (path: string, content: string) => Promise<void>;
 }
 ```
 
-### Tool Discovery and Loading
+### 工具发现和加载
 
-Tools are discovered from:
-1. `data/tools/**/index.ts` (workspace-local, recursive)
-2. `~/.pi/mom/tools/**/index.ts` (global, recursive)
+工具从以下位置发现：
+1. `data/tools/**/index.ts` (工作区本地，递归)
+2. `~/.pi/mom/tools/**/index.ts` (全局，递归)
 
 ```typescript
 // loader.ts
@@ -793,9 +793,9 @@ async function loadCustomTools(dataDir: string): Promise<LoadedTool[]> {
 }
 ```
 
-### The invoke_tool Agent Tool
+### invoke_tool 代理工具
 
-Mom has a single `invoke_tool` tool that dispatches to custom tools:
+Mom 有一个单一的 `invoke_tool` 工具，用于分发给自定义工具：
 
 ```typescript
 import { Type } from "@sinclair/typebox";
@@ -843,9 +843,9 @@ function createInvokeToolTool(loadedTools: LoadedTool[]): AgentTool {
 }
 ```
 
-### System Prompt Integration
+### 系统提示集成
 
-Custom tools are described in the system prompt so mom knows what's available:
+自定义工具在系统提示中描述，以便 Mom 知道可用内容：
 
 ```typescript
 function formatCustomToolsForPrompt(tools: LoadedTool[]): string {
@@ -884,7 +884,7 @@ function schemaToSimpleJson(schema: TSchema): object {
 }
 ```
 
-### Example: Gmail Tool
+### 示例：Gmail 工具
 
 ```typescript
 // data/tools/gmail/index.ts
@@ -914,57 +914,57 @@ export default async function(api: ToolAPI): Promise<MomCustomTool> {
 }
 ```
 
-### Security Considerations
+### 安全注意事项
 
-1. **Tools run on host**: Custom tools have full host access. Only install trusted tools.
-2. **Credential storage**: Tools should store credentials in the data directory, not in code.
-3. **Sandbox separation**: The sandbox (Docker) can't access host tools directly. Only mom's invoke_tool can call them.
+1. **工具在主机上运行**：自定义工具拥有完整的主机访问权限。仅安装受信任的工具。
+2. **凭据存储**：工具应将凭据存储在数据目录中，而不是代码中。
+3. **沙箱分离**：沙箱 (Docker) 无法直接访问主机工具。只有 Mom 的 invoke_tool 可以调用它们。
 
-### Loading
+### 加载
 
-Tools are loaded via jiti. They can import any 3rd party dependencies (install in the tool directory). Imports of `@mariozechner/pi-ai` and `@mariozechner/pi-mom` are aliased to the running mom bundle.
+工具通过 jiti 加载。它们可以导入任何第三方依赖项（在工具目录中安装）。`@mariozechner/pi-ai` 和 `@mariozechner/pi-mom` 的导入被别名到运行中的 mom 包。
 
-**Live reload**: In dev mode, tools are watched and reloaded on change. No restart needed.
+**实时重载**：在开发模式下，工具会被监视并在更改时重载。无需重启。
 
-## Events System
+## 事件系统
 
-Scheduled wake-ups via JSON files in `workspace/events/`.
+通过 `workspace/events/` 中的 JSON 文件进行计划唤醒。
 
-### Format
+### 格式
 
 ```json
 {"type": "one-shot", "channelId": "slack-acme/C123ABC", "text": "Reminder", "at": "2025-12-15T09:00:00+01:00"}
 ```
 
-Channel ID is qualified with adapter name so the event watcher knows which adapter to use.
+频道 ID 带有适配器名称限定，以便事件观察者知道使用哪个适配器。
 
-### Running
+### 运行
 
 ```bash
 mom ./data
 ```
 
-Reads `config.json`, starts all adapters defined there.
+读取 `config.json`，启动其中定义的所有适配器。
 
-The shared workspace allows:
-- Shared MEMORY.md (global knowledge)
-- Shared skills
-- Events can target any platform
-- Per-channel data is still isolated by channel ID
+共享工作区允许：
+- 共享 MEMORY.md（全局知识）
+- 共享技能
+- 事件可以针对任何平台
+- 每个频道的数据仍由频道 ID 隔离
 
-## Summary
+## 总结
 
-The key insight is **separation of concerns**:
+关键见解是 **关注点分离**：
 
-1. **Storage**: Unified schema, messages stored as-is from platform
-2. **Agent**: Doesn't know about Slack/Discord, just processes messages and emits events
-3. **Adapters**: Handle platform-specific connection, formatting, and message splitting
-4. **Progress Rendering**: Each adapter decides how to display tool progress and results
+1. **存储**：统一模式，按从平台接收的原样存储消息
+2. **代理**：不知道 Slack/Discord，只处理消息并发射事件
+3. **适配器**：处理特定于平台的连接、格式化和消息拆分
+4. **进度渲染**：每个适配器决定如何显示工具进度和结果
 
-This allows:
-- Testing agent without any platform
-- Testing adapters without agent
-- Adding new platforms by implementing `PlatformAdapter`
-- Sharing all storage, context management, and agent logic
-- Rich UI on platforms that support it (embeds, buttons)
-- Graceful degradation on simpler platforms (plain text)
+这允许：
+- 在没有任何平台的情况下测试代理
+- 在没有代理的情况下测试适配器
+- 通过实现 `PlatformAdapter` 添加新平台
+- 共享所有存储、上下文管理和代理逻辑
+- 在支持它的平台上提供丰富的 UI（嵌入、按钮）
+- 在更简单的平台上优雅降级（纯文本）

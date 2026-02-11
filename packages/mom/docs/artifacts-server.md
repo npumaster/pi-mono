@@ -1,16 +1,16 @@
-# Artifacts Server
+# Artifacts 服务器
 
-Share HTML files, visualizations, and interactive demos publicly via Cloudflare Tunnel with live reload support.
+通过 Cloudflare Tunnel 公开分享 HTML 文件、可视化图表和交互式演示，并支持实时重载。
 
-## What is it?
+## 它是什么？
 
-The artifacts server lets Mom create HTML/JS/CSS files that you can instantly view in a browser, with WebSocket-based live reload for development. Perfect for dashboards, visualizations, prototypes, and interactive demos.
+Artifacts 服务器允许 Mom 创建 HTML/JS/CSS 文件，你可以立即在浏览器中查看这些文件，并具有基于 WebSocket 的实时重载功能以便于开发。非常适合仪表板、可视化、原型和交互式演示。
 
-## Installation
+## 安装
 
-### 1. Install Dependencies
+### 1. 安装依赖项
 
-**Node.js packages:**
+**Node.js 包：**
 ```bash
 cd /workspace/artifacts
 npm init -y
@@ -25,9 +25,9 @@ chmod +x /usr/local/bin/cloudflared
 cloudflared --version
 ```
 
-### 2. Create Server
+### 2. 创建服务器
 
-Save this as `/workspace/artifacts/server.js`:
+保存为 `/workspace/artifacts/server.js`：
 
 ```javascript
 #!/usr/bin/env node
@@ -244,14 +244,14 @@ server.listen(PORT, () => {
 });
 ```
 
-Make executable:
+赋予执行权限：
 ```bash
 chmod +x /workspace/artifacts/server.js
 ```
 
-### 3. Create Startup Script
+### 3. 创建启动脚本
 
-Save this as `/workspace/artifacts/start-server.sh`:
+保存为 `/workspace/artifacts/start-server.sh`：
 
 ```bash
 #!/bin/sh
@@ -310,55 +310,55 @@ trap cleanup INT TERM
 wait $NODE_PID $TUNNEL_PID
 ```
 
-Make executable:
+赋予执行权限：
 ```bash
 chmod +x /workspace/artifacts/start-server.sh
 ```
 
-## Directory Structure
+## 目录结构
 
 ```
 /workspace/artifacts/
-├── server.js              # Node.js server
-├── start-server.sh        # Startup script
-├── package.json           # Dependencies
-├── node_modules/          # Installed packages
-└── files/                 # PUT YOUR ARTIFACTS HERE
+├── server.js              # Node.js 服务器
+├── start-server.sh        # 启动脚本
+├── package.json           # 依赖项
+├── node_modules/          # 已安装的包
+└── files/                 # 将你的 ARTIFACTS 放在这里
     ├── 2025-12-14-demo/
     │   ├── index.html
     │   ├── style.css
     │   └── logo.png
     ├── 2025-12-15-chart/
     │   └── index.html
-    └── test.html (standalone OK)
+    └── test.html (独立文件也可以)
 ```
 
-## Usage
+## 用法
 
-### Starting the Server
+### 启动服务器
 
 ```bash
 cd /workspace/artifacts
 ./start-server.sh
 ```
 
-This will:
-1. Start Node.js server on localhost:8080
-2. Create Cloudflare Tunnel with public URL
-3. Print the URL (e.g., `https://random-words-123.trycloudflare.com`)
-4. Save URL to `/tmp/artifacts-url.txt`
+这将：
+1. 在 localhost:8080 启动 Node.js 服务器
+2. 创建带有公共 URL 的 Cloudflare Tunnel
+3. 打印 URL（例如 `https://random-words-123.trycloudflare.com`）
+4. 将 URL 保存到 `/tmp/artifacts-url.txt`
 
-**Note:** URL changes every time you restart (free Cloudflare Tunnel limitation).
+**注意：** 每次重启 URL 都会更改（免费 Cloudflare Tunnel 的限制）。
 
-### Creating Artifacts
+### 创建 Artifacts
 
-**Folder organization:**
-- Create one subfolder per artifact: `$(date +%Y-%m-%d)-description/`
-- Put main file as `index.html` for clean URLs
-- Include images, CSS, JS, data in same folder
-- CDN resources (Tailwind, Three.js, etc.) work fine
+**文件夹组织：**
+- 每个 artifact 创建一个子文件夹：`$(date +%Y-%m-%d)-description/`
+- 将主文件命名为 `index.html` 以获得干净的 URL
+- 将图像、CSS、JS、数据放在同一个文件夹中
+- CDN 资源（Tailwind, Three.js 等）可以正常工作
 
-**Example:**
+**示例：**
 ```bash
 mkdir -p /workspace/artifacts/files/$(date +%Y-%m-%d)-dashboard
 cat > /workspace/artifacts/files/$(date +%Y-%m-%d)-dashboard/index.html << 'EOF'
@@ -375,101 +375,101 @@ cat > /workspace/artifacts/files/$(date +%Y-%m-%d)-dashboard/index.html << 'EOF'
 EOF
 ```
 
-**Access:**
-- **IMPORTANT:** Always use full `index.html` path for live reload to work
-- Development (live reload): `https://your-url.trycloudflare.com/2025-12-14-dashboard/index.html?ws=true`
-- Share (static): `https://your-url.trycloudflare.com/2025-12-14-dashboard/index.html`
+**访问：**
+- **重要：** 始终使用完整的 `index.html` 路径以使实时重载工作
+- 开发（实时重载）：`https://your-url.trycloudflare.com/2025-12-14-dashboard/index.html?ws=true`
+- 分享（静态）：`https://your-url.trycloudflare.com/2025-12-14-dashboard/index.html`
 
-**Note:** Folder URLs (`/folder/`) won't inject WebSocket script, must use `/folder/index.html`
+**注意：** 文件夹 URL（`/folder/`）不会注入 WebSocket 脚本，必须使用 `/folder/index.html`
 
-### Live Reload
+### 实时重载
 
-When viewing with `?ws=true`:
-1. You'll see a green box at bottom-left: "Live reload connected!"
-2. Edit any file in the artifact folder
-3. Page auto-reloads within 1 second
-4. Perfect for iterating on designs
+当使用 `?ws=true` 查看时：
+1. 你会在左下角看到一个绿色框："Live reload connected!"
+2. 编辑 artifact 文件夹中的任何文件
+3. 页面会在 1 秒内自动重载
+4. 非常适合迭代设计
 
-**Remove `?ws=true` when sharing** - no WebSocket overhead for viewers.
+**分享时移除 `?ws=true`** - 避免给查看者带来 WebSocket 开销。
 
-## How It Works
+## 工作原理
 
-**Architecture:**
-- Node.js server (Express) serves static files from `/workspace/artifacts/files/`
-- Chokidar file watcher monitors for changes (including new directories)
-- WebSocket broadcasts reload messages to connected clients
-- Cloudflare Tunnel exposes localhost to internet with public HTTPS URL
-- Client-side script auto-reloads browser when file changes detected
+**架构：**
+- Node.js 服务器 (Express) 从 `/workspace/artifacts/files/` 提供静态文件
+- Chokidar 文件监视器监控更改（包括新目录）
+- WebSocket 向连接的客户端广播重载消息
+- Cloudflare Tunnel 将 localhost 暴露给互联网，提供公共 HTTPS URL
+- 客户端脚本在检测到文件更改时自动重载浏览器
 
-**Security:**
-- Path traversal protection prevents access outside `files/` directory
-- Only files in `/workspace/artifacts/files/` are served
-- Cache-busting headers prevent stale content
+**安全性：**
+- 路径遍历保护防止访问 `files/` 目录之外的内容
+- 仅提供 `/workspace/artifacts/files/` 中的文件
+- 缓存清除标头防止内容陈旧
 
-**File Watching:**
-- Automatically detects new artifact folders created after server start
-- Watches all subdirectories recursively (depth: 99)
-- No server restart needed when creating new projects
+**文件监视：**
+- 自动检测服务器启动后创建的新 artifact 文件夹
+- 递归监视所有子目录（深度：99）
+- 创建新项目时无需重启服务器
 
-## Troubleshooting
+## 故障排除
 
 **502 Bad Gateway:**
-- Node server crashed. Check logs: `cat /tmp/server.log`
-- Restart: `cd /workspace/artifacts && node server.js &`
+- Node 服务器崩溃。检查日志：`cat /tmp/server.log`
+- 重启：`cd /workspace/artifacts && node server.js &`
 
-**WebSocket not connecting:**
-- Check browser console for errors
-- Ensure `?ws=true` is in URL
-- Red/yellow box at bottom-left shows connection errors
-- Use full `index.html` path, not folder URL
+**WebSocket 未连接：**
+- 检查浏览器控制台是否有错误
+- 确保 URL 中包含 `?ws=true`
+- 左下角的红/黄框显示连接错误
+- 使用完整的 `index.html` 路径，而不是文件夹 URL
 
-**Files not updating:**
-- Check file watcher logs: `tail /tmp/server.log`
-- Ensure files are in `/workspace/artifacts/files/`
-- Should see "File change:" messages in logs
+**文件未更新：**
+- 检查文件监视器日志：`tail /tmp/server.log`
+- 确保文件在 `/workspace/artifacts/files/` 中
+- 日志中应看到 "File change:" 消息
 
-**Port already in use:**
-- Kill existing server: `pkill node`
-- Wait 2 seconds, restart
+**端口已被占用：**
+- 杀死现有服务器：`pkill node`
+- 等待 2 秒，重启
 
-**Browser caching issues:**
-- Server sends no-cache headers
-- Hard refresh: Ctrl+Shift+R
-- Add version parameter: `?ws=true&v=2`
+**浏览器缓存问题：**
+- 服务器发送无缓存标头
+- 强制刷新：Ctrl+Shift+R
+- 添加版本参数：`?ws=true&v=2`
 
-## Example Session
+## 示例会话
 
-**You:** "Create a Three.js spinning cube demo with Tailwind UI"
+**你：** "Create a Three.js spinning cube demo with Tailwind UI"
 
-**Mom creates:**
+**Mom 创建：**
 ```
 /workspace/artifacts/files/2025-12-14-threejs-cube/
 ├── index.html (Three.js from CDN, Tailwind from CDN)
 └── screenshot.png
 ```
 
-**Access:** `https://concepts-rome-123.trycloudflare.com/2025-12-14-threejs-cube/index.html?ws=true`
+**访问：** `https://concepts-rome-123.trycloudflare.com/2025-12-14-threejs-cube/index.html?ws=true`
 
-**You:** "Make the cube purple and add a grid"
+**你：** "Make the cube purple and add a grid"
 
-**Mom:** Edits `index.html`
+**Mom：** 编辑 `index.html`
 
-**Result:** Your browser auto-reloads, showing purple cube with grid (within 1 second)
+**结果：** 你的浏览器自动重载，显示带网格的紫色立方体（在 1 秒内）
 
-## Technical Notes
+## 技术说明
 
-**Why not Node.js fs.watch?**
-- `fs.watch` with `recursive: true` only works on macOS/Windows
-- On Linux (Docker), it doesn't support recursive watching
-- Chokidar is the most reliable cross-platform solution
-- We explicitly add new directories when detected to ensure monitoring
+**为什么不使用 Node.js fs.watch？**
+- `fs.watch` 配合 `recursive: true` 仅在 macOS/Windows 上有效
+- 在 Linux (Docker) 上，它不支持递归监视
+- Chokidar 是最可靠的跨平台解决方案
+- 我们在检测到新目录时显式添加它们以确保监控
 
 **WebSocket vs Server-Sent Events:**
-- WebSocket works reliably through Cloudflare Tunnel
-- All connected clients reload when ANY file changes (simple approach)
-- For production, you'd filter by current page path
+- WebSocket 通过 Cloudflare Tunnel 工作可靠
+- 当任何文件更改时，所有连接的客户端都会重载（简单方法）
+- 对于生产环境，你会根据当前页面路径进行过滤
 
-**Cloudflare Tunnel Free Tier:**
-- Random subdomain changes on each restart
-- No persistent URLs without paid account
-- WebSocket support is reliable despite being free tier
+**Cloudflare Tunnel 免费层级：**
+- 每次重启随机子域名都会更改
+- 没有付费账户无法获得持久 URL
+- 尽管是免费层级，WebSocket 支持依然可靠

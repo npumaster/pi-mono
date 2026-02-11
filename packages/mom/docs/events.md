@@ -1,12 +1,12 @@
-# Events System
+# 事件系统
 
-The events system allows mom to be triggered by scheduled or immediate events. Events are JSON files in the `workspace/events/` directory. The harness watches this directory and executes events when they become due.
+事件系统允许 Mom 由计划的或即时的事件触发。事件是 `workspace/events/` 目录中的 JSON 文件。Harness 会监视此目录，并在事件到期时执行它们。
 
-## Event Types
+## 事件类型
 
-### Immediate
+### 即时事件 (Immediate)
 
-Executes as soon as the harness discovers the file. Used by programs mom writes to signal external events (webhooks, file changes, API callbacks, etc.).
+Harness 一发现文件就立即执行。由 Mom 编写的程序使用，用于通知外部事件（webhooks、文件更改、API 回调等）。
 
 ```json
 {
@@ -16,11 +16,11 @@ Executes as soon as the harness discovers the file. Used by programs mom writes 
 }
 ```
 
-After execution, the file is deleted. Staleness is determined by file mtime (see Startup Behavior).
+执行后，文件将被删除。陈旧性由文件 mtime 确定（见启动行为）。
 
-### One-Shot
+### 一次性事件 (One-Shot)
 
-Executes once at a specific date/time. Used for reminders, scheduled tasks, or deferred actions.
+在特定日期/时间执行一次。用于提醒、计划任务或延期操作。
 
 ```json
 {
@@ -31,11 +31,11 @@ Executes once at a specific date/time. Used for reminders, scheduled tasks, or d
 }
 ```
 
-The `at` timestamp must include a timezone offset. After execution, the file is deleted.
+`at` 时间戳必须包含时区偏移量。执行后，文件将被删除。
 
-### Periodic
+### 周期性事件 (Periodic)
 
-Executes repeatedly on a cron schedule. Used for recurring tasks like daily summaries, weekly reports, or regular checks.
+按 cron 计划重复执行。用于定期任务，如每日摘要、每周报告或定期检查。
 
 ```json
 {
@@ -47,118 +47,118 @@ Executes repeatedly on a cron schedule. Used for recurring tasks like daily summ
 }
 ```
 
-The `schedule` field uses standard cron syntax. The `timezone` field uses IANA timezone names. The file persists until explicitly deleted by mom or the program that created it.
+`schedule` 字段使用标准 cron 语法。`timezone` 字段使用 IANA 时区名称。文件将一直保留，直到被 Mom 或创建它的程序显式删除。
 
-#### Cron Format
+#### Cron 格式
 
 `minute hour day-of-month month day-of-week`
 
-Examples:
-- `0 9 * * *` — daily at 9:00
-- `0 9 * * 1-5` — weekdays at 9:00
-- `30 14 * * 1` — Mondays at 14:30
-- `0 0 1 * *` — first of each month at midnight
-- `*/15 * * * *` — every 15 minutes
+示例：
+- `0 9 * * *` — 每天 9:00
+- `0 9 * * 1-5` — 工作日 9:00
+- `30 14 * * 1` — 周一 14:30
+- `0 0 1 * *` — 每月 1 号午夜
+- `*/15 * * * *` — 每 15 分钟
 
-## Timezone Handling
+## 时区处理
 
-All timestamps must include timezone information:
-- For `one-shot`: Use ISO 8601 format with offset (e.g., `2025-12-15T09:00:00+01:00`)
-- For `periodic`: Use the `timezone` field with an IANA timezone name (e.g., `Europe/Vienna`, `America/New_York`)
+所有时间戳必须包含时区信息：
+- 对于 `one-shot`：使用带偏移量的 ISO 8601 格式（例如 `2025-12-15T09:00:00+01:00`）
+- 对于 `periodic`：使用带 IANA 时区名称的 `timezone` 字段（例如 `Europe/Vienna`, `America/New_York`）
 
-The harness runs in the host process timezone. When users mention times without specifying timezone, assume the harness timezone.
+Harness 在主机进程时区中运行。当用户提到时间而未指定时区时，假定为 Harness 时区。
 
-## Harness Behavior
+## Harness 行为
 
-### Startup
+### 启动
 
-1. Scan `workspace/events/` for all `.json` files
-2. Parse each event file
-3. For each event:
-   - **Immediate**: Check file mtime. If the file was created while the harness was NOT running (mtime < harness start time), it's stale. Delete without executing. Otherwise, execute immediately and delete.
-   - **One-shot**: If `at` is in the past, delete the file. If `at` is in the future, set a `setTimeout` to execute at the specified time.
-   - **Periodic**: Set up a cron job (using `croner` library) to execute on the specified schedule. If a scheduled time was missed while harness was down, do NOT catch up. Wait for the next scheduled occurrence.
+1. 扫描 `workspace/events/` 中的所有 `.json` 文件
+2. 解析每个事件文件
+3. 对于每个事件：
+   - **即时事件**：检查文件 mtime。如果文件是在 Harness 未运行（mtime < harness 启动时间）时创建的，则视为陈旧。删除而不执行。否则，立即执行并删除。
+   - **一次性事件**：如果 `at` 在过去，删除文件。如果 `at` 在未来，设置 `setTimeout` 在指定时间执行。
+   - **周期性事件**：设置 cron 作业（使用 `croner` 库）按指定计划执行。如果 Harness 停机期间错过了计划时间，**不**补执行。等待下一次计划发生。
 
-### File System Watching
+### 文件系统监视
 
-The harness watches `workspace/events/` using `fs.watch()` with 100ms debounce.
+Harness 使用 `fs.watch()` 监视 `workspace/events/`，去抖动时间为 100ms。
 
-**New file added:**
-- Parse the event
-- Based on type: execute immediately, set `setTimeout`, or set up cron job
+**添加新文件：**
+- 解析事件
+- 根据类型：立即执行、设置 `setTimeout` 或设置 cron 作业
 
-**Existing file modified:**
-- Cancel any existing timer/cron for this file
-- Re-parse and set up again (allows rescheduling)
+**修改现有文件：**
+- 取消此文件的任何现有计时器/cron
+- 重新解析并重新设置（允许重新调度）
 
-**File deleted:**
-- Cancel any existing timer/cron for this file
+**删除文件：**
+- 取消此文件的任何现有计时器/cron
 
-### Parse Errors
+### 解析错误
 
-If a JSON file fails to parse:
-1. Retry with exponential backoff (100ms, 200ms, 400ms)
-2. If still failing after retries, delete the file and log error to console
+如果 JSON 文件解析失败：
+1. 以指数退避重试（100ms, 200ms, 400ms）
+2. 如果重试后仍然失败，删除文件并将错误记录到控制台
 
-### Execution Errors
+### 执行错误
 
-If the agent errors while processing an event:
-1. Post error message to the channel
-2. Delete the event file (for immediate/one-shot)
-3. No retries
+如果代理在处理事件时出错：
+1. 向频道发布错误消息
+2. 删除事件文件（对于即时/一次性事件）
+3. 不重试
 
-## Queue Integration
+## 队列集成
 
-Events integrate with the existing `ChannelQueue` in `SlackBot`:
+事件与 `SlackBot` 中现有的 `ChannelQueue` 集成：
 
-- New method: `SlackBot.enqueueEvent(event: SlackEvent)` — always queues, no "already working" rejection
-- Maximum 5 events can be queued per channel. If queue is full, discard and log to console.
-- User @mom mentions retain current behavior: rejected with "Already working" message if agent is busy
+- 新方法：`SlackBot.enqueueEvent(event: SlackEvent)` — 始终入队，无“已经在工作”拒绝
+- 每个频道最多可排队 5 个事件。如果队列已满，丢弃并记录到控制台。
+- 用户 @mom 提及保留当前行为：如果代理忙碌，则以“Already working”消息拒绝
 
-When an event triggers:
-1. Create a synthetic `SlackEvent` with formatted message
-2. Call `slack.enqueueEvent(event)`
-3. Event waits in queue if agent is busy, processed when idle
+当事件触发时：
+1. 创建带有格式化消息的合成 `SlackEvent`
+2. 调用 `slack.enqueueEvent(event)`
+3. 如果代理忙碌，事件在队列中等待，空闲时处理
 
-## Event Execution
+## 事件执行
 
-When an event is dequeued and executes:
+当事件出队并执行时：
 
-1. Post status message: "_Starting event: {filename}_"
-2. Invoke the agent with message: `[EVENT:{filename}:{type}:{schedule}] {text}`
-   - For immediate: `[EVENT:webhook-123.json:immediate] New support ticket`
-   - For one-shot: `[EVENT:dentist.json:one-shot:2025-12-15T09:00:00+01:00] Remind Mario`
-   - For periodic: `[EVENT:daily-inbox.json:periodic:0 9 * * 1-5] Check inbox`
-3. After execution:
-   - If response is `[SILENT]`: delete status message, post nothing to Slack
-   - Immediate and one-shot: delete the event file
-   - Periodic: keep the file, event will trigger again on schedule
+1. 发布状态消息："_Starting event: {filename}_"
+2. 使用以下消息调用代理：`[EVENT:{filename}:{type}:{schedule}] {text}`
+   - 对于即时事件：`[EVENT:webhook-123.json:immediate] New support ticket`
+   - 对于一次性事件：`[EVENT:dentist.json:one-shot:2025-12-15T09:00:00+01:00] Remind Mario`
+   - 对于周期性事件：`[EVENT:daily-inbox.json:periodic:0 9 * * 1-5] Check inbox`
+3. 执行后：
+   - 如果响应是 `[SILENT]`：删除状态消息，不向 Slack 发布任何内容
+   - 即时和一次性事件：删除事件文件
+   - 周期性事件：保留文件，事件将按计划再次触发
 
-## Silent Completion
+## 静默完成 (Silent Completion)
 
-For periodic events that check for activity (inbox, notifications, etc.), mom may find nothing to report. To avoid spamming the channel, mom can respond with just `[SILENT]`. This deletes the "Starting event..." status message and posts nothing to Slack.
+对于检查活动（收件箱、通知等）的周期性事件，Mom 可能没有发现任何要报告的内容。为了避免在频道中刷屏，Mom 可以仅响应 `[SILENT]`。这将删除 "Starting event..." 状态消息，并且不向 Slack 发布任何内容。
 
-Example: A periodic event checks for new emails every 15 minutes. If there are no new emails, mom responds `[SILENT]`. If there are new emails, mom posts a summary.
+示例：一个周期性事件每 15 分钟检查一次新邮件。如果没有新邮件，Mom 响应 `[SILENT]`。如果有新邮件，Mom 发布摘要。
 
-## File Naming
+## 文件命名
 
-Event files should have descriptive names ending in `.json`:
-- `webhook-12345.json` (immediate)
-- `dentist-reminder-2025-12-15.json` (one-shot)
-- `daily-inbox-summary.json` (periodic)
+事件文件应具有描述性名称，并以 `.json` 结尾：
+- `webhook-12345.json` (即时)
+- `dentist-reminder-2025-12-15.json` (一次性)
+- `daily-inbox-summary.json` (周期性)
 
-The filename is used as an identifier for tracking timers and in the event message. Avoid special characters.
+文件名用作跟踪计时器的标识符，并出现在事件消息中。避免特殊字符。
 
-## Implementation
+## 实现
 
-### Files
+### 文件
 
-- `src/events.ts` — Event parsing, timer management, fs watching
-- `src/slack.ts` — Add `enqueueEvent()` method and `size()` to `ChannelQueue`
-- `src/main.ts` — Initialize events watcher on startup
-- `src/agent.ts` — Update system prompt with events documentation
+- `src/events.ts` — 事件解析、计时器管理、fs 监视
+- `src/slack.ts` — 添加 `enqueueEvent()` 方法和 `size()` 到 `ChannelQueue`
+- `src/main.ts` — 在启动时初始化事件监视器
+- `src/agent.ts` — 使用事件文档更新系统提示
 
-### Key Components
+### 关键组件
 
 ```typescript
 // events.ts
@@ -208,32 +208,32 @@ class EventsWatcher {
 }
 ```
 
-### Dependencies
+### 依赖项
 
-- `croner` — Cron scheduling with timezone support
+- `croner` — 支持时区的 Cron 调度
 
-## System Prompt Section
+## 系统提示部分
 
-The following should be added to mom's system prompt:
+以下内容应添加到 Mom 的系统提示中：
 
 ```markdown
 ## Events
 
-You can schedule events that wake you up at specific times or when external things happen. Events are JSON files in `/workspace/events/`.
+你可以安排在特定时间或当外部事情发生时唤醒你的事件。事件是 `/workspace/events/` 中的 JSON 文件。
 
 ### Event Types
 
-**Immediate** — Triggers as soon as harness sees the file. Use in scripts/webhooks to signal external events.
+**Immediate** — Harness 一看到文件就触发。用于脚本/webhooks 中以通知外部事件。
 ```json
 {"type": "immediate", "channelId": "C123", "text": "New GitHub issue opened"}
 ```
 
-**One-shot** — Triggers once at a specific time. Use for reminders.
+**One-shot** — 在特定时间触发一次。用于提醒。
 ```json
 {"type": "one-shot", "channelId": "C123", "text": "Remind Mario about dentist", "at": "2025-12-15T09:00:00+01:00"}
 ```
 
-**Periodic** — Triggers on a cron schedule. Use for recurring tasks.
+**Periodic** — 按 cron 计划触发。用于定期任务。
 ```json
 {"type": "periodic", "channelId": "C123", "text": "Check inbox and summarize", "schedule": "0 9 * * 1-5", "timezone": "Europe/Vienna"}
 ```
@@ -242,14 +242,14 @@ You can schedule events that wake you up at specific times or when external thin
 
 `minute hour day-of-month month day-of-week`
 
-- `0 9 * * *` = daily at 9:00
-- `0 9 * * 1-5` = weekdays at 9:00
-- `30 14 * * 1` = Mondays at 14:30
-- `0 0 1 * *` = first of each month at midnight
+- `0 9 * * *` = 每天 9:00
+- `0 9 * * 1-5` = 工作日 9:00
+- `30 14 * * 1` = 周一 14:30
+- `0 0 1 * *` = 每月 1 号午夜
 
 ### Timezones
 
-All `at` timestamps must include offset (e.g., `+01:00`). Periodic events use IANA timezone names. The harness runs in ${TIMEZONE}. When users mention times without timezone, assume ${TIMEZONE}.
+所有 `at` 时间戳必须包含偏移量（例如 `+01:00`）。周期性事件使用 IANA 时区名称。Harness 运行在 ${TIMEZONE}。当用户提到时间而未指定时区时，假定为 ${TIMEZONE}。
 
 ### Creating Events
 
@@ -261,26 +261,26 @@ EOF
 
 ### Managing Events
 
-- List: `ls /workspace/events/`
-- View: `cat /workspace/events/foo.json`
-- Delete/cancel: `rm /workspace/events/foo.json`
+- 列出: `ls /workspace/events/`
+- 查看: `cat /workspace/events/foo.json`
+- 删除/取消: `rm /workspace/events/foo.json`
 
 ### When Events Trigger
 
-You receive a message like:
+你会收到如下消息：
 ```
 [EVENT:dentist-reminder.json:one-shot:2025-12-14T09:00:00+01:00] Dentist tomorrow
 ```
 
-Immediate and one-shot events auto-delete after triggering. Periodic events persist until you delete them.
+即时和一次性事件在触发后自动删除。周期性事件会一直保留，直到你删除它们。
 
 ### Debouncing
 
-When writing programs that create immediate events (email watchers, webhook handlers, etc.), always debounce. If 50 emails arrive in a minute, don't create 50 immediate events. Instead:
+编写创建即时事件的程序（电子邮件观察器、webhook 处理程序等）时，务必去抖动。如果一分钟内收到 50 封电子邮件，不要创建 50 个即时事件。相反：
 
-- Collect events over a window (e.g., 30 seconds)
-- Create ONE immediate event summarizing what happened
-- Or just signal "new activity, check inbox" rather than per-item events
+- 在一个窗口（例如 30 秒）内收集事件
+- 创建一个总结发生情况的即时事件
+- 或者只是发出“新活动，检查收件箱”的信号，而不是每项一个事件
 
 Bad:
 ```bash
@@ -299,9 +299,9 @@ on_email() {
 }
 ```
 
-Or simpler: use a periodic event to check for new emails every 15 minutes instead of immediate events.
+或者更简单：使用周期性事件每 15 分钟检查一次新邮件，而不是即时事件。
 
 ### Limits
 
-Maximum 5 events can be queued. Don't create excessive immediate or periodic events.
+最多可排队 5 个事件。不要创建过多的即时或周期性事件。
 ```
