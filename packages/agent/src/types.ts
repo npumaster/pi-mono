@@ -11,23 +11,22 @@ import type {
 } from "@mariozechner/pi-ai";
 import type { Static, TSchema } from "@sinclair/typebox";
 
-/** Stream function - can return sync or Promise for async config lookup */
+/** 流函数 - 可以返回同步结果或 Promise 用于异步配置查找 */
 export type StreamFn = (
 	...args: Parameters<typeof streamSimple>
 ) => ReturnType<typeof streamSimple> | Promise<ReturnType<typeof streamSimple>>;
 
 /**
- * Configuration for the agent loop.
+ * Agent 循环的配置。
  */
 export interface AgentLoopConfig extends SimpleStreamOptions {
 	model: Model<any>;
 
 	/**
-	 * Converts AgentMessage[] to LLM-compatible Message[] before each LLM call.
+	 * 在每次 LLM 调用之前将 AgentMessage[] 转换为 LLM 兼容的 Message[]。
 	 *
-	 * Each AgentMessage must be converted to a UserMessage, AssistantMessage, or ToolResultMessage
-	 * that the LLM can understand. AgentMessages that cannot be converted (e.g., UI-only notifications,
-	 * status messages) should be filtered out.
+	 * 每个 AgentMessage 必须转换为 LLM 可以理解的 UserMessage、AssistantMessage 或 ToolResultMessage。
+	 * 无法转换的 AgentMessage（例如，仅 UI 通知、状态消息）应被过滤掉。
 	 *
 	 * @example
 	 * ```typescript
@@ -48,11 +47,11 @@ export interface AgentLoopConfig extends SimpleStreamOptions {
 	convertToLlm: (messages: AgentMessage[]) => Message[] | Promise<Message[]>;
 
 	/**
-	 * Optional transform applied to the context before `convertToLlm`.
+	 * 在 `convertToLlm` 之前应用于上下文的可选转换。
 	 *
-	 * Use this for operations that work at the AgentMessage level:
-	 * - Context window management (pruning old messages)
-	 * - Injecting context from external sources
+	 * 将此用于在 AgentMessage 级别工作的操作：
+	 * - 上下文窗口管理（修剪旧消息）
+	 * - 从外部来源注入上下文
 	 *
 	 * @example
 	 * ```typescript
@@ -67,45 +66,42 @@ export interface AgentLoopConfig extends SimpleStreamOptions {
 	transformContext?: (messages: AgentMessage[], signal?: AbortSignal) => Promise<AgentMessage[]>;
 
 	/**
-	 * Resolves an API key dynamically for each LLM call.
+	 * 为每次 LLM 调用动态解析 API 密钥。
 	 *
-	 * Useful for short-lived OAuth tokens (e.g., GitHub Copilot) that may expire
-	 * during long-running tool execution phases.
+	 * 对于可能在长时间运行的工具执行阶段过期的短期 OAuth 令牌（例如 GitHub Copilot）非常有用。
 	 */
 	getApiKey?: (provider: string) => Promise<string | undefined> | string | undefined;
 
 	/**
-	 * Returns steering messages to inject into the conversation mid-run.
+	 * 返回要在运行中注入对话的引导消息。
 	 *
-	 * Called after each tool execution to check for user interruptions.
-	 * If messages are returned, remaining tool calls are skipped and
-	 * these messages are added to the context before the next LLM call.
+	 * 在每次工具执行后调用以检查用户中断。
+	 * 如果返回消息，则跳过剩余的工具调用，并在下一次 LLM 调用之前将这些消息添加到上下文中。
 	 *
-	 * Use this for "steering" the agent while it's working.
+	 * 使用它在 agent 工作时对其进行“引导”。
 	 */
 	getSteeringMessages?: () => Promise<AgentMessage[]>;
 
 	/**
-	 * Returns follow-up messages to process after the agent would otherwise stop.
+	 * 返回在 agent 否则将停止后要处理的后续消息。
 	 *
-	 * Called when the agent has no more tool calls and no steering messages.
-	 * If messages are returned, they're added to the context and the agent
-	 * continues with another turn.
+	 * 当 agent 没有更多工具调用且没有引导消息时调用。
+	 * 如果返回消息，它们将被添加到上下文中，并且 agent 继续进行下一轮。
 	 *
-	 * Use this for follow-up messages that should wait until the agent finishes.
+	 * 使用它处理应等待 agent 完成后的后续消息。
 	 */
 	getFollowUpMessages?: () => Promise<AgentMessage[]>;
 }
 
 /**
- * Thinking/reasoning level for models that support it.
- * Note: "xhigh" is only supported by OpenAI gpt-5.1-codex-max, gpt-5.2, gpt-5.2-codex, gpt-5.3, and gpt-5.3-codex models.
+ * 支持它的模型的思考/推理级别。
+ * 注意："xhigh" 仅由 OpenAI gpt-5.1-codex-max, gpt-5.2, gpt-5.2-codex, gpt-5.3, 和 gpt-5.3-codex 模型支持。
  */
 export type ThinkingLevel = "off" | "minimal" | "low" | "medium" | "high" | "xhigh";
 
 /**
- * Extensible interface for custom app messages.
- * Apps can extend via declaration merging:
+ * 自定义应用程序消息的可扩展接口。
+ * 应用程序可以通过声明合并进行扩展：
  *
  * @example
  * ```typescript
@@ -122,14 +118,13 @@ export interface CustomAgentMessages {
 }
 
 /**
- * AgentMessage: Union of LLM messages + custom messages.
- * This abstraction allows apps to add custom message types while maintaining
- * type safety and compatibility with the base LLM messages.
+ * AgentMessage: LLM 消息 + 自定义消息的联合类型。
+ * 这种抽象允许应用程序添加自定义消息类型，同时保持类型安全和与基本 LLM 消息的兼容性。
  */
 export type AgentMessage = Message | CustomAgentMessages[keyof CustomAgentMessages];
 
 /**
- * Agent state containing all configuration and conversation data.
+ * 包含所有配置和对话数据的 Agent 状态。
  */
 export interface AgentState {
 	systemPrompt: string;
@@ -144,18 +139,18 @@ export interface AgentState {
 }
 
 export interface AgentToolResult<T> {
-	// Content blocks supporting text and images
+	// 支持文本和图像的内容块
 	content: (TextContent | ImageContent)[];
-	// Details to be displayed in a UI or logged
+	// 要在 UI 中显示或记录的详细信息
 	details: T;
 }
 
-// Callback for streaming tool execution updates
+// 用于流式传输工具执行更新的回调
 export type AgentToolUpdateCallback<T = any> = (partialResult: AgentToolResult<T>) => void;
 
-// AgentTool extends Tool but adds the execute function
+// AgentTool 扩展了 Tool 但添加了 execute 函数
 export interface AgentTool<TParameters extends TSchema = TSchema, TDetails = any> extends Tool<TParameters> {
-	// A human-readable label for the tool to be displayed in UI
+	// 要在 UI 中显示的工具的人类可读标签
 	label: string;
 	execute: (
 		toolCallId: string,
@@ -165,7 +160,7 @@ export interface AgentTool<TParameters extends TSchema = TSchema, TDetails = any
 	) => Promise<AgentToolResult<TDetails>>;
 }
 
-// AgentContext is like Context but uses AgentTool
+// AgentContext 类似于 Context 但使用 AgentTool
 export interface AgentContext {
 	systemPrompt: string;
 	messages: AgentMessage[];
@@ -173,22 +168,22 @@ export interface AgentContext {
 }
 
 /**
- * Events emitted by the Agent for UI updates.
- * These events provide fine-grained lifecycle information for messages, turns, and tool executions.
+ * Agent 发出的用于 UI 更新的事件。
+ * 这些事件为消息、轮次和工具执行提供细粒度的生命周期信息。
  */
 export type AgentEvent =
-	// Agent lifecycle
+	// Agent 生命周期
 	| { type: "agent_start" }
 	| { type: "agent_end"; messages: AgentMessage[] }
-	// Turn lifecycle - a turn is one assistant response + any tool calls/results
+	// 轮次生命周期 - 一个轮次是一次助手响应 + 任何工具调用/结果
 	| { type: "turn_start" }
 	| { type: "turn_end"; message: AgentMessage; toolResults: ToolResultMessage[] }
-	// Message lifecycle - emitted for user, assistant, and toolResult messages
+	// 消息生命周期 - 为用户、助手和 toolResult 消息发出
 	| { type: "message_start"; message: AgentMessage }
-	// Only emitted for assistant messages during streaming
+	// 仅在流式传输期间为助手消息发出
 	| { type: "message_update"; message: AgentMessage; assistantMessageEvent: AssistantMessageEvent }
 	| { type: "message_end"; message: AgentMessage }
-	// Tool execution lifecycle
+	// 工具执行生命周期
 	| { type: "tool_execution_start"; toolCallId: string; toolName: string; args: any }
 	| { type: "tool_execution_update"; toolCallId: string; toolName: string; args: any; partialResult: any }
 	| { type: "tool_execution_end"; toolCallId: string; toolName: string; result: any; isError: boolean };

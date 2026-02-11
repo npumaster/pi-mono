@@ -1,6 +1,6 @@
 /**
- * Agent class that uses the agent-loop directly.
- * No transport abstraction - calls streamSimple via the loop.
+ * 直接使用 agent-loop 的 Agent 类。
+ * 没有传输抽象 - 通过循环调用 streamSimple。
  */
 
 import {
@@ -25,7 +25,7 @@ import type {
 } from "./types.js";
 
 /**
- * Default convertToLlm: Keep only LLM-compatible messages, convert attachments.
+ * 默认 convertToLlm: 仅保留 LLM 兼容的消息，转换附件。
  */
 function defaultConvertToLlm(messages: AgentMessage[]): Message[] {
 	return messages.filter((m) => m.role === "user" || m.role === "assistant" || m.role === "toolResult");
@@ -35,54 +35,54 @@ export interface AgentOptions {
 	initialState?: Partial<AgentState>;
 
 	/**
-	 * Converts AgentMessage[] to LLM-compatible Message[] before each LLM call.
-	 * Default filters to user/assistant/toolResult and converts attachments.
+	 * 在每次 LLM 调用之前将 AgentMessage[] 转换为 LLM 兼容的 Message[]。
+	 * 默认过滤为 user/assistant/toolResult 并转换附件。
 	 */
 	convertToLlm?: (messages: AgentMessage[]) => Message[] | Promise<Message[]>;
 
 	/**
-	 * Optional transform applied to context before convertToLlm.
-	 * Use for context pruning, injecting external context, etc.
+	 * 在 convertToLlm 之前应用于上下文的可选转换。
+	 * 用于上下文修剪、注入外部上下文等。
 	 */
 	transformContext?: (messages: AgentMessage[], signal?: AbortSignal) => Promise<AgentMessage[]>;
 
 	/**
-	 * Steering mode: "all" = send all steering messages at once, "one-at-a-time" = one per turn
+	 * 引导模式："all" = 一次发送所有引导消息，"one-at-a-time" = 每轮发送一条
 	 */
 	steeringMode?: "all" | "one-at-a-time";
 
 	/**
-	 * Follow-up mode: "all" = send all follow-up messages at once, "one-at-a-time" = one per turn
+	 * 后续模式："all" = 一次发送所有后续消息，"one-at-a-time" = 每轮发送一条
 	 */
 	followUpMode?: "all" | "one-at-a-time";
 
 	/**
-	 * Custom stream function (for proxy backends, etc.). Default uses streamSimple.
+	 * 自定义流函数（用于代理后端等）。默认使用 streamSimple。
 	 */
 	streamFn?: StreamFn;
 
 	/**
-	 * Optional session identifier forwarded to LLM providers.
-	 * Used by providers that support session-based caching (e.g., OpenAI Codex).
+	 * 转发给 LLM 提供商的可选会话标识符。
+	 * 由支持基于会话的缓存的提供商（例如 OpenAI Codex）使用。
 	 */
 	sessionId?: string;
 
 	/**
-	 * Resolves an API key dynamically for each LLM call.
-	 * Useful for expiring tokens (e.g., GitHub Copilot OAuth).
+	 * 为每次 LLM 调用动态解析 API 密钥。
+	 * 对于过期令牌（例如 GitHub Copilot OAuth）很有用。
 	 */
 	getApiKey?: (provider: string) => Promise<string | undefined> | string | undefined;
 
 	/**
-	 * Custom token budgets for thinking levels (token-based providers only).
+	 * 思考级别的自定义令牌预算（仅限基于令牌的提供商）。
 	 */
 	thinkingBudgets?: ThinkingBudgets;
 
 	/**
-	 * Maximum delay in milliseconds to wait for a retry when the server requests a long wait.
-	 * If the server's requested delay exceeds this value, the request fails immediately,
-	 * allowing higher-level retry logic to handle it with user visibility.
-	 * Default: 60000 (60 seconds). Set to 0 to disable the cap.
+	 * 当服务器请求长时间等待时，等待重试的最大延迟（毫秒）。
+	 * 如果服务器请求的延迟超过此值，请求将立即失败，
+	 * 允许更高级别的重试逻辑以用户可见的方式处理它。
+	 * 默认值：60000（60 秒）。设置为 0 以禁用上限。
 	 */
 	maxRetryDelayMs?: number;
 }
@@ -130,44 +130,44 @@ export class Agent {
 	}
 
 	/**
-	 * Get the current session ID used for provider caching.
+	 * 获取用于提供商缓存的当前会话 ID。
 	 */
 	get sessionId(): string | undefined {
 		return this._sessionId;
 	}
 
 	/**
-	 * Set the session ID for provider caching.
-	 * Call this when switching sessions (new session, branch, resume).
+	 * 设置用于提供商缓存的会话 ID。
+	 * 在切换会话（新会话、分支、恢复）时调用此项。
 	 */
 	set sessionId(value: string | undefined) {
 		this._sessionId = value;
 	}
 
 	/**
-	 * Get the current thinking budgets.
+	 * 获取当前的思考预算。
 	 */
 	get thinkingBudgets(): ThinkingBudgets | undefined {
 		return this._thinkingBudgets;
 	}
 
 	/**
-	 * Set custom thinking budgets for token-based providers.
+	 * 设置基于令牌的提供商的自定义思考预算。
 	 */
 	set thinkingBudgets(value: ThinkingBudgets | undefined) {
 		this._thinkingBudgets = value;
 	}
 
 	/**
-	 * Get the current max retry delay in milliseconds.
+	 * 获取当前最大重试延迟（毫秒）。
 	 */
 	get maxRetryDelayMs(): number | undefined {
 		return this._maxRetryDelayMs;
 	}
 
 	/**
-	 * Set the maximum delay to wait for server-requested retries.
-	 * Set to 0 to disable the cap.
+	 * 设置等待服务器请求的重试的最大延迟。
+	 * 设置为 0 以禁用上限。
 	 */
 	set maxRetryDelayMs(value: number | undefined) {
 		this._maxRetryDelayMs = value;
@@ -224,16 +224,16 @@ export class Agent {
 	}
 
 	/**
-	 * Queue a steering message to interrupt the agent mid-run.
-	 * Delivered after current tool execution, skips remaining tools.
+	 * 排队引导消息以在运行中打断 agent。
+	 * 在当前工具执行后传递，跳过剩余工具。
 	 */
 	steer(m: AgentMessage) {
 		this.steeringQueue.push(m);
 	}
 
 	/**
-	 * Queue a follow-up message to be processed after the agent finishes.
-	 * Delivered only when agent has no more tool calls or steering messages.
+	 * 排队后续消息以在 agent 完成后处理。
+	 * 仅当 agent 没有更多工具调用或引导消息时传递。
 	 */
 	followUp(m: AgentMessage) {
 		this.followUpQueue.push(m);
@@ -308,7 +308,7 @@ export class Agent {
 		this.followUpQueue = [];
 	}
 
-	/** Send a prompt with an AgentMessage */
+	/** 发送带有 AgentMessage 的提示 */
 	async prompt(message: AgentMessage | AgentMessage[]): Promise<void>;
 	async prompt(input: string, images?: ImageContent[]): Promise<void>;
 	async prompt(input: string | AgentMessage | AgentMessage[], images?: ImageContent[]) {
@@ -345,7 +345,7 @@ export class Agent {
 	}
 
 	/**
-	 * Continue from current context (used for retries and resuming queued messages).
+	 * 从当前上下文继续（用于重试和恢复排队的消息）。
 	 */
 	async continue() {
 		if (this._state.isStreaming) {
@@ -376,9 +376,9 @@ export class Agent {
 	}
 
 	/**
-	 * Run the agent loop.
-	 * If messages are provided, starts a new conversation turn with those messages.
-	 * Otherwise, continues from existing context.
+	 * 运行 agent 循环。
+	 * 如果提供了消息，则使用这些消息开始新的对话轮次。
+	 * 否则，从现有上下文继续。
 	 */
 	private async _runLoop(messages?: AgentMessage[], options?: { skipInitialSteeringPoll?: boolean }) {
 		const model = this._state.model;
@@ -430,7 +430,7 @@ export class Agent {
 				: agentLoopContinue(context, config, this.abortController.signal, this.streamFn);
 
 			for await (const event of stream) {
-				// Update internal state based on events
+				// 根据事件更新内部状态
 				switch (event.type) {
 					case "message_start":
 						partial = event.message;
@@ -474,11 +474,11 @@ export class Agent {
 						break;
 				}
 
-				// Emit to listeners
+				// 向监听器发出
 				this.emit(event);
 			}
 
-			// Handle any remaining partial message
+			// 处理任何剩余的部分消息
 			if (partial && partial.role === "assistant" && partial.content.length > 0) {
 				const onlyEmpty = !partial.content.some(
 					(c) =>

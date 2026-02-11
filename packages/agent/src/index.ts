@@ -1,8 +1,8 @@
-// Core Agent
+// 核心 Agent
 export * from "./agent.js";
-// Loop functions
+// 循环函数
 export * from "./agent-loop.js";
-// Proxy utilities
+// 代理工具
 export * from "./proxy.js";
-// Types
+// 类型
 export * from "./types.js";

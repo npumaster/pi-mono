@@ -1,6 +1,6 @@
 /**
- * Agent loop that works with AgentMessage throughout.
- * Transforms to Message[] only at the LLM call boundary.
+ * 在整个过程中使用 AgentMessage 的 Agent 循环。
+ * 仅在 LLM 调用边界转换为 Message[]。
  */
 
 import {
@@ -22,8 +22,8 @@ import type {
 } from "./types.js";
 
 /**
- * Start an agent loop with a new prompt message.
- * The prompt is added to the context and events are emitted for it.
+ * 使用新的提示消息启动 agent 循环。
+ * 提示被添加到上下文并为此发出事件。
  */
 export function agentLoop(
 	prompts: AgentMessage[],
@@ -55,12 +55,12 @@ export function agentLoop(
 }
 
 /**
- * Continue an agent loop from the current context without adding a new message.
- * Used for retries - context already has user message or tool results.
+ * 从当前上下文继续 agent 循环，不添加新消息。
+ * 用于重试 - 上下文已有用户消息或工具结果。
  *
- * **Important:** The last message in context must convert to a `user` or `toolResult` message
- * via `convertToLlm`. If it doesn't, the LLM provider will reject the request.
- * This cannot be validated here since `convertToLlm` is only called once per turn.
+ * **重要：** 上下文中的最后一条消息必须通过 `convertToLlm` 转换为 `user` 或 `toolResult` 消息。
+ * 如果不能，LLM 提供商将拒绝请求。
+ * 由于 `convertToLlm` 每轮仅调用一次，因此此处无法验证。
  */
 export function agentLoopContinue(
 	context: AgentContext,
@@ -99,7 +99,7 @@ function createAgentStream(): EventStream<AgentEvent, AgentMessage[]> {
 }
 
 /**
- * Main loop logic shared by agentLoop and agentLoopContinue.
+ * 由 agentLoop 和 agentLoopContinue 共享的主循环逻辑。
  */
 async function runLoop(
 	currentContext: AgentContext,
@@ -110,15 +110,15 @@ async function runLoop(
 	streamFn?: StreamFn,
 ): Promise<void> {
 	let firstTurn = true;
-	// Check for steering messages at start (user may have typed while waiting)
+	// 在开始时检查引导消息（用户可能在等待时输入了内容）
 	let pendingMessages: AgentMessage[] = (await config.getSteeringMessages?.()) || [];
 
-	// Outer loop: continues when queued follow-up messages arrive after agent would stop
+	// 外层循环：当 agent 停止后到达排队的后续消息时继续
 	while (true) {
 		let hasMoreToolCalls = true;
 		let steeringAfterTools: AgentMessage[] | null = null;
 
-		// Inner loop: process tool calls and steering messages
+		// 内层循环：处理工具调用和引导消息
 		while (hasMoreToolCalls || pendingMessages.length > 0) {
 			if (!firstTurn) {
 				stream.push({ type: "turn_start" });
@@ -126,7 +126,7 @@ async function runLoop(
 				firstTurn = false;
 			}
 
-			// Process pending messages (inject before next assistant response)
+			// 处理挂起的消息（在下一次助手响应之前注入）
 			if (pendingMessages.length > 0) {
 				for (const message of pendingMessages) {
 					stream.push({ type: "message_start", message });
@@ -137,7 +137,7 @@ async function runLoop(
 				pendingMessages = [];
 			}
 
-			// Stream assistant response
+			// 流式传输助手响应
 			const message = await streamAssistantResponse(currentContext, config, signal, stream, streamFn);
 			newMessages.push(message);
 
@@ -148,7 +148,7 @@ async function runLoop(
 				return;
 			}
 
-			// Check for tool calls
+			// 检查工具调用
 			const toolCalls = message.content.filter((c) => c.type === "toolCall");
 			hasMoreToolCalls = toolCalls.length > 0;
 
@@ -172,7 +172,7 @@ async function runLoop(
 
 			stream.push({ type: "turn_end", message, toolResults });
 
-			// Get steering messages after turn completes
+			// 在轮次完成后获取引导消息
 			if (steeringAfterTools && steeringAfterTools.length > 0) {
 				pendingMessages = steeringAfterTools;
 				steeringAfterTools = null;
@@ -181,15 +181,15 @@ async function runLoop(
 			}
 		}
 
-		// Agent would stop here. Check for follow-up messages.
+		// Agent 将在此处停止。检查后续消息。
 		const followUpMessages = (await config.getFollowUpMessages?.()) || [];
 		if (followUpMessages.length > 0) {
-			// Set as pending so inner loop processes them
+			// 设置为挂起，以便内层循环处理它们
 			pendingMessages = followUpMessages;
 			continue;
 		}
 
-		// No more messages, exit
+		// 没有更多消息，退出
 		break;
 	}
 
@@ -198,8 +198,8 @@ async function runLoop(
 }
 
 /**
- * Stream an assistant response from the LLM.
- * This is where AgentMessage[] gets transformed to Message[] for the LLM.
+ * 从 LLM 流式传输助手响应。
+ * 这是 AgentMessage[] 转换为 LLM 的 Message[] 的地方。
  */
 async function streamAssistantResponse(
 	context: AgentContext,
@@ -208,16 +208,16 @@ async function streamAssistantResponse(
 	stream: EventStream<AgentEvent, AgentMessage[]>,
 	streamFn?: StreamFn,
 ): Promise<AssistantMessage> {
-	// Apply context transform if configured (AgentMessage[] → AgentMessage[])
+	// 如果配置了上下文转换，则应用它 (AgentMessage[] → AgentMessage[])
 	let messages = context.messages;
 	if (config.transformContext) {
 		messages = await config.transformContext(messages, signal);
 	}
 
-	// Convert to LLM-compatible messages (AgentMessage[] → Message[])
+	// 转换为 LLM 兼容的消息 (AgentMessage[] → Message[])
 	const llmMessages = await config.convertToLlm(messages);
 
-	// Build LLM context
+	// 构建 LLM 上下文
 	const llmContext: Context = {
 		systemPrompt: context.systemPrompt,
 		messages: llmMessages,
@@ -226,7 +226,7 @@ async function streamAssistantResponse(
 
 	const streamFunction = streamFn || streamSimple;
 
-	// Resolve API key (important for expiring tokens)
+	// 解析 API 密钥（对于过期令牌很重要）
 	const resolvedApiKey =
 		(config.getApiKey ? await config.getApiKey(config.model.provider) : undefined) || config.apiKey;
 
@@ -289,7 +289,7 @@ async function streamAssistantResponse(
 }
 
 /**
- * Execute tool calls from an assistant message.
+ * 执行助手消息中的工具调用。
  */
 async function executeToolCalls(
 	tools: AgentTool<any>[] | undefined,
@@ -360,7 +360,7 @@ async function executeToolCalls(
 		stream.push({ type: "message_start", message: toolResultMessage });
 		stream.push({ type: "message_end", message: toolResultMessage });
 
-		// Check for steering messages - skip remaining tools if user interrupted
+		// 检查引导消息 - 如果用户中断，则跳过剩余的工具
 		if (getSteeringMessages) {
 			const steering = await getSteeringMessages();
 			if (steering.length > 0) {
