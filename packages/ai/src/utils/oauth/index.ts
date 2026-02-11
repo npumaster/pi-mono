@@ -1,15 +1,14 @@
 /**
- * OAuth credential management for AI providers.
+ * AI 提供商的 OAuth 凭据管理。
  *
- * This module handles login, token refresh, and credential storage
- * for OAuth-based providers:
+ * 此模块处理基于 OAuth 的提供商的登录、令牌刷新和凭据存储：
  * - Anthropic (Claude Pro/Max)
  * - GitHub Copilot
  * - Google Cloud Code Assist (Gemini CLI)
  * - Antigravity (Gemini 3, Claude, GPT-OSS via Google Cloud)
  */
 
-// Set up HTTP proxy for fetch() calls (respects HTTP_PROXY, HTTPS_PROXY env vars)
+// 为 fetch() 调用设置 HTTP 代理（遵循 HTTP_PROXY, HTTPS_PROXY 环境变量）
 import "../http-proxy.js";
 
 // Anthropic
@@ -32,7 +31,7 @@ export { loginOpenAICodex, openaiCodexOAuthProvider, refreshOpenAICodexToken } f
 export * from "./types.js";
 
 // ============================================================================
-// Provider Registry
+// 提供商注册表
 // ============================================================================
 
 import { anthropicOAuthProvider } from "./anthropic.js";
@@ -51,28 +50,28 @@ const oauthProviderRegistry = new Map<string, OAuthProviderInterface>([
 ]);
 
 /**
- * Get an OAuth provider by ID
+ * 通过 ID 获取 OAuth 提供商
  */
 export function getOAuthProvider(id: OAuthProviderId): OAuthProviderInterface | undefined {
 	return oauthProviderRegistry.get(id);
 }
 
 /**
- * Register a custom OAuth provider
+ * 注册自定义 OAuth 提供商
  */
 export function registerOAuthProvider(provider: OAuthProviderInterface): void {
 	oauthProviderRegistry.set(provider.id, provider);
 }
 
 /**
- * Get all registered OAuth providers
+ * 获取所有注册的 OAuth 提供商
  */
 export function getOAuthProviders(): OAuthProviderInterface[] {
 	return Array.from(oauthProviderRegistry.values());
 }
 
 /**
- * @deprecated Use getOAuthProviders() which returns OAuthProviderInterface[]
+ * @deprecated 使用返回 OAuthProviderInterface[] 的 getOAuthProviders()
  */
 export function getOAuthProviderInfoList(): OAuthProviderInfo[] {
 	return getOAuthProviders().map((p) => ({
@@ -83,12 +82,12 @@ export function getOAuthProviderInfoList(): OAuthProviderInfo[] {
 }
 
 // ============================================================================
-// High-level API (uses provider registry)
+// 高级 API（使用提供商注册表）
 // ============================================================================
 
 /**
- * Refresh token for any OAuth provider.
- * @deprecated Use getOAuthProvider(id).refreshToken() instead
+ * 刷新任何 OAuth 提供商的令牌。
+ * @deprecated 请改用 getOAuthProvider(id).refreshToken()
  */
 export async function refreshOAuthToken(
 	providerId: OAuthProviderId,
@@ -102,11 +101,11 @@ export async function refreshOAuthToken(
 }
 
 /**
- * Get API key for a provider from OAuth credentials.
- * Automatically refreshes expired tokens.
+ * 从 OAuth 凭据中获取提供商的 API 密钥。
+ * 自动刷新过期的令牌。
  *
- * @returns API key string and updated credentials, or null if no credentials
- * @throws Error if refresh fails
+ * @returns API 密钥字符串和更新后的凭据，如果没有凭据则为 null
+ * @throws 如果刷新失败则抛出 Error
  */
 export async function getOAuthApiKey(
 	providerId: OAuthProviderId,
@@ -122,7 +121,7 @@ export async function getOAuthApiKey(
 		return null;
 	}
 
-	// Refresh if expired
+	// 如果已过期则刷新
 	if (Date.now() >= creds.expires) {
 		try {
 			creds = await provider.refreshToken(creds);

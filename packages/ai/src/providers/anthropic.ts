@@ -32,8 +32,8 @@ import { adjustMaxTokensForThinking, buildBaseOptions } from "./simple-options.j
 import { transformMessages } from "./transform-messages.js";
 
 /**
- * Resolve cache retention preference.
- * Defaults to "short" and uses PI_CACHE_RETENTION for backward compatibility.
+ * 解析缓存保留偏好。
+ * 默认为 "short"，并使用 PI_CACHE_RETENTION 进行向后兼容。
  */
 function resolveCacheRetention(cacheRetention?: CacheRetention): CacheRetention {
 	if (cacheRetention) {
@@ -60,10 +60,10 @@ function getCacheControl(
 	};
 }
 
-// Stealth mode: Mimic Claude Code's tool naming exactly
+// 隐身模式：完全模仿 Claude Code 的工具命名
 const claudeCodeVersion = "2.1.2";
 
-// Claude Code 2.x tool names (canonical casing)
+// Claude Code 2.x 工具名称（规范大小写）
 // Source: https://cchistory.mariozechner.at/data/prompts-2.1.11.md
 // To update: https://github.com/badlogic/cchistory
 const claudeCodeTools = [
@@ -100,7 +100,7 @@ const fromClaudeCodeName = (name: string, tools?: Tool[]) => {
 };
 
 /**
- * Convert content blocks to Anthropic API format
+ * 将内容块转换为 Anthropic API 格式
  */
 function convertContentBlocks(content: (TextContent | ImageContent)[]):
 	| string
@@ -115,13 +115,13 @@ function convertContentBlocks(content: (TextContent | ImageContent)[]):
 					};
 			  }
 	  > {
-	// If only text blocks, return as concatenated string for simplicity
+	// 如果只有文本块，为简单起见返回拼接字符串
 	const hasImages = content.some((c) => c.type === "image");
 	if (!hasImages) {
 		return sanitizeSurrogates(content.map((c) => (c as TextContent).text).join("\n"));
 	}
 
-	// If we have images, convert to content block array
+	// 如果有图像，转换为内容块数组
 	const blocks = content.map((block) => {
 		if (block.type === "text") {
 			return {
@@ -139,7 +139,7 @@ function convertContentBlocks(content: (TextContent | ImageContent)[]):
 		};
 	});
 
-	// If only images (no text), add placeholder text block
+	// 如果只有图像（没有文本），添加占位符文本块
 	const hasText = blocks.some((b) => b.type === "text");
 	if (!hasText) {
 		blocks.unshift({
@@ -155,24 +155,24 @@ export type AnthropicEffort = "low" | "medium" | "high" | "max";
 
 export interface AnthropicOptions extends StreamOptions {
 	/**
-	 * Enable extended thinking.
-	 * For Opus 4.6+: uses adaptive thinking (Claude decides when/how much to think).
-	 * For older models: uses budget-based thinking with thinkingBudgetTokens.
+	 * 启用扩展思考。
+	 * 对于 Opus 4.6+：使用自适应思考（Claude 决定何时/思考多少）。
+	 * 对于旧模型：使用基于预算的思考，配合 thinkingBudgetTokens。
 	 */
 	thinkingEnabled?: boolean;
 	/**
-	 * Token budget for extended thinking (older models only).
-	 * Ignored for Opus 4.6+ which uses adaptive thinking.
+	 * 扩展思考的 token 预算（仅限旧模型）。
+	 * 对于使用自适应思考的 Opus 4.6+ 忽略此项。
 	 */
 	thinkingBudgetTokens?: number;
 	/**
-	 * Effort level for adaptive thinking (Opus 4.6+ only).
-	 * Controls how much thinking Claude allocates:
-	 * - "max": Always thinks with no constraints
-	 * - "high": Always thinks, deep reasoning (default)
-	 * - "medium": Moderate thinking, may skip for simple queries
-	 * - "low": Minimal thinking, skips for simple tasks
-	 * Ignored for older models.
+	 * 自适应思考的努力级别（仅限 Opus 4.6+）。
+	 * 控制 Claude 分配多少思考：
+	 * - "max": 总是无限制地思考
+	 * - "high": 总是思考，深度推理（默认）
+	 * - "medium": 适度思考，对于简单查询可能会跳过
+	 * - "low": 极少思考，对于简单任务会跳过
+	 * 对于旧模型忽略此项。
 	 */
 	effort?: AnthropicEffort;
 	interleavedThinking?: boolean;
@@ -233,13 +233,13 @@ export const streamAnthropic: StreamFunction<"anthropic-messages", AnthropicOpti
 
 			for await (const event of anthropicStream) {
 				if (event.type === "message_start") {
-					// Capture initial token usage from message_start event
-					// This ensures we have input token counts even if the stream is aborted early
+					// 从 message_start 事件捕获初始 token 使用情况
+					// 这确保即使流提前中止，我们也有输入 token 计数
 					output.usage.input = event.message.usage.input_tokens || 0;
 					output.usage.output = event.message.usage.output_tokens || 0;
 					output.usage.cacheRead = event.message.usage.cache_read_input_tokens || 0;
 					output.usage.cacheWrite = event.message.usage.cache_creation_input_tokens || 0;
-					// Anthropic doesn't provide total_tokens, compute from components
+					// Anthropic 不提供 total_tokens，从组件计算
 					output.usage.totalTokens =
 						output.usage.input + output.usage.output + output.usage.cacheRead + output.usage.cacheWrite;
 					calculateCost(model, output.usage);
@@ -369,7 +369,7 @@ export const streamAnthropic: StreamFunction<"anthropic-messages", AnthropicOpti
 					if (event.usage.cache_creation_input_tokens != null) {
 						output.usage.cacheWrite = event.usage.cache_creation_input_tokens;
 					}
-					// Anthropic doesn't provide total_tokens, compute from components
+					// Anthropic 不提供 total_tokens，从组件计算
 					output.usage.totalTokens =
 						output.usage.input + output.usage.output + output.usage.cacheRead + output.usage.cacheWrite;
 					calculateCost(model, output.usage);
@@ -399,7 +399,7 @@ export const streamAnthropic: StreamFunction<"anthropic-messages", AnthropicOpti
 };
 
 /**
- * Check if a model supports adaptive thinking (Opus 4.6+)
+ * 检查模型是否支持自适应思考 (Opus 4.6+)
  */
 function supportsAdaptiveThinking(modelId: string): boolean {
 	// Opus 4.6 model IDs (with or without date suffix)
@@ -407,7 +407,7 @@ function supportsAdaptiveThinking(modelId: string): boolean {
 }
 
 /**
- * Map ThinkingLevel to Anthropic effort levels for adaptive thinking
+ * 将 ThinkingLevel 映射到自适应思考的 Anthropic 努力级别
  */
 function mapThinkingLevelToEffort(level: SimpleStreamOptions["reasoning"]): AnthropicEffort {
 	switch (level) {
@@ -441,8 +441,8 @@ export const streamSimpleAnthropic: StreamFunction<"anthropic-messages", SimpleS
 		return streamAnthropic(model, context, { ...base, thinkingEnabled: false } satisfies AnthropicOptions);
 	}
 
-	// For Opus 4.6+: use adaptive thinking with effort level
-	// For older models: use budget-based thinking
+	// 对于 Opus 4.6+：使用带有努力级别的自适应思考
+	// 对于旧模型：使用基于预算的思考
 	if (supportsAdaptiveThinking(model.id)) {
 		const effort = mapThinkingLevelToEffort(options.reasoning);
 		return streamAnthropic(model, context, {
@@ -542,7 +542,7 @@ function buildParams(
 		stream: true,
 	};
 
-	// For OAuth tokens, we MUST include Claude Code identity
+	// 对于 OAuth 令牌，我们必须包含 Claude Code 身份
 	if (isOAuthToken) {
 		params.system = [
 			{
@@ -559,7 +559,7 @@ function buildParams(
 			});
 		}
 	} else if (context.systemPrompt) {
-		// Add cache control to system prompt for non-OAuth tokens
+		// 为非 OAuth 令牌向系统提示添加缓存控制
 		params.system = [
 			{
 				type: "text",
@@ -577,16 +577,16 @@ function buildParams(
 		params.tools = convertTools(context.tools, isOAuthToken);
 	}
 
-	// Configure thinking mode: adaptive (Opus 4.6+) or budget-based (older models)
+	// 配置思考模式：自适应 (Opus 4.6+) 或基于预算 (旧模型)
 	if (options?.thinkingEnabled && model.reasoning) {
 		if (supportsAdaptiveThinking(model.id)) {
-			// Adaptive thinking: Claude decides when and how much to think
+			// 自适应思考：Claude 决定何时以及思考多少
 			params.thinking = { type: "adaptive" };
 			if (options.effort) {
 				params.output_config = { effort: options.effort };
 			}
 		} else {
-			// Budget-based thinking for older models
+			// 旧模型的基于预算的思考
 			params.thinking = {
 				type: "enabled",
 				budget_tokens: options.thinkingBudgetTokens || 1024,
@@ -605,7 +605,7 @@ function buildParams(
 	return params;
 }
 
-// Normalize tool call IDs to match Anthropic's required pattern and length
+// 标准化工具调用 ID 以匹配 Anthropic 要求的模式和长度
 function normalizeToolCallId(id: string): string {
 	return id.replace(/[^a-zA-Z0-9_-]/g, "_").slice(0, 64);
 }
@@ -618,7 +618,7 @@ function convertMessages(
 ): MessageParam[] {
 	const params: MessageParam[] = [];
 
-	// Transform messages for cross-provider compatibility
+	// 转换消息以实现跨提供商兼容性
 	const transformedMessages = transformMessages(messages, model, normalizeToolCallId);
 
 	for (let i = 0; i < transformedMessages.length; i++) {
@@ -675,9 +675,9 @@ function convertMessages(
 					});
 				} else if (block.type === "thinking") {
 					if (block.thinking.trim().length === 0) continue;
-					// If thinking signature is missing/empty (e.g., from aborted stream),
-					// convert to plain text block without <thinking> tags to avoid API rejection
-					// and prevent Claude from mimicking the tags in responses
+					// 如果思考签名缺失/为空（例如，来自中止的流），
+					// 转换为不带 <thinking> 标签的纯文本块，以避免 API 拒绝
+					// 并防止 Claude 在响应中模仿这些标签
 					if (!block.thinkingSignature || block.thinkingSignature.trim().length === 0) {
 						blocks.push({
 							type: "text",
@@ -795,14 +795,14 @@ function mapStopReason(reason: Anthropic.Messages.StopReason | string): StopReas
 			return "toolUse";
 		case "refusal":
 			return "error";
-		case "pause_turn": // Stop is good enough -> resubmit
+		case "pause_turn": // Stop 已经足够好 -> 重新提交
 			return "stop";
 		case "stop_sequence":
-			return "stop"; // We don't supply stop sequences, so this should never happen
-		case "sensitive": // Content flagged by safety filters (not yet in SDK types)
+			return "stop"; // 我们不提供停止序列，所以这应该永远不会发生
+		case "sensitive": // 内容被安全过滤器标记（尚未在 SDK 类型中）
 			return "error";
 		default:
-			// Handle unknown stop reasons gracefully (API may add new values)
+			// 优雅地处理未知的停止原因（API 可能会添加新值）
 			throw new Error(`Unhandled stop reason: ${reason}`);
 	}
 }

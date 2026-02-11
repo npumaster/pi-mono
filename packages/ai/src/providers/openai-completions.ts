@@ -33,15 +33,15 @@ import { buildBaseOptions, clampReasoning } from "./simple-options.js";
 import { transformMessages } from "./transform-messages.js";
 
 /**
- * Normalize tool call ID for Mistral.
- * Mistral requires tool IDs to be exactly 9 alphanumeric characters (a-z, A-Z, 0-9).
+ * 标准化 Mistral 的工具调用 ID。
+ * Mistral 要求工具 ID 必须正好是 9 个字母数字字符（a-z, A-Z, 0-9）。
  */
 function normalizeMistralToolId(id: string): string {
-	// Remove non-alphanumeric characters
+	// 移除非字母数字字符
 	let normalized = id.replace(/[^a-zA-Z0-9]/g, "");
-	// Mistral requires exactly 9 characters
+	// Mistral 要求正好 9 个字符
 	if (normalized.length < 9) {
-		// Pad with deterministic characters based on original ID to ensure matching
+		// 根据原始 ID 使用确定性字符填充以确保匹配
 		const padding = "ABCDEFGHI";
 		normalized = normalized + padding.slice(0, 9 - normalized.length);
 	} else if (normalized.length > 9) {
@@ -51,9 +51,9 @@ function normalizeMistralToolId(id: string): string {
 }
 
 /**
- * Check if conversation messages contain tool calls or tool results.
- * This is needed because Anthropic (via proxy) requires the tools param
- * to be present when messages include tool_calls or tool role messages.
+ * 检查对话消息是否包含工具调用或工具结果。
+ * 这是因为 Anthropic（通过代理）在消息包含 tool_calls 或 tool 角色消息时，
+ * 要求存在 tools 参数。
  */
 function hasToolHistory(messages: Message[]): boolean {
 	for (const msg of messages) {
@@ -147,13 +147,13 @@ export const streamOpenAICompletions: StreamFunction<"openai-completions", OpenA
 					const input = (chunk.usage.prompt_tokens || 0) - cachedTokens;
 					const outputTokens = (chunk.usage.completion_tokens || 0) + reasoningTokens;
 					output.usage = {
-						// OpenAI includes cached tokens in prompt_tokens, so subtract to get non-cached input
+						// OpenAI 在 prompt_tokens 中包含缓存的令牌，因此减去以获得非缓存输入
 						input,
 						output: outputTokens,
 						cacheRead: cachedTokens,
 						cacheWrite: 0,
-						// Compute totalTokens ourselves since we add reasoning_tokens to output
-						// and some providers (e.g., Groq) don't include them in total_tokens
+						// 我们自己计算 totalTokens，因为我们将 reasoning_tokens 添加到 output 中
+						// 并且某些提供商（例如 Groq）不将它们包含在 total_tokens 中
 						totalTokens: input + outputTokens + cachedTokens,
 						cost: {
 							input: 0,
@@ -197,10 +197,9 @@ export const streamOpenAICompletions: StreamFunction<"openai-completions", OpenA
 						}
 					}
 
-					// Some endpoints return reasoning in reasoning_content (llama.cpp),
-					// or reasoning (other openai compatible endpoints)
-					// Use the first non-empty reasoning field to avoid duplication
-					// (e.g., chutes.ai returns both reasoning_content and reasoning with same content)
+					// 某些端点在 reasoning_content (llama.cpp) 或 reasoning (其他 openai 兼容端点) 中返回推理
+					// 使用第一个非空推理字段以避免重复
+					// (例如，chutes.ai 同时返回内容相同的 reasoning_content 和 reasoning)
 					const reasoningFields = ["reasoning_content", "reasoning", "reasoning_text"];
 					let foundReasoningField: string | null = null;
 					for (const field of reasoningFields) {

@@ -1,5 +1,5 @@
 /**
- * GitHub Copilot OAuth flow
+ * GitHub Copilot OAuth 流程
  */
 
 import { getModels } from "../../models.js";
@@ -64,26 +64,26 @@ function getUrls(domain: string): {
 }
 
 /**
- * Parse the proxy-ep from a Copilot token and convert to API base URL.
- * Token format: tid=...;exp=...;proxy-ep=proxy.individual.githubcopilot.com;...
- * Returns API URL like https://api.individual.githubcopilot.com
+ * 解析 Copilot 令牌中的 proxy-ep 并转换为 API 基本 URL。
+ * 令牌格式：tid=...;exp=...;proxy-ep=proxy.individual.githubcopilot.com;...
+ * 返回 API URL，例如 https://api.individual.githubcopilot.com
  */
 function getBaseUrlFromToken(token: string): string | null {
 	const match = token.match(/proxy-ep=([^;]+)/);
 	if (!match) return null;
 	const proxyHost = match[1];
-	// Convert proxy.xxx to api.xxx
+	// 将 proxy.xxx 转换为 api.xxx
 	const apiHost = proxyHost.replace(/^proxy\./, "api.");
 	return `https://${apiHost}`;
 }
 
 export function getGitHubCopilotBaseUrl(token?: string, enterpriseDomain?: string): string {
-	// If we have a token, extract the base URL from proxy-ep
+	// 如果我们有令牌，从 proxy-ep 中提取基本 URL
 	if (token) {
 		const urlFromToken = getBaseUrlFromToken(token);
 		if (urlFromToken) return urlFromToken;
 	}
-	// Fallback for enterprise or if token parsing fails
+	// 企业或令牌解析失败的回退
 	if (enterpriseDomain) return `https://copilot-api.${enterpriseDomain}`;
 	return "https://api.individual.githubcopilot.com";
 }
@@ -142,7 +142,7 @@ async function startDeviceFlow(domain: string): Promise<DeviceCodeResponse> {
 }
 
 /**
- * Sleep that can be interrupted by an AbortSignal
+ * 可被 AbortSignal 中断的睡眠
  */
 function abortableSleep(ms: number, signal?: AbortSignal): Promise<void> {
 	return new Promise((resolve, reject) => {
@@ -221,7 +221,7 @@ async function pollForGitHubAccessToken(
 }
 
 /**
- * Refresh GitHub Copilot token
+ * 刷新 GitHub Copilot 令牌
  */
 export async function refreshGitHubCopilotToken(
 	refreshToken: string,
@@ -258,8 +258,8 @@ export async function refreshGitHubCopilotToken(
 }
 
 /**
- * Enable a model for the user's GitHub Copilot account.
- * This is required for some models (like Claude, Grok) before they can be used.
+ * 为用户的 GitHub Copilot 帐户启用模型。
+ * 某些模型（如 Claude、Grok）在使用前需要此操作。
  */
 async function enableGitHubCopilotModel(token: string, modelId: string, enterpriseDomain?: string): Promise<boolean> {
 	const baseUrl = getGitHubCopilotBaseUrl(token, enterpriseDomain);
@@ -284,8 +284,8 @@ async function enableGitHubCopilotModel(token: string, modelId: string, enterpri
 }
 
 /**
- * Enable all known GitHub Copilot models that may require policy acceptance.
- * Called after successful login to ensure all models are available.
+ * 启用所有可能需要接受策略的已知 GitHub Copilot 模型。
+ * 成功登录后调用以确保所有模型可用。
  */
 async function enableAllGitHubCopilotModels(
 	token: string,
@@ -302,12 +302,12 @@ async function enableAllGitHubCopilotModels(
 }
 
 /**
- * Login with GitHub Copilot OAuth (device code flow)
+ * 使用 GitHub Copilot OAuth 登录（设备代码流程）
  *
- * @param options.onAuth - Callback with URL and optional instructions (user code)
- * @param options.onPrompt - Callback to prompt user for input
- * @param options.onProgress - Optional progress callback
- * @param options.signal - Optional AbortSignal for cancellation
+ * @param options.onAuth - 带有 URL 和可选说明（用户代码）的回调
+ * @param options.onPrompt - 提示用户输入的回调
+ * @param options.onProgress - 可选的进度回调
+ * @param options.signal - 用于取消的可选 AbortSignal
  */
 export async function loginGitHubCopilot(options: {
 	onAuth: (url: string, instructions?: string) => void;
@@ -344,7 +344,7 @@ export async function loginGitHubCopilot(options: {
 	);
 	const credentials = await refreshGitHubCopilotToken(githubAccessToken, enterpriseDomain ?? undefined);
 
-	// Enable all models after successful login
+	// 成功登录后启用所有模型
 	options.onProgress?.("Enabling models...");
 	await enableAllGitHubCopilotModels(credentials.access, enterpriseDomain ?? undefined);
 	return credentials;

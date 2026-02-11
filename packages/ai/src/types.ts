@@ -42,7 +42,7 @@ export type Provider = KnownProvider | string;
 
 export type ThinkingLevel = "minimal" | "low" | "medium" | "high" | "xhigh";
 
-/** Token budgets for each thinking level (token-based providers only) */
+/** 每个思考层级的 Token 预算（仅限基于 token 的提供商） */
 export interface ThinkingBudgets {
 	minimal?: number;
 	low?: number;
@@ -50,7 +50,7 @@ export interface ThinkingBudgets {
 	high?: number;
 }
 
-// Base options all providers share
+// 所有提供商共享的基础选项
 export type CacheRetention = "none" | "short" | "long";
 
 export interface StreamOptions {
@@ -59,46 +59,46 @@ export interface StreamOptions {
 	signal?: AbortSignal;
 	apiKey?: string;
 	/**
-	 * Prompt cache retention preference. Providers map this to their supported values.
-	 * Default: "short".
+	 * 提示缓存保留偏好。提供商将其映射到其支持的值。
+	 * 默认值: "short"。
 	 */
 	cacheRetention?: CacheRetention;
 	/**
-	 * Optional session identifier for providers that support session-based caching.
-	 * Providers can use this to enable prompt caching, request routing, or other
-	 * session-aware features. Ignored by providers that don't support it.
+	 * 支持基于会话缓存的提供商的可选会话标识符。
+	 * 提供商可以使用它来启用提示缓存、请求路由或其他
+	 * 感知会话的功能。不支持它的提供商将忽略此项。
 	 */
 	sessionId?: string;
 	/**
-	 * Optional callback for inspecting provider payloads before sending.
+	 * 发送前检查提供商负载的可选回调。
 	 */
 	onPayload?: (payload: unknown) => void;
 	/**
-	 * Optional custom HTTP headers to include in API requests.
-	 * Merged with provider defaults; can override default headers.
-	 * Not supported by all providers (e.g., AWS Bedrock uses SDK auth).
+	 * 包含在 API 请求中的可选自定义 HTTP 标头。
+	 * 与提供商默认值合并；可以覆盖默认标头。
+	 * 并非所有提供商都支持（例如，AWS Bedrock 使用 SDK 身份验证）。
 	 */
 	headers?: Record<string, string>;
 	/**
-	 * Maximum delay in milliseconds to wait for a retry when the server requests a long wait.
-	 * If the server's requested delay exceeds this value, the request fails immediately
-	 * with an error containing the requested delay, allowing higher-level retry logic
-	 * to handle it with user visibility.
-	 * Default: 60000 (60 seconds). Set to 0 to disable the cap.
+	 * 当服务器请求长时间等待时，等待重试的最大延迟（以毫秒为单位）。
+	 * 如果服务器请求的延迟超过此值，请求将立即失败
+	 * 并带有包含请求延迟的错误，允许更高级别的重试逻辑
+	 * 以用户可见的方式处理它。
+	 * 默认值: 60000 (60 秒)。设置为 0 以禁用上限。
 	 */
 	maxRetryDelayMs?: number;
 }
 
 export type ProviderStreamOptions = StreamOptions & Record<string, unknown>;
 
-// Unified options with reasoning passed to streamSimple() and completeSimple()
+// 传递给 streamSimple() 和 completeSimple() 的带有推理的统一选项
 export interface SimpleStreamOptions extends StreamOptions {
 	reasoning?: ThinkingLevel;
-	/** Custom token budgets for thinking levels (token-based providers only) */
+	/** 思考层级的自定义 Token 预算（仅限基于 token 的提供商） */
 	thinkingBudgets?: ThinkingBudgets;
 }
 
-// Generic StreamFunction with typed options
+// 带有类型选项的通用 StreamFunction
 export type StreamFunction<TApi extends Api = Api, TOptions extends StreamOptions = StreamOptions> = (
 	model: Model<TApi>,
 	context: Context,
@@ -108,19 +108,19 @@ export type StreamFunction<TApi extends Api = Api, TOptions extends StreamOption
 export interface TextContent {
 	type: "text";
 	text: string;
-	textSignature?: string; // e.g., for OpenAI responses, the message ID
+	textSignature?: string; // 例如，对于 OpenAI 响应，为消息 ID
 }
 
 export interface ThinkingContent {
 	type: "thinking";
 	thinking: string;
-	thinkingSignature?: string; // e.g., for OpenAI responses, the reasoning item ID
+	thinkingSignature?: string; // 例如，对于 OpenAI 响应，为推理项 ID
 }
 
 export interface ImageContent {
 	type: "image";
-	data: string; // base64 encoded image data
-	mimeType: string; // e.g., "image/jpeg", "image/png"
+	data: string; // base64 编码的图像数据
+	mimeType: string; // 例如，"image/jpeg", "image/png"
 }
 
 export interface ToolCall {
@@ -128,7 +128,7 @@ export interface ToolCall {
 	id: string;
 	name: string;
 	arguments: Record<string, any>;
-	thoughtSignature?: string; // Google-specific: opaque signature for reusing thought context
+	thoughtSignature?: string; // Google 特有：用于重用思维上下文的不透明签名
 }
 
 export interface Usage {
@@ -151,7 +151,7 @@ export type StopReason = "stop" | "length" | "toolUse" | "error" | "aborted";
 export interface UserMessage {
 	role: "user";
 	content: string | (TextContent | ImageContent)[];
-	timestamp: number; // Unix timestamp in milliseconds
+	timestamp: number; // Unix 时间戳（以毫秒为单位）
 }
 
 export interface AssistantMessage {
@@ -163,17 +163,17 @@ export interface AssistantMessage {
 	usage: Usage;
 	stopReason: StopReason;
 	errorMessage?: string;
-	timestamp: number; // Unix timestamp in milliseconds
+	timestamp: number; // Unix 时间戳（以毫秒为单位）
 }
 
 export interface ToolResultMessage<TDetails = any> {
 	role: "toolResult";
 	toolCallId: string;
 	toolName: string;
-	content: (TextContent | ImageContent)[]; // Supports text and images
+	content: (TextContent | ImageContent)[]; // 支持文本和图像
 	details?: TDetails;
 	isError: boolean;
-	timestamp: number; // Unix timestamp in milliseconds
+	timestamp: number; // Unix 时间戳（以毫秒为单位）
 }
 
 export type Message = UserMessage | AssistantMessage | ToolResultMessage;
@@ -207,68 +207,68 @@ export type AssistantMessageEvent =
 	| { type: "error"; reason: Extract<StopReason, "aborted" | "error">; error: AssistantMessage };
 
 /**
- * Compatibility settings for OpenAI-compatible completions APIs.
- * Use this to override URL-based auto-detection for custom providers.
+ * OpenAI 兼容的 completions API 的兼容性设置。
+ * 用于覆盖自定义提供商的基于 URL 的自动检测。
  */
 export interface OpenAICompletionsCompat {
-	/** Whether the provider supports the `store` field. Default: auto-detected from URL. */
+	/** 提供商是否支持 `store` 字段。默认值：从 URL 自动检测。 */
 	supportsStore?: boolean;
-	/** Whether the provider supports the `developer` role (vs `system`). Default: auto-detected from URL. */
+	/** 提供商是否支持 `developer` 角色（相对于 `system`）。默认值：从 URL 自动检测。 */
 	supportsDeveloperRole?: boolean;
-	/** Whether the provider supports `reasoning_effort`. Default: auto-detected from URL. */
+	/** 提供商是否支持 `reasoning_effort`。默认值：从 URL 自动检测。 */
 	supportsReasoningEffort?: boolean;
-	/** Whether the provider supports `stream_options: { include_usage: true }` for token usage in streaming responses. Default: true. */
+	/** 提供商是否支持流式响应中的 token 使用情况的 `stream_options: { include_usage: true }`。默认值：true。 */
 	supportsUsageInStreaming?: boolean;
-	/** Which field to use for max tokens. Default: auto-detected from URL. */
+	/** 用于最大 token 数的字段。默认值：从 URL 自动检测。 */
 	maxTokensField?: "max_completion_tokens" | "max_tokens";
-	/** Whether tool results require the `name` field. Default: auto-detected from URL. */
+	/** 工具结果是否需要 `name` 字段。默认值：从 URL 自动检测。 */
 	requiresToolResultName?: boolean;
-	/** Whether a user message after tool results requires an assistant message in between. Default: auto-detected from URL. */
+	/** 工具结果之后的用户消息是否需要在中间插入助手消息。默认值：从 URL 自动检测。 */
 	requiresAssistantAfterToolResult?: boolean;
-	/** Whether thinking blocks must be converted to text blocks with <thinking> delimiters. Default: auto-detected from URL. */
+	/** 思考块是否必须转换为带有 <thinking> 分隔符的文本块。默认值：从 URL 自动检测。 */
 	requiresThinkingAsText?: boolean;
-	/** Whether tool call IDs must be normalized to Mistral format (exactly 9 alphanumeric chars). Default: auto-detected from URL. */
+	/** 工具调用 ID 是否必须标准化为 Mistral 格式（正好 9 个字母数字字符）。默认值：从 URL 自动检测。 */
 	requiresMistralToolIds?: boolean;
-	/** Format for reasoning/thinking parameter. "openai" uses reasoning_effort, "zai" uses thinking: { type: "enabled" }, "qwen" uses enable_thinking: boolean. Default: "openai". */
+	/** 推理/思考参数的格式。"openai" 使用 reasoning_effort，"zai" 使用 thinking: { type: "enabled" }，"qwen" 使用 enable_thinking: boolean。默认值："openai"。 */
 	thinkingFormat?: "openai" | "zai" | "qwen";
-	/** OpenRouter-specific routing preferences. Only used when baseUrl points to OpenRouter. */
+	/** OpenRouter 特有的路由偏好。仅当 baseUrl 指向 OpenRouter 时使用。 */
 	openRouterRouting?: OpenRouterRouting;
-	/** Vercel AI Gateway routing preferences. Only used when baseUrl points to Vercel AI Gateway. */
+	/** Vercel AI Gateway 路由偏好。仅当 baseUrl 指向 Vercel AI Gateway 时使用。 */
 	vercelGatewayRouting?: VercelGatewayRouting;
-	/** Whether the provider supports the `strict` field in tool definitions. Default: true. */
+	/** 提供商是否支持工具定义中的 `strict` 字段。默认值：true。 */
 	supportsStrictMode?: boolean;
 }
 
-/** Compatibility settings for OpenAI Responses APIs. */
+/** OpenAI Responses API 的兼容性设置。 */
 export interface OpenAIResponsesCompat {
-	// Reserved for future use
+	// 预留给未来使用
 }
 
 /**
- * OpenRouter provider routing preferences.
- * Controls which upstream providers OpenRouter routes requests to.
+ * OpenRouter 提供商路由偏好。
+ * 控制 OpenRouter 将请求路由到哪些上游提供商。
  * @see https://openrouter.ai/docs/provider-routing
  */
 export interface OpenRouterRouting {
-	/** List of provider slugs to exclusively use for this request (e.g., ["amazon-bedrock", "anthropic"]). */
+	/** 仅用于此请求的提供商 slug 列表（例如 ["amazon-bedrock", "anthropic"]）。 */
 	only?: string[];
-	/** List of provider slugs to try in order (e.g., ["anthropic", "openai"]). */
+	/** 按顺序尝试的提供商 slug 列表（例如 ["anthropic", "openai"]）。 */
 	order?: string[];
 }
 
 /**
- * Vercel AI Gateway routing preferences.
- * Controls which upstream providers the gateway routes requests to.
+ * Vercel AI Gateway 路由偏好。
+ * 控制网关将请求路由到哪些上游提供商。
  * @see https://vercel.com/docs/ai-gateway/models-and-providers/provider-options
  */
 export interface VercelGatewayRouting {
-	/** List of provider slugs to exclusively use for this request (e.g., ["bedrock", "anthropic"]). */
+	/** 仅用于此请求的提供商 slug 列表（例如 ["bedrock", "anthropic"]）。 */
 	only?: string[];
-	/** List of provider slugs to try in order (e.g., ["anthropic", "openai"]). */
+	/** 按顺序尝试的提供商 slug 列表（例如 ["anthropic", "openai"]）。 */
 	order?: string[];
 }
 
-// Model interface for the unified model system
+// 统一模型系统的模型接口
 export interface Model<TApi extends Api> {
 	id: string;
 	name: string;
@@ -278,15 +278,15 @@ export interface Model<TApi extends Api> {
 	reasoning: boolean;
 	input: ("text" | "image")[];
 	cost: {
-		input: number; // $/million tokens
-		output: number; // $/million tokens
-		cacheRead: number; // $/million tokens
-		cacheWrite: number; // $/million tokens
+		input: number; // $/百万 token
+		output: number; // $/百万 token
+		cacheRead: number; // $/百万 token
+		cacheWrite: number; // $/百万 token
 	};
 	contextWindow: number;
 	maxTokens: number;
 	headers?: Record<string, string>;
-	/** Compatibility overrides for OpenAI-compatible APIs. If not set, auto-detected from baseUrl. */
+	/** OpenAI 兼容 API 的兼容性覆盖。如果未设置，则从 baseUrl 自动检测。 */
 	compat?: TApi extends "openai-completions"
 		? OpenAICompletionsCompat
 		: TApi extends "openai-responses"

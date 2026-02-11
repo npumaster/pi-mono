@@ -1,18 +1,18 @@
 import AjvModule from "ajv";
 import addFormatsModule from "ajv-formats";
 
-// Handle both default and named exports
+// 处理默认和命名导出
 const Ajv = (AjvModule as any).default || AjvModule;
 const addFormats = (addFormatsModule as any).default || addFormatsModule;
 
 import type { Tool, ToolCall } from "../types.js";
 
-// Detect if we're in a browser extension environment with strict CSP
-// Chrome extensions with Manifest V3 don't allow eval/Function constructor
+// 检测我们是否处于具有严格 CSP 的浏览器扩展环境中
+// 具有 Manifest V3 的 Chrome 扩展不允许使用 eval/Function 构造函数
 const isBrowserExtension = typeof globalThis !== "undefined" && (globalThis as any).chrome?.runtime?.id !== undefined;
 
-// Create a singleton AJV instance with formats (only if not in browser extension)
-// AJV requires 'unsafe-eval' CSP which is not allowed in Manifest V3
+// 创建带有格式的单例 AJV 实例（仅当不在浏览器扩展中时）
+// AJV 需要 'unsafe-eval' CSP，这在 Manifest V3 中是不允许的
 let ajv: any = null;
 if (!isBrowserExtension) {
 	try {
@@ -23,17 +23,17 @@ if (!isBrowserExtension) {
 		});
 		addFormats(ajv);
 	} catch (_e) {
-		// AJV initialization failed (likely CSP restriction)
+		// AJV 初始化失败（可能是 CSP 限制）
 		console.warn("AJV validation disabled due to CSP restrictions");
 	}
 }
 
 /**
- * Finds a tool by name and validates the tool call arguments against its TypeBox schema
- * @param tools Array of tool definitions
- * @param toolCall The tool call from the LLM
- * @returns The validated arguments
- * @throws Error if tool is not found or validation fails
+ * 按名称查找工具并根据其 TypeBox 模式验证工具调用参数
+ * @param tools 工具定义数组
+ * @param toolCall 来自 LLM 的工具调用
+ * @returns 经过验证的参数
+ * @throws 如果找不到工具或验证失败则抛出 Error
  */
 export function validateToolCall(tools: Tool[], toolCall: ToolCall): any {
 	const tool = tools.find((t) => t.name === toolCall.name);
@@ -44,32 +44,32 @@ export function validateToolCall(tools: Tool[], toolCall: ToolCall): any {
 }
 
 /**
- * Validates tool call arguments against the tool's TypeBox schema
- * @param tool The tool definition with TypeBox schema
- * @param toolCall The tool call from the LLM
- * @returns The validated (and potentially coerced) arguments
- * @throws Error with formatted message if validation fails
+ * 根据工具的 TypeBox 模式验证工具调用参数
+ * @param tool 带有 TypeBox 模式的工具定义
+ * @param toolCall 来自 LLM 的工具调用
+ * @returns 经过验证（并可能强制转换）的参数
+ * @throws 如果验证失败则抛出带有格式化消息的 Error
  */
 export function validateToolArguments(tool: Tool, toolCall: ToolCall): any {
-	// Skip validation in browser extension environment (CSP restrictions prevent AJV from working)
+	// 在浏览器扩展环境中跳过验证（CSP 限制阻止 AJV 工作）
 	if (!ajv || isBrowserExtension) {
-		// Trust the LLM's output without validation
-		// Browser extensions can't use AJV due to Manifest V3 CSP restrictions
+		// 无需验证即可信任 LLM 的输出
+		// 由于 Manifest V3 CSP 限制，浏览器扩展无法使用 AJV
 		return toolCall.arguments;
 	}
 
-	// Compile the schema
+	// 编译模式
 	const validate = ajv.compile(tool.parameters);
 
-	// Clone arguments so AJV can safely mutate for type coercion
+	// 克隆参数，以便 AJV 可以安全地进行类型强制转换
 	const args = structuredClone(toolCall.arguments);
 
-	// Validate the arguments (AJV mutates args in-place for type coercion)
+	// 验证参数（AJV 会就地修改 args 以进行类型强制转换）
 	if (validate(args)) {
 		return args;
 	}
 
-	// Format validation errors nicely
+	// 很好地格式化验证错误
 	const errors =
 		validate.errors
 			?.map((err: any) => {

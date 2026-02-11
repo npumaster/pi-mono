@@ -1,9 +1,9 @@
 /**
- * Gemini CLI OAuth flow (Google Cloud Code Assist)
- * Standard Gemini models only (gemini-2.0-flash, gemini-2.5-*)
+ * Gemini CLI OAuth 流程 (Google Cloud Code Assist)
+ * 仅标准 Gemini 模型 (gemini-2.0-flash, gemini-2.5-*)
  *
- * NOTE: This module uses Node.js http.createServer for the OAuth callback.
- * It is only intended for CLI use, not browser environments.
+ * 注意：此模块使用 Node.js http.createServer 进行 OAuth 回调。
+ * 它仅用于 CLI 使用，不适用于浏览器环境。
  */
 
 import type { Server } from "node:http";
@@ -44,7 +44,7 @@ type CallbackServerInfo = {
 };
 
 /**
- * Start a local HTTP server to receive the OAuth callback
+ * 启动本地 HTTP 服务器以接收 OAuth 回调
  */
 async function getNodeCreateServer(): Promise<typeof import("node:http").createServer> {
 	if (_createServer) return _createServer;
@@ -119,7 +119,7 @@ async function startCallbackServer(): Promise<CallbackServerInfo> {
 }
 
 /**
- * Parse redirect URL to extract code and state
+ * 解析重定向 URL 以提取代码和状态
  */
 function parseRedirectUrl(input: string): { code?: string; state?: string } {
 	const value = input.trim();
@@ -132,7 +132,7 @@ function parseRedirectUrl(input: string): { code?: string; state?: string } {
 			state: url.searchParams.get("state") ?? undefined,
 		};
 	} catch {
-		// Not a URL, return empty
+		// 不是 URL，返回空
 		return {};
 	}
 }
@@ -144,7 +144,7 @@ interface LoadCodeAssistPayload {
 }
 
 /**
- * Long-running operation response from onboardUser
+ * 来自 onboardUser 的长时间运行操作响应
  */
 interface LongRunningOperationResponse {
 	name?: string;
@@ -154,7 +154,7 @@ interface LongRunningOperationResponse {
 	};
 }
 
-// Tier IDs as used by the Cloud Code API
+// Cloud Code API 使用的层级 ID
 const TIER_FREE = "free-tier";
 const TIER_LEGACY = "legacy-tier";
 const TIER_STANDARD = "standard-tier";
@@ -166,14 +166,14 @@ interface GoogleRpcErrorResponse {
 }
 
 /**
- * Wait helper for onboarding retries
+ * 载入重试的等待助手
  */
 function wait(ms: number): Promise<void> {
 	return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
 /**
- * Get default tier from allowed tiers
+ * 从允许的层级中获取默认层级
  */
 function getDefaultTier(allowedTiers?: Array<{ id?: string; isDefault?: boolean }>): { id?: string } {
 	if (!allowedTiers || allowedTiers.length === 0) return { id: TIER_LEGACY };
@@ -190,7 +190,7 @@ function isVpcScAffectedUser(payload: unknown): boolean {
 }
 
 /**
- * Poll a long-running operation until completion
+ * 轮询长时间运行的操作直到完成
  */
 async function pollOperation(
 	operationName: string,
@@ -223,10 +223,10 @@ async function pollOperation(
 }
 
 /**
- * Discover or provision a Google Cloud project for the user
+ * 为用户发现或配置 Google Cloud 项目
  */
 async function discoverProject(accessToken: string, onProgress?: (message: string) => void): Promise<string> {
-	// Check for user-provided project ID via environment variable
+	// 通过环境变量检查用户提供的项目 ID
 	const envProjectId = process.env.GOOGLE_CLOUD_PROJECT || process.env.GOOGLE_CLOUD_PROJECT_ID;
 
 	const headers = {
@@ -236,7 +236,7 @@ async function discoverProject(accessToken: string, onProgress?: (message: strin
 		"X-Goog-Api-Client": "gl-node/22.17.0",
 	};
 
-	// Try to load existing project via loadCodeAssist
+	// 尝试通过 loadCodeAssist 加载现有项目
 	onProgress?.("Checking for existing Cloud Code Assist project...");
 	const loadResponse = await fetch(`${CODE_ASSIST_ENDPOINT}/v1internal:loadCodeAssist`, {
 		method: "POST",
@@ -272,12 +272,12 @@ async function discoverProject(accessToken: string, onProgress?: (message: strin
 		data = (await loadResponse.json()) as LoadCodeAssistPayload;
 	}
 
-	// If user already has a current tier and project, use it
+	// 如果用户已有当前层级和项目，则使用它
 	if (data.currentTier) {
 		if (data.cloudaicompanionProject) {
 			return data.cloudaicompanionProject;
 		}
-		// User has a tier but no managed project - they need to provide one via env var
+		// 用户有层级但没有托管项目 - 他们需要通过环境变量提供一个
 		if (envProjectId) {
 			return envProjectId;
 		}
@@ -287,7 +287,7 @@ async function discoverProject(accessToken: string, onProgress?: (message: strin
 		);
 	}
 
-	// User needs to be onboarded - get the default tier
+	// 用户需要进行载入 - 获取默认层级
 	const tier = getDefaultTier(data.allowedTiers);
 	const tierId = tier?.id ?? TIER_FREE;
 
@@ -300,8 +300,8 @@ async function discoverProject(accessToken: string, onProgress?: (message: strin
 
 	onProgress?.("Provisioning Cloud Code Assist project (this may take a moment)...");
 
-	// Build onboard request - for free tier, don't include project ID (Google provisions one)
-	// For other tiers, include the user's project ID if available
+	// 构建载入请求 - 对于免费层级，不包含项目 ID（Google 会配置一个）
+	// 对于其他层级，如果可用，包含用户的项目 ID
 	const onboardBody: Record<string, unknown> = {
 		tierId,
 		metadata: {
@@ -316,7 +316,7 @@ async function discoverProject(accessToken: string, onProgress?: (message: strin
 		(onboardBody.metadata as Record<string, unknown>).duetProject = envProjectId;
 	}
 
-	// Start onboarding - this returns a long-running operation
+	// 开始载入 - 这会返回一个长时间运行的操作
 	const onboardResponse = await fetch(`${CODE_ASSIST_ENDPOINT}/v1internal:onboardUser`, {
 		method: "POST",
 		headers,
@@ -330,18 +330,18 @@ async function discoverProject(accessToken: string, onProgress?: (message: strin
 
 	let lroData = (await onboardResponse.json()) as LongRunningOperationResponse;
 
-	// If the operation isn't done yet, poll until completion
+	// 如果操作尚未完成，轮询直到完成
 	if (!lroData.done && lroData.name) {
 		lroData = await pollOperation(lroData.name, headers, onProgress);
 	}
 
-	// Try to get project ID from the response
+	// 尝试从响应中获取项目 ID
 	const projectId = lroData.response?.cloudaicompanionProject?.id;
 	if (projectId) {
 		return projectId;
 	}
 
-	// If no project ID from onboarding, fall back to env var
+	// 如果载入没有返回项目 ID，回退到环境变量
 	if (envProjectId) {
 		return envProjectId;
 	}
@@ -354,7 +354,7 @@ async function discoverProject(accessToken: string, onProgress?: (message: strin
 }
 
 /**
- * Get user email from the access token
+ * 从访问令牌中获取用户电子邮件
  */
 async function getUserEmail(accessToken: string): Promise<string | undefined> {
 	try {
@@ -369,13 +369,13 @@ async function getUserEmail(accessToken: string): Promise<string | undefined> {
 			return data.email;
 		}
 	} catch {
-		// Ignore errors, email is optional
+		// 忽略错误，电子邮件是可选的
 	}
 	return undefined;
 }
 
 /**
- * Refresh Google Cloud Code Assist token
+ * 刷新 Google Cloud Code Assist 令牌
  */
 export async function refreshGoogleCloudToken(refreshToken: string, projectId: string): Promise<OAuthCredentials> {
 	const response = await fetch(TOKEN_URL, {
@@ -409,12 +409,12 @@ export async function refreshGoogleCloudToken(refreshToken: string, projectId: s
 }
 
 /**
- * Login with Gemini CLI (Google Cloud Code Assist) OAuth
+ * 使用 Gemini CLI (Google Cloud Code Assist) OAuth 登录
  *
- * @param onAuth - Callback with URL and optional instructions
- * @param onProgress - Optional progress callback
- * @param onManualCodeInput - Optional promise that resolves with user-pasted redirect URL.
- *                            Races with browser callback - whichever completes first wins.
+ * @param onAuth - 带有 URL 和可选说明的回调
+ * @param onProgress - 可选的进度回调
+ * @param onManualCodeInput - 可选的 Promise，解析为用户粘贴的重定向 URL。
+ *                            与浏览器回调竞争 - 无论哪个先完成都会获胜。
  */
 export async function loginGeminiCli(
 	onAuth: (info: { url: string; instructions?: string }) => void,
@@ -423,14 +423,14 @@ export async function loginGeminiCli(
 ): Promise<OAuthCredentials> {
 	const { verifier, challenge } = await generatePKCE();
 
-	// Start local server for callback
+	// 启动本地服务器进行回调
 	onProgress?.("Starting local server for OAuth callback...");
 	const server = await startCallbackServer();
 
 	let code: string | undefined;
 
 	try {
-		// Build authorization URL
+		// 构建授权 URL
 		const authParams = new URLSearchParams({
 			client_id: CLIENT_ID,
 			response_type: "code",
@@ -445,17 +445,17 @@ export async function loginGeminiCli(
 
 		const authUrl = `${AUTH_URL}?${authParams.toString()}`;
 
-		// Notify caller with URL to open
+		// 通知调用者打开 URL
 		onAuth({
 			url: authUrl,
 			instructions: "Complete the sign-in in your browser.",
 		});
 
-		// Wait for the callback, racing with manual input if provided
+		// 等待回调，如果提供则与手动输入竞争
 		onProgress?.("Waiting for OAuth callback...");
 
 		if (onManualCodeInput) {
-			// Race between browser callback and manual input
+			// 浏览器回调和手动输入之间的竞争
 			let manualInput: string | undefined;
 			let manualError: Error | undefined;
 			const manualPromise = onManualCodeInput()
@@ -470,19 +470,19 @@ export async function loginGeminiCli(
 
 			const result = await server.waitForCode();
 
-			// If manual input was cancelled, throw that error
+			// 如果手动输入被取消，则抛出该错误
 			if (manualError) {
 				throw manualError;
 			}
 
 			if (result?.code) {
-				// Browser callback won - verify state
+				// 浏览器回调获胜 - 验证状态
 				if (result.state !== verifier) {
 					throw new Error("OAuth state mismatch - possible CSRF attack");
 				}
 				code = result.code;
 			} else if (manualInput) {
-				// Manual input won
+				// 手动输入获胜
 				const parsed = parseRedirectUrl(manualInput);
 				if (parsed.state && parsed.state !== verifier) {
 					throw new Error("OAuth state mismatch - possible CSRF attack");
@@ -490,7 +490,7 @@ export async function loginGeminiCli(
 				code = parsed.code;
 			}
 
-			// If still no code, wait for manual promise and try that
+			// 如果仍然没有代码，等待手动 Promise 并尝试
 			if (!code) {
 				await manualPromise;
 				if (manualError) {
@@ -505,7 +505,7 @@ export async function loginGeminiCli(
 				}
 			}
 		} else {
-			// Original flow: just wait for callback
+			// 原始流程：仅等待回调
 			const result = await server.waitForCode();
 			if (result?.code) {
 				if (result.state !== verifier) {
@@ -519,7 +519,7 @@ export async function loginGeminiCli(
 			throw new Error("No authorization code received");
 		}
 
-		// Exchange code for tokens
+		// 用代码交换令牌
 		onProgress?.("Exchanging authorization code for tokens...");
 		const tokenResponse = await fetch(TOKEN_URL, {
 			method: "POST",
@@ -551,14 +551,14 @@ export async function loginGeminiCli(
 			throw new Error("No refresh token received. Please try again.");
 		}
 
-		// Get user email
+		// 获取用户信息
 		onProgress?.("Getting user info...");
 		const email = await getUserEmail(tokenData.access_token);
 
-		// Discover project
+		// 发现项目
 		const projectId = await discoverProject(tokenData.access_token, onProgress);
 
-		// Calculate expiry time (current time + expires_in seconds - 5 min buffer)
+		// 计算过期时间（当前时间 + expires_in 秒 - 5 分钟缓冲）
 		const expiresAt = Date.now() + tokenData.expires_in * 1000 - 5 * 60 * 1000;
 
 		const credentials: OAuthCredentials = {

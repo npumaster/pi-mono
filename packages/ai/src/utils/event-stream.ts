@@ -81,7 +81,7 @@ export class AssistantMessageEventStream extends EventStream<AssistantMessageEve
 	}
 }
 
-/** Factory function for AssistantMessageEventStream (for use in extensions) */
+/** AssistantMessageEventStream 的工厂函数（用于扩展） */
 export function createAssistantMessageEventStream(): AssistantMessageEventStream {
 	return new AssistantMessageEventStream();
 }

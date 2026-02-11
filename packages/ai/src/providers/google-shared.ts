@@ -1,5 +1,5 @@
 /**
- * Shared utilities for Google Generative AI and Google Cloud Code Assist providers.
+ * Google Generative AI 和 Google Cloud Code Assist 提供商的共享实用程序。
  */
 
 import { type Content, FinishReason, FunctionCallingConfigMode, type Part } from "@google/genai";
@@ -10,39 +10,39 @@ import { transformMessages } from "./transform-messages.js";
 type GoogleApiType = "google-generative-ai" | "google-gemini-cli" | "google-vertex";
 
 /**
- * Determines whether a streamed Gemini `Part` should be treated as "thinking".
+ * 确定流式 Gemini `Part` 是否应被视为“思考”。
  *
- * Protocol note (Gemini / Vertex AI thought signatures):
- * - `thought: true` is the definitive marker for thinking content (thought summaries).
- * - `thoughtSignature` is an encrypted representation of the model's internal thought process
- *   used to preserve reasoning context across multi-turn interactions.
- * - `thoughtSignature` can appear on ANY part type (text, functionCall, etc.) - it does NOT
- *   indicate the part itself is thinking content.
- * - For non-functionCall responses, the signature appears on the last part for context replay.
- * - When persisting/replaying model outputs, signature-bearing parts must be preserved as-is;
- *   do not merge/move signatures across parts.
+ * 协议说明（Gemini / Vertex AI 思考签名）：
+ * - `thought: true` 是思考内容（思考摘要）的明确标记。
+ * - `thoughtSignature` 是模型内部思维过程的加密表示，
+ *   用于在多轮交互中保留推理上下文。
+ * - `thoughtSignature` 可以出现在任何部分类型（text、functionCall 等）上 - 它并不
+ *   表示该部分本身是思考内容。
+ * - 对于非 functionCall 响应，签名出现在最后一部分以便上下文回放。
+ * - 当持久化/回放模型输出时，必须按原样保留带有签名的部分；
+ *   不要跨部分合并/移动签名。
  *
- * See: https://ai.google.dev/gemini-api/docs/thought-signatures
+ * 参见：https://ai.google.dev/gemini-api/docs/thought-signatures
  */
 export function isThinkingPart(part: Pick<Part, "thought" | "thoughtSignature">): boolean {
 	return part.thought === true;
 }
 
 /**
- * Retain thought signatures during streaming.
+ * 在流式传输期间保留思考签名。
  *
- * Some backends only send `thoughtSignature` on the first delta for a given part/block; later deltas may omit it.
- * This helper preserves the last non-empty signature for the current block.
+ * 某些后端仅在给定部分/块的第一个增量上发送 `thoughtSignature`；后续增量可能会省略它。
+ * 此助手保留当前块的最后一个非空签名。
  *
- * Note: this does NOT merge or move signatures across distinct response parts. It only prevents
- * a signature from being overwritten with `undefined` within the same streamed block.
+ * 注意：这不会跨不同的响应部分合并或移动签名。它只是防止
+ * 签名在同一个流式块中被 `undefined` 覆盖。
  */
 export function retainThoughtSignature(existing: string | undefined, incoming: string | undefined): string | undefined {
 	if (typeof incoming === "string" && incoming.length > 0) return incoming;
 	return existing;
 }
 
-// Thought signatures must be base64 for Google APIs (TYPE_BYTES).
+// 思考签名对于 Google API (TYPE_BYTES) 必须是 base64。
 const base64SignaturePattern = /^[A-Za-z0-9+/]+={0,2}$/;
 
 function isValidThoughtSignature(signature: string | undefined): boolean {
@@ -52,21 +52,21 @@ function isValidThoughtSignature(signature: string | undefined): boolean {
 }
 
 /**
- * Only keep signatures from the same provider/model and with valid base64.
+ * 仅保留来自相同提供商/模型且具有有效 base64 的签名。
  */
 function resolveThoughtSignature(isSameProviderAndModel: boolean, signature: string | undefined): string | undefined {
 	return isSameProviderAndModel && isValidThoughtSignature(signature) ? signature : undefined;
 }
 
 /**
- * Models via Google APIs that require explicit tool call IDs in function calls/responses.
+ * 通过 Google API 的模型，需要在函数调用/响应中显式提供工具调用 ID。
  */
 export function requiresToolCallId(modelId: string): boolean {
 	return modelId.startsWith("claude-") || modelId.startsWith("gpt-oss-");
 }
 
 /**
- * Convert internal messages to Gemini Content[] format.
+ * 将内部消息转换为 Gemini Content[] 格式。
  */
 export function convertMessages<T extends GoogleApiType>(model: Model<T>, context: Context): Content[] {
 	const contents: Content[] = [];
@@ -106,12 +106,12 @@ export function convertMessages<T extends GoogleApiType>(model: Model<T>, contex
 			}
 		} else if (msg.role === "assistant") {
 			const parts: Part[] = [];
-			// Check if message is from same provider and model - only then keep thinking blocks
+			// 检查消息是否来自相同的提供商和模型 - 只有这样才保留思考块
 			const isSameProviderAndModel = msg.provider === model.provider && msg.model === model.id;
 
 			for (const block of msg.content) {
 				if (block.type === "text") {
-					// Skip empty text blocks - they can cause issues with some models (e.g. Claude via Antigravity)
+					// 跳过空文本块 - 它们可能会导致某些模型（例如通过 Antigravity 的 Claude）出现问题
 					if (!block.text || block.text.trim() === "") continue;
 					const thoughtSignature = resolveThoughtSignature(isSameProviderAndModel, block.textSignature);
 					parts.push({
@@ -119,10 +119,10 @@ export function convertMessages<T extends GoogleApiType>(model: Model<T>, contex
 						...(thoughtSignature && { thoughtSignature }),
 					});
 				} else if (block.type === "thinking") {
-					// Skip empty thinking blocks
+					// 跳过空思考块
 					if (!block.thinking || block.thinking.trim() === "") continue;
-					// Only keep as thinking block if same provider AND same model
-					// Otherwise convert to plain text (no tags to avoid model mimicking them)
+					// 仅当相同提供商且相同模型时保留为思考块
+					// 否则转换为纯文本（无标签以避免模型模仿它们）
 					if (isSameProviderAndModel) {
 						const thoughtSignature = resolveThoughtSignature(isSameProviderAndModel, block.thinkingSignature);
 						parts.push({
@@ -137,10 +137,10 @@ export function convertMessages<T extends GoogleApiType>(model: Model<T>, contex
 					}
 				} else if (block.type === "toolCall") {
 					const thoughtSignature = resolveThoughtSignature(isSameProviderAndModel, block.thoughtSignature);
-					// Gemini 3 requires thoughtSignature on all function calls when thinking mode is enabled.
-					// When replaying history from providers without thought signatures (e.g. Claude via Antigravity),
-					// convert unsigned function calls to text to avoid API validation errors.
-					// We include a note telling the model this is historical context to prevent mimicry.
+					// Gemini 3 在启用思考模式时要求所有函数调用都有 thoughtSignature。
+					// 当从没有思考签名的提供商（例如通过 Antigravity 的 Claude）回放历史记录时，
+					// 将未签名的函数调用转换为文本以避免 API 验证错误。
+					// 我们包含一个注释告诉模型这是历史上下文，以防止模仿。
 					const isGemini3 = model.id.toLowerCase().includes("gemini-3");
 					if (isGemini3 && !thoughtSignature) {
 						const argsStr = JSON.stringify(block.arguments ?? {}, null, 2);
@@ -169,7 +169,7 @@ export function convertMessages<T extends GoogleApiType>(model: Model<T>, contex
 				parts,
 			});
 		} else if (msg.role === "toolResult") {
-			// Extract text and image content
+			// 提取文本和图像内容
 			const textContent = msg.content.filter((c): c is TextContent => c.type === "text");
 			const textResult = textContent.map((c) => c.text).join("\n");
 			const imageContent = model.input.includes("image")
@@ -179,12 +179,12 @@ export function convertMessages<T extends GoogleApiType>(model: Model<T>, contex
 			const hasText = textResult.length > 0;
 			const hasImages = imageContent.length > 0;
 
-			// Gemini 3 supports multimodal function responses with images nested inside functionResponse.parts
-			// See: https://ai.google.dev/gemini-api/docs/function-calling#multimodal
-			// Older models don't support this, so we put images in a separate user message.
+			// Gemini 3 支持多模态函数响应，图像嵌套在 functionResponse.parts 中
+			// 参见：https://ai.google.dev/gemini-api/docs/function-calling#multimodal
+			// 旧模型不支持此功能，因此我们将图像放在单独的用户消息中。
 			const supportsMultimodalFunctionResponse = model.id.includes("gemini-3");
 
-			// Use "output" key for success, "error" key for errors as per SDK documentation
+			// 根据 SDK 文档，使用 "output" 键表示成功，"error" 键表示错误
 			const responseValue = hasText ? sanitizeSurrogates(textResult) : hasImages ? "(see attached image)" : "";
 
 			const imageParts: Part[] = imageContent.map((imageBlock) => ({
@@ -199,14 +199,14 @@ export function convertMessages<T extends GoogleApiType>(model: Model<T>, contex
 				functionResponse: {
 					name: msg.toolName,
 					response: msg.isError ? { error: responseValue } : { output: responseValue },
-					// Nest images inside functionResponse.parts for Gemini 3
+					// 对于 Gemini 3，将图像嵌套在 functionResponse.parts 中
 					...(hasImages && supportsMultimodalFunctionResponse && { parts: imageParts }),
 					...(includeId ? { id: msg.toolCallId } : {}),
 				},
 			};
 
-			// Cloud Code Assist API requires all function responses to be in a single user turn.
-			// Check if the last content is already a user turn with function responses and merge.
+			// Cloud Code Assist API 要求所有函数响应都在单个用户轮次中。
+			// 检查最后一个内容是否已经是带有函数响应的用户轮次并合并。
 			const lastContent = contents[contents.length - 1];
 			if (lastContent?.role === "user" && lastContent.parts?.some((p) => p.functionResponse)) {
 				lastContent.parts.push(functionResponsePart);
@@ -217,7 +217,7 @@ export function convertMessages<T extends GoogleApiType>(model: Model<T>, contex
 				});
 			}
 
-			// For older models, add images in a separate user message
+			// 对于旧模型，将图像添加到单独的用户消息中
 			if (hasImages && !supportsMultimodalFunctionResponse) {
 				contents.push({
 					role: "user",
@@ -231,12 +231,12 @@ export function convertMessages<T extends GoogleApiType>(model: Model<T>, contex
 }
 
 /**
- * Convert tools to Gemini function declarations format.
+ * 将工具转换为 Gemini 函数声明格式。
  *
- * By default uses `parametersJsonSchema` which supports full JSON Schema (including
- * anyOf, oneOf, const, etc.). Set `useParameters` to true to use the legacy `parameters`
- * field instead (OpenAPI 3.03 Schema). This is needed for Cloud Code Assist with Claude
- * models, where the API translates `parameters` into Anthropic's `input_schema`.
+ * 默认使用 `parametersJsonSchema`，它支持完整的 JSON Schema（包括
+ * anyOf, oneOf, const 等）。将 `useParameters` 设置为 true 以使用旧版 `parameters`
+ * 字段（OpenAPI 3.03 Schema）。这对于使用 Claude 模型的 Cloud Code Assist 是必需的，
+ * 其中 API 将 `parameters` 转换为 Anthropic 的 `input_schema`。
  */
 export function convertTools(
 	tools: Tool[],
@@ -255,7 +255,7 @@ export function convertTools(
 }
 
 /**
- * Map tool choice string to Gemini FunctionCallingConfigMode.
+ * 将工具选择字符串映射到 Gemini FunctionCallingConfigMode。
  */
 export function mapToolChoice(choice: string): FunctionCallingConfigMode {
 	switch (choice) {
@@ -271,7 +271,7 @@ export function mapToolChoice(choice: string): FunctionCallingConfigMode {
 }
 
 /**
- * Map Gemini FinishReason to our StopReason.
+ * 将 Gemini FinishReason 映射到我们的 StopReason。
  */
 export function mapStopReason(reason: FinishReason): StopReason {
 	switch (reason) {
@@ -303,7 +303,7 @@ export function mapStopReason(reason: FinishReason): StopReason {
 }
 
 /**
- * Map string finish reason to our StopReason (for raw API responses).
+ * 将字符串完成原因映射到我们的 StopReason（用于原始 API 响应）。
  */
 export function mapStopReasonString(reason: string): StopReason {
 	switch (reason) {

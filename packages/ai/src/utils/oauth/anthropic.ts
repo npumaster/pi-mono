@@ -1,5 +1,5 @@
 /**
- * Anthropic OAuth flow (Claude Pro/Max)
+ * Anthropic OAuth 流程 (Claude Pro/Max)
  */
 
 import { generatePKCE } from "./pkce.js";
@@ -13,10 +13,10 @@ const REDIRECT_URI = "https://console.anthropic.com/oauth/code/callback";
 const SCOPES = "org:create_api_key user:profile user:inference";
 
 /**
- * Login with Anthropic OAuth (device code flow)
+ * 使用 Anthropic OAuth 登录（设备代码流程）
  *
- * @param onAuthUrl - Callback to handle the authorization URL (e.g., open browser)
- * @param onPromptCode - Callback to prompt user for the authorization code
+ * @param onAuthUrl - 处理授权 URL 的回调（例如，打开浏览器）
+ * @param onPromptCode - 提示用户输入授权代码的回调
  */
 export async function loginAnthropic(
 	onAuthUrl: (url: string) => void,
@@ -24,7 +24,7 @@ export async function loginAnthropic(
 ): Promise<OAuthCredentials> {
 	const { verifier, challenge } = await generatePKCE();
 
-	// Build authorization URL
+	// 构建授权 URL
 	const authParams = new URLSearchParams({
 		code: "true",
 		client_id: CLIENT_ID,
@@ -38,16 +38,16 @@ export async function loginAnthropic(
 
 	const authUrl = `${AUTHORIZE_URL}?${authParams.toString()}`;
 
-	// Notify caller with URL to open
+	// 通知调用者打开 URL
 	onAuthUrl(authUrl);
 
-	// Wait for user to paste authorization code (format: code#state)
+	// 等待用户粘贴授权代码（格式：code#state）
 	const authCode = await onPromptCode();
 	const splits = authCode.split("#");
 	const code = splits[0];
 	const state = splits[1];
 
-	// Exchange code for tokens
+	// 用代码交换令牌
 	const tokenResponse = await fetch(TOKEN_URL, {
 		method: "POST",
 		headers: {
@@ -74,10 +74,10 @@ export async function loginAnthropic(
 		expires_in: number;
 	};
 
-	// Calculate expiry time (current time + expires_in seconds - 5 min buffer)
+	// 计算过期时间（当前时间 + expires_in 秒 - 5 分钟缓冲）
 	const expiresAt = Date.now() + tokenData.expires_in * 1000 - 5 * 60 * 1000;
 
-	// Save credentials
+	// 保存凭据
 	return {
 		refresh: tokenData.refresh_token,
 		access: tokenData.access_token,
@@ -86,7 +86,7 @@ export async function loginAnthropic(
 }
 
 /**
- * Refresh Anthropic OAuth token
+ * 刷新 Anthropic OAuth 令牌
  */
 export async function refreshAnthropicToken(refreshToken: string): Promise<OAuthCredentials> {
 	const response = await fetch(TOKEN_URL, {

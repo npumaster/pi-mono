@@ -1,9 +1,9 @@
 /**
- * Antigravity OAuth flow (Gemini 3, Claude, GPT-OSS via Google Cloud)
- * Uses different OAuth credentials than google-gemini-cli for access to additional models.
+ * Antigravity OAuth 流程 (Gemini 3, Claude, GPT-OSS via Google Cloud)
+ * 使用与 google-gemini-cli 不同的 OAuth 凭据以访问其他模型。
  *
- * NOTE: This module uses Node.js http.createServer for the OAuth callback.
- * It is only intended for CLI use, not browser environments.
+ * 注意：此模块使用 Node.js http.createServer 进行 OAuth 回调。
+ * 它仅用于 CLI 使用，不适用于浏览器环境。
  */
 
 import type { Server } from "node:http";
@@ -22,7 +22,7 @@ if (typeof process !== "undefined" && (process.versions?.node || process.version
 	});
 }
 
-// Antigravity OAuth credentials (different from Gemini CLI)
+// Antigravity OAuth 凭据（与 Gemini CLI 不同）
 const decode = (s: string) => atob(s);
 const CLIENT_ID = decode(
 	"MTA3MTAwNjA2MDU5MS10bWhzc2luMmgyMWxjcmUyMzV2dG9sb2poNGc0MDNlcC5hcHBzLmdvb2dsZXVzZXJjb250ZW50LmNvbQ==",
@@ -30,7 +30,7 @@ const CLIENT_ID = decode(
 const CLIENT_SECRET = decode("R09DU1BYLUs1OEZXUjQ4NkxkTEoxbUxCOHNYQzR6NnFEQWY=");
 const REDIRECT_URI = "http://localhost:51121/oauth-callback";
 
-// Antigravity requires additional scopes
+// Antigravity 需要额外的范围
 const SCOPES = [
 	"https://www.googleapis.com/auth/cloud-platform",
 	"https://www.googleapis.com/auth/userinfo.email",
@@ -42,7 +42,7 @@ const SCOPES = [
 const AUTH_URL = "https://accounts.google.com/o/oauth2/v2/auth";
 const TOKEN_URL = "https://oauth2.googleapis.com/token";
 
-// Fallback project ID when discovery fails
+// 发现失败时的回退项目 ID
 const DEFAULT_PROJECT_ID = "rising-fact-p41fc";
 
 type CallbackServerInfo = {
@@ -52,7 +52,7 @@ type CallbackServerInfo = {
 };
 
 /**
- * Start a local HTTP server to receive the OAuth callback
+ * 启动本地 HTTP 服务器以接收 OAuth 回调
  */
 async function getNodeCreateServer(): Promise<typeof import("node:http").createServer> {
 	if (_createServer) return _createServer;
@@ -127,7 +127,7 @@ async function startCallbackServer(): Promise<CallbackServerInfo> {
 }
 
 /**
- * Parse redirect URL to extract code and state
+ * 解析重定向 URL 以提取代码和状态
  */
 function parseRedirectUrl(input: string): { code?: string; state?: string } {
 	const value = input.trim();
@@ -140,7 +140,7 @@ function parseRedirectUrl(input: string): { code?: string; state?: string } {
 			state: url.searchParams.get("state") ?? undefined,
 		};
 	} catch {
-		// Not a URL, return empty
+		// 不是 URL，返回空
 		return {};
 	}
 }
@@ -152,7 +152,7 @@ interface LoadCodeAssistPayload {
 }
 
 /**
- * Discover or provision a project for the user
+ * 为用户发现或配置项目
  */
 async function discoverProject(accessToken: string, onProgress?: (message: string) => void): Promise<string> {
 	const headers = {
@@ -167,7 +167,7 @@ async function discoverProject(accessToken: string, onProgress?: (message: strin
 		}),
 	};
 
-	// Try endpoints in order: prod first, then sandbox
+	// 按顺序尝试端点：首先是 prod，然后是 sandbox
 	const endpoints = ["https://cloudcode-pa.googleapis.com", "https://daily-cloudcode-pa.sandbox.googleapis.com"];
 
 	onProgress?.("Checking for existing project...");
@@ -189,7 +189,7 @@ async function discoverProject(accessToken: string, onProgress?: (message: strin
 			if (loadResponse.ok) {
 				const data = (await loadResponse.json()) as LoadCodeAssistPayload;
 
-				// Handle both string and object formats
+				// 处理字符串和对象格式
 				if (typeof data.cloudaicompanionProject === "string" && data.cloudaicompanionProject) {
 					return data.cloudaicompanionProject;
 				}
@@ -202,17 +202,17 @@ async function discoverProject(accessToken: string, onProgress?: (message: strin
 				}
 			}
 		} catch {
-			// Try next endpoint
+			// 尝试下一个端点
 		}
 	}
 
-	// Use fallback project ID
+	// 使用回退项目 ID
 	onProgress?.("Using default project...");
 	return DEFAULT_PROJECT_ID;
 }
 
 /**
- * Get user email from the access token
+ * 从访问令牌中获取用户电子邮件
  */
 async function getUserEmail(accessToken: string): Promise<string | undefined> {
 	try {
@@ -227,13 +227,13 @@ async function getUserEmail(accessToken: string): Promise<string | undefined> {
 			return data.email;
 		}
 	} catch {
-		// Ignore errors, email is optional
+		// 忽略错误，电子邮件是可选的
 	}
 	return undefined;
 }
 
 /**
- * Refresh Antigravity token
+ * 刷新 Antigravity 令牌
  */
 export async function refreshAntigravityToken(refreshToken: string, projectId: string): Promise<OAuthCredentials> {
 	const response = await fetch(TOKEN_URL, {
@@ -267,12 +267,12 @@ export async function refreshAntigravityToken(refreshToken: string, projectId: s
 }
 
 /**
- * Login with Antigravity OAuth
+ * 使用 Antigravity OAuth 登录
  *
- * @param onAuth - Callback with URL and optional instructions
- * @param onProgress - Optional progress callback
- * @param onManualCodeInput - Optional promise that resolves with user-pasted redirect URL.
- *                            Races with browser callback - whichever completes first wins.
+ * @param onAuth - 带有 URL 和可选说明的回调
+ * @param onProgress - 可选的进度回调
+ * @param onManualCodeInput - 可选的 Promise，解析为用户粘贴的重定向 URL。
+ *                            与浏览器回调竞争 - 无论哪个先完成都会获胜。
  */
 export async function loginAntigravity(
 	onAuth: (info: { url: string; instructions?: string }) => void,
@@ -281,14 +281,14 @@ export async function loginAntigravity(
 ): Promise<OAuthCredentials> {
 	const { verifier, challenge } = await generatePKCE();
 
-	// Start local server for callback
+	// 启动本地服务器进行回调
 	onProgress?.("Starting local server for OAuth callback...");
 	const server = await startCallbackServer();
 
 	let code: string | undefined;
 
 	try {
-		// Build authorization URL
+		// 构建授权 URL
 		const authParams = new URLSearchParams({
 			client_id: CLIENT_ID,
 			response_type: "code",
@@ -303,17 +303,17 @@ export async function loginAntigravity(
 
 		const authUrl = `${AUTH_URL}?${authParams.toString()}`;
 
-		// Notify caller with URL to open
+		// 通知调用者打开 URL
 		onAuth({
 			url: authUrl,
 			instructions: "Complete the sign-in in your browser.",
 		});
 
-		// Wait for the callback, racing with manual input if provided
+		// 等待回调，如果提供则与手动输入竞争
 		onProgress?.("Waiting for OAuth callback...");
 
 		if (onManualCodeInput) {
-			// Race between browser callback and manual input
+			// 浏览器回调和手动输入之间的竞争
 			let manualInput: string | undefined;
 			let manualError: Error | undefined;
 			const manualPromise = onManualCodeInput()
@@ -328,19 +328,19 @@ export async function loginAntigravity(
 
 			const result = await server.waitForCode();
 
-			// If manual input was cancelled, throw that error
+			// 如果手动输入被取消，则抛出该错误
 			if (manualError) {
 				throw manualError;
 			}
 
 			if (result?.code) {
-				// Browser callback won - verify state
+				// 浏览器回调获胜 - 验证状态
 				if (result.state !== verifier) {
 					throw new Error("OAuth state mismatch - possible CSRF attack");
 				}
 				code = result.code;
 			} else if (manualInput) {
-				// Manual input won
+				// 手动输入获胜
 				const parsed = parseRedirectUrl(manualInput);
 				if (parsed.state && parsed.state !== verifier) {
 					throw new Error("OAuth state mismatch - possible CSRF attack");
@@ -348,7 +348,7 @@ export async function loginAntigravity(
 				code = parsed.code;
 			}
 
-			// If still no code, wait for manual promise and try that
+			// 如果仍然没有代码，等待手动 Promise 并尝试
 			if (!code) {
 				await manualPromise;
 				if (manualError) {
@@ -363,7 +363,7 @@ export async function loginAntigravity(
 				}
 			}
 		} else {
-			// Original flow: just wait for callback
+			// 原始流程：仅等待回调
 			const result = await server.waitForCode();
 			if (result?.code) {
 				if (result.state !== verifier) {
@@ -377,7 +377,7 @@ export async function loginAntigravity(
 			throw new Error("No authorization code received");
 		}
 
-		// Exchange code for tokens
+		// 用代码交换令牌
 		onProgress?.("Exchanging authorization code for tokens...");
 		const tokenResponse = await fetch(TOKEN_URL, {
 			method: "POST",
@@ -409,14 +409,14 @@ export async function loginAntigravity(
 			throw new Error("No refresh token received. Please try again.");
 		}
 
-		// Get user email
+		// 获取用户信息
 		onProgress?.("Getting user info...");
 		const email = await getUserEmail(tokenData.access_token);
 
-		// Discover project
+		// 发现项目
 		const projectId = await discoverProject(tokenData.access_token, onProgress);
 
-		// Calculate expiry time (current time + expires_in seconds - 5 min buffer)
+		// 计算过期时间（当前时间 + expires_in 秒 - 5 分钟缓冲）
 		const expiresAt = Date.now() + tokenData.expires_in * 1000 - 5 * 60 * 1000;
 
 		const credentials: OAuthCredentials = {

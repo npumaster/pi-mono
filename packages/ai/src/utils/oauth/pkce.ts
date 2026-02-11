@@ -1,10 +1,10 @@
 /**
- * PKCE utilities using Web Crypto API.
- * Works in both Node.js 20+ and browsers.
+ * 使用 Web Crypto API 的 PKCE 实用程序。
+ * 适用于 Node.js 20+ 和浏览器。
  */
 
 /**
- * Encode bytes as base64url string.
+ * 将字节编码为 base64url 字符串。
  */
 function base64urlEncode(bytes: Uint8Array): string {
 	let binary = "";
@@ -15,8 +15,8 @@ function base64urlEncode(bytes: Uint8Array): string {
 }
 
 /**
- * Generate PKCE code verifier and challenge.
- * Uses Web Crypto API for cross-platform compatibility.
+ * 生成 PKCE 代码验证器和挑战。
+ * 使用 Web Crypto API 以实现跨平台兼容性。
  */
 export async function generatePKCE(): Promise<{ verifier: string; challenge: string }> {
 	// Generate random verifier

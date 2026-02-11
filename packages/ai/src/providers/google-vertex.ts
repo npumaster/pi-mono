@@ -37,7 +37,7 @@ export interface GoogleVertexOptions extends StreamOptions {
 	toolChoice?: "auto" | "none" | "any";
 	thinking?: {
 		enabled: boolean;
-		budgetTokens?: number; // -1 for dynamic, 0 to disable
+		budgetTokens?: number; // -1 表示动态，0 表示禁用
 		level?: GoogleThinkingLevel;
 	};
 	project?: string;
@@ -264,7 +264,7 @@ export const streamGoogleVertex: StreamFunction<"google-vertex", GoogleVertexOpt
 			stream.push({ type: "done", reason: output.stopReason, message: output });
 			stream.end();
 		} catch (error) {
-			// Remove internal index property used during streaming
+			// 移除流式传输期间使用的内部索引属性
 			for (const block of output.content) {
 				if ("index" in block) {
 					delete (block as { index?: number }).index;

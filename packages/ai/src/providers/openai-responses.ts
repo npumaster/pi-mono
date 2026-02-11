@@ -20,8 +20,8 @@ import { buildBaseOptions, clampReasoning } from "./simple-options.js";
 const OPENAI_TOOL_CALL_PROVIDERS = new Set(["openai", "openai-codex", "opencode"]);
 
 /**
- * Resolve cache retention preference.
- * Defaults to "short" and uses PI_CACHE_RETENTION for backward compatibility.
+ * 解析缓存保留偏好。
+ * 默认为 "short"，并使用 PI_CACHE_RETENTION 进行向后兼容。
  */
 function resolveCacheRetention(cacheRetention?: CacheRetention): CacheRetention {
 	if (cacheRetention) {
@@ -34,8 +34,8 @@ function resolveCacheRetention(cacheRetention?: CacheRetention): CacheRetention 
 }
 
 /**
- * Get prompt cache retention based on cacheRetention and base URL.
- * Only applies to direct OpenAI API calls (api.openai.com).
+ * 根据 cacheRetention 和基础 URL 获取提示缓存保留。
+ * 仅适用于直接 OpenAI API 调用 (api.openai.com)。
  */
 function getPromptCacheRetention(baseUrl: string, cacheRetention: CacheRetention): "24h" | undefined {
 	if (cacheRetention !== "long") {
@@ -47,7 +47,7 @@ function getPromptCacheRetention(baseUrl: string, cacheRetention: CacheRetention
 	return undefined;
 }
 
-// OpenAI Responses-specific options
+// OpenAI Responses 特定的选项
 export interface OpenAIResponsesOptions extends StreamOptions {
 	reasoningEffort?: "minimal" | "low" | "medium" | "high" | "xhigh";
 	reasoningSummary?: "auto" | "detailed" | "concise" | null;
@@ -55,7 +55,7 @@ export interface OpenAIResponsesOptions extends StreamOptions {
 }
 
 /**
- * Generate function for OpenAI Responses API
+ * OpenAI Responses API 的生成函数
  */
 export const streamOpenAIResponses: StreamFunction<"openai-responses", OpenAIResponsesOptions> = (
 	model: Model<"openai-responses">,
@@ -64,7 +64,7 @@ export const streamOpenAIResponses: StreamFunction<"openai-responses", OpenAIRes
 ): AssistantMessageEventStream => {
 	const stream = new AssistantMessageEventStream();
 
-	// Start async processing
+	// 开始异步处理
 	(async () => {
 		const output: AssistantMessage = {
 			role: "assistant",
@@ -85,7 +85,7 @@ export const streamOpenAIResponses: StreamFunction<"openai-responses", OpenAIRes
 		};
 
 		try {
-			// Create OpenAI client
+			// 创建 OpenAI 客户端
 			const apiKey = options?.apiKey || getEnvApiKey(model.provider) || "";
 			const client = createClient(model, context, apiKey, options?.headers);
 			const params = buildParams(model, context, options);
@@ -159,9 +159,9 @@ function createClient(
 
 	const headers = { ...model.headers };
 	if (model.provider === "github-copilot") {
-		// Copilot expects X-Initiator to indicate whether the request is user-initiated
-		// or agent-initiated (e.g. follow-up after assistant/tool messages). If there is
-		// no prior message, default to user-initiated.
+		// Copilot 期望 X-Initiator 指示请求是用户发起的
+		// 还是代理发起的（例如助手/工具消息后的跟进）。如果有
+		// 没有先前的消息，默认为用户发起。
 		const messages = context.messages || [];
 		const lastMessage = messages[messages.length - 1];
 		const isAgentCall = lastMessage ? lastMessage.role !== "user" : false;
@@ -234,7 +234,7 @@ function buildParams(model: Model<"openai-responses">, context: Context, options
 			params.include = ["reasoning.encrypted_content"];
 		} else {
 			if (model.name.startsWith("gpt-5")) {
-				// Jesus Christ, see https://community.openai.com/t/need-reasoning-false-option-for-gpt-5/1351588/7
+				// 天哪，请参阅 https://community.openai.com/t/need-reasoning-false-option-for-gpt-5/1351588/7
 				messages.push({
 					role: "developer",
 					content: [

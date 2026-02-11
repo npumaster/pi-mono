@@ -1,11 +1,11 @@
 /**
- * OpenAI Codex (ChatGPT OAuth) flow
+ * OpenAI Codex (ChatGPT OAuth) 流程
  *
- * NOTE: This module uses Node.js crypto and http for the OAuth callback.
- * It is only intended for CLI use, not browser environments.
+ * 注意：此模块使用 Node.js crypto 和 http 进行 OAuth 回调。
+ * 它仅用于 CLI 使用，不适用于浏览器环境。
  */
 
-// NEVER convert to top-level imports - breaks browser/Vite builds (web-ui)
+// 切勿转换为顶层导入 - 会破坏浏览器/Vite 构建 (web-ui)
 let _randomBytes: typeof import("node:crypto").randomBytes | null = null;
 let _http: typeof import("node:http") | null = null;
 if (typeof process !== "undefined" && (process.versions?.node || process.versions?.bun)) {
@@ -68,7 +68,7 @@ function parseAuthorizationInput(input: string): { code?: string; state?: string
 			state: url.searchParams.get("state") ?? undefined,
 		};
 	} catch {
-		// not a URL
+		// 不是 URL
 	}
 
 	if (value.includes("#")) {
@@ -292,15 +292,15 @@ function getAccountId(accessToken: string): string | null {
 }
 
 /**
- * Login with OpenAI Codex OAuth
+ * 使用 OpenAI Codex OAuth 登录
  *
- * @param options.onAuth - Called with URL and instructions when auth starts
- * @param options.onPrompt - Called to prompt user for manual code paste (fallback if no onManualCodeInput)
- * @param options.onProgress - Optional progress messages
- * @param options.onManualCodeInput - Optional promise that resolves with user-pasted code.
- *                                    Races with browser callback - whichever completes first wins.
- *                                    Useful for showing paste input immediately alongside browser flow.
- * @param options.originator - OAuth originator parameter (defaults to "pi")
+ * @param options.onAuth - 当身份验证开始时调用，带有 URL 和说明
+ * @param options.onPrompt - 调用以提示用户手动粘贴代码（如果没有 onManualCodeInput 则作为回退）
+ * @param options.onProgress - 可选的进度消息
+ * @param options.onManualCodeInput - 可选的 Promise，解析为用户粘贴的代码。
+ *                                    与浏览器回调竞争 - 无论哪个先完成都会获胜。
+ *                                    用于在浏览器流程旁边立即显示粘贴输入。
+ * @param options.originator - OAuth 发起者参数（默认为 "pi"）
  */
 export async function loginOpenAICodex(options: {
 	onAuth: (info: { url: string; instructions?: string }) => void;
@@ -317,7 +317,7 @@ export async function loginOpenAICodex(options: {
 	let code: string | undefined;
 	try {
 		if (options.onManualCodeInput) {
-			// Race between browser callback and manual input
+			// 浏览器回调和手动输入之间的竞争
 			let manualCode: string | undefined;
 			let manualError: Error | undefined;
 			const manualPromise = options
@@ -333,16 +333,16 @@ export async function loginOpenAICodex(options: {
 
 			const result = await server.waitForCode();
 
-			// If manual input was cancelled, throw that error
+			// 如果手动输入被取消，则抛出该错误
 			if (manualError) {
 				throw manualError;
 			}
 
 			if (result?.code) {
-				// Browser callback won
+				// 浏览器回调获胜
 				code = result.code;
 			} else if (manualCode) {
-				// Manual input won (or callback timed out and user had entered code)
+				// 手动输入获胜（或回调超时且用户已输入代码）
 				const parsed = parseAuthorizationInput(manualCode);
 				if (parsed.state && parsed.state !== state) {
 					throw new Error("State mismatch");
@@ -350,7 +350,7 @@ export async function loginOpenAICodex(options: {
 				code = parsed.code;
 			}
 
-			// If still no code, wait for manual promise to complete and try that
+			// 如果仍然没有代码，等待手动 Promise 完成并尝试
 			if (!code) {
 				await manualPromise;
 				if (manualError) {
@@ -365,14 +365,14 @@ export async function loginOpenAICodex(options: {
 				}
 			}
 		} else {
-			// Original flow: wait for callback, then prompt if needed
+			// 原始流程：等待回调，然后根据需要提示
 			const result = await server.waitForCode();
 			if (result?.code) {
 				code = result.code;
 			}
 		}
 
-		// Fallback to onPrompt if still no code
+		// 如果仍然没有代码，回退到 onPrompt
 		if (!code) {
 			const input = await options.onPrompt({
 				message: "Paste the authorization code (or full redirect URL):",
@@ -410,7 +410,7 @@ export async function loginOpenAICodex(options: {
 }
 
 /**
- * Refresh OpenAI Codex OAuth token
+ * 刷新 OpenAI Codex OAuth 令牌
  */
 export async function refreshOpenAICodexToken(refreshToken: string): Promise<OAuthCredentials> {
 	const result = await refreshAccessToken(refreshToken);

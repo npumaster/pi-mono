@@ -1,7 +1,7 @@
 /**
- * Google Gemini CLI / Antigravity provider.
- * Shared implementation for both google-gemini-cli and google-antigravity providers.
- * Uses the Cloud Code Assist API endpoint to access Gemini and Claude models.
+ * Google Gemini CLI / Antigravity 提供商。
+ * google-gemini-cli 和 google-antigravity 提供商的共享实现。
+ * 使用 Cloud Code Assist API 端点访问 Gemini 和 Claude 模型。
  */
 
 import type { Content, ThinkingConfig } from "@google/genai";
@@ -33,25 +33,25 @@ import {
 import { buildBaseOptions, clampReasoning } from "./simple-options.js";
 
 /**
- * Thinking level for Gemini 3 models.
- * Mirrors Google's ThinkingLevel enum values.
+ * Gemini 3 模型的思考级别。
+ * 镜像 Google 的 ThinkingLevel 枚举值。
  */
 export type GoogleThinkingLevel = "THINKING_LEVEL_UNSPECIFIED" | "MINIMAL" | "LOW" | "MEDIUM" | "HIGH";
 
 export interface GoogleGeminiCliOptions extends StreamOptions {
 	toolChoice?: "auto" | "none" | "any";
 	/**
-	 * Thinking/reasoning configuration.
-	 * - Gemini 2.x models: use `budgetTokens` to set the thinking budget
-	 * - Gemini 3 models (gemini-3-pro-*, gemini-3-flash-*): use `level` instead
+	 * 思考/推理配置。
+	 * - Gemini 2.x 模型：使用 `budgetTokens` 设置思考预算
+	 * - Gemini 3 模型 (gemini-3-pro-*, gemini-3-flash-*)：使用 `level` 代替
 	 *
-	 * When using `streamSimple`, this is handled automatically based on the model.
+	 * 当使用 `streamSimple` 时，这将根据模型自动处理。
 	 */
 	thinking?: {
 		enabled: boolean;
-		/** Thinking budget in tokens. Use for Gemini 2.x models. */
+		/** 思考预算（以 token 为单位）。用于 Gemini 2.x 模型。 */
 		budgetTokens?: number;
-		/** Thinking level. Use for Gemini 3 models (LOW/HIGH for Pro, MINIMAL/LOW/MEDIUM/HIGH for Flash). */
+		/** 思考级别。用于 Gemini 3 模型（Pro 为 LOW/HIGH，Flash 为 MINIMAL/LOW/MEDIUM/HIGH）。 */
 		level?: GoogleThinkingLevel;
 	};
 	projectId?: string;
@@ -60,7 +60,7 @@ export interface GoogleGeminiCliOptions extends StreamOptions {
 const DEFAULT_ENDPOINT = "https://cloudcode-pa.googleapis.com";
 const ANTIGRAVITY_DAILY_ENDPOINT = "https://daily-cloudcode-pa.sandbox.googleapis.com";
 const ANTIGRAVITY_ENDPOINT_FALLBACKS = [ANTIGRAVITY_DAILY_ENDPOINT, DEFAULT_ENDPOINT] as const;
-// Headers for Gemini CLI (prod endpoint)
+// Gemini CLI 的请求头（生产端点）
 const GEMINI_CLI_HEADERS = {
 	"User-Agent": "google-cloud-sdk vscode_cloudshelleditor/0.1",
 	"X-Goog-Api-Client": "gl-node/22.17.0",
@@ -71,7 +71,7 @@ const GEMINI_CLI_HEADERS = {
 	}),
 };
 
-// Headers for Antigravity (sandbox endpoint) - requires specific User-Agent
+// Antigravity 的请求头（沙盒端点）- 需要特定的 User-Agent
 const DEFAULT_ANTIGRAVITY_VERSION = "1.15.8";
 
 function getAntigravityHeaders() {
@@ -87,17 +87,17 @@ function getAntigravityHeaders() {
 	};
 }
 
-// Antigravity system instruction (compact version from CLIProxyAPI).
+// Antigravity 系统指令（来自 CLIProxyAPI 的紧凑版本）。
 const ANTIGRAVITY_SYSTEM_INSTRUCTION =
 	"You are Antigravity, a powerful agentic AI coding assistant designed by the Google Deepmind team working on Advanced Agentic Coding." +
 	"You are pair programming with a USER to solve their coding task. The task may require creating a new codebase, modifying or debugging an existing codebase, or simply answering a question." +
 	"**Absolute paths only**" +
 	"**Proactiveness**";
 
-// Counter for generating unique tool call IDs
+// 用于生成唯一工具调用 ID 的计数器
 let toolCallCounter = 0;
 
-// Retry configuration
+// 重试配置
 const MAX_RETRIES = 3;
 const BASE_DELAY_MS = 1000;
 const MAX_EMPTY_STREAM_RETRIES = 2;
@@ -105,13 +105,13 @@ const EMPTY_STREAM_BASE_DELAY_MS = 500;
 const CLAUDE_THINKING_BETA_HEADER = "interleaved-thinking-2025-05-14";
 
 /**
- * Extract retry delay from Gemini error response (in milliseconds).
- * Checks headers first (Retry-After, x-ratelimit-reset, x-ratelimit-reset-after),
- * then parses body patterns like:
+ * 从 Gemini 错误响应中提取重试延迟（以毫秒为单位）。
+ * 首先检查头信息 (Retry-After, x-ratelimit-reset, x-ratelimit-reset-after)，
+ * 然后解析主体模式，如：
  * - "Your quota will reset after 39s"
  * - "Your quota will reset after 18h31m10s"
  * - "Please retry in Xs" or "Please retry in Xms"
- * - "retryDelay": "34.074824224s" (JSON field)
+ * - "retryDelay": "34.074824224s" (JSON 字段)
  */
 export function extractRetryDelay(errorText: string, response?: Response | Headers): number | undefined {
 	const normalizeDelay = (ms: number): number | undefined => (ms > 0 ? Math.ceil(ms + 1000) : undefined);
@@ -160,7 +160,7 @@ export function extractRetryDelay(errorText: string, response?: Response | Heade
 		}
 	}
 
-	// Pattern 1: "Your quota will reset after ..." (formats: "18h31m10s", "10m15s", "6s", "39s")
+	// 模式 1: "Your quota will reset after ..." (格式: "18h31m10s", "10m15s", "6s", "39s")
 	const durationMatch = errorText.match(/reset after (?:(\d+)h)?(?:(\d+)m)?(\d+(?:\.\d+)?)s/i);
 	if (durationMatch) {
 		const hours = durationMatch[1] ? parseInt(durationMatch[1], 10) : 0;
@@ -175,7 +175,7 @@ export function extractRetryDelay(errorText: string, response?: Response | Heade
 		}
 	}
 
-	// Pattern 2: "Please retry in X[ms|s]"
+	// 模式 2: "Please retry in X[ms|s]"
 	const retryInMatch = errorText.match(/Please retry in ([0-9.]+)(ms|s)/i);
 	if (retryInMatch?.[1]) {
 		const value = parseFloat(retryInMatch[1]);
@@ -188,7 +188,7 @@ export function extractRetryDelay(errorText: string, response?: Response | Heade
 		}
 	}
 
-	// Pattern 3: "retryDelay": "34.074824224s" (JSON field in error details)
+	// 模式 3: "retryDelay": "34.074824224s" (错误详情中的 JSON 字段)
 	const retryDelayMatch = errorText.match(/"retryDelay":\s*"([0-9.]+)(ms|s)"/i);
 	if (retryDelayMatch?.[1]) {
 		const value = parseFloat(retryDelayMatch[1]);
@@ -210,7 +210,7 @@ function isClaudeThinkingModel(modelId: string): boolean {
 }
 
 /**
- * Check if an error is retryable (rate limit, server error, network error, etc.)
+ * 检查错误是否可重试（速率限制、服务器错误、网络错误等）
  */
 function isRetryableError(status: number, errorText: string): boolean {
 	if (status === 429 || status === 500 || status === 502 || status === 503 || status === 504) {
@@ -220,8 +220,8 @@ function isRetryableError(status: number, errorText: string): boolean {
 }
 
 /**
- * Extract a clean, user-friendly error message from Google API error response.
- * Parses JSON error responses and returns just the message field.
+ * 从 Google API 错误响应中提取干净、用户友好的错误消息。
+ * 解析 JSON 错误响应并仅返回消息字段。
  */
 function extractErrorMessage(errorText: string): string {
 	try {
@@ -236,7 +236,7 @@ function extractErrorMessage(errorText: string): string {
 }
 
 /**
- * Sleep for a given number of milliseconds, respecting abort signal.
+ * 休眠指定的毫秒数，支持中止信号。
  */
 function sleep(ms: number, signal?: AbortSignal): Promise<void> {
 	return new Promise((resolve, reject) => {
@@ -334,7 +334,7 @@ export const streamGoogleGeminiCli: StreamFunction<"google-gemini-cli", GoogleGe
 		};
 
 		try {
-			// apiKey is JSON-encoded: { token, projectId }
+			// apiKey 是 JSON 编码的: { token, projectId }
 			const apiKeyRaw = options?.apiKey;
 			if (!apiKeyRaw) {
 				throw new Error("Google Cloud Code Assist requires OAuth authentication. Use /login to authenticate.");
@@ -373,7 +373,7 @@ export const streamGoogleGeminiCli: StreamFunction<"google-gemini-cli", GoogleGe
 			};
 			const requestBodyJson = JSON.stringify(requestBody);
 
-			// Fetch with retry logic for rate limits and transient errors
+			// 带有重试逻辑的获取，用于处理速率限制和瞬态错误
 			let response: Response | undefined;
 			let lastError: Error | undefined;
 			let requestUrl: string | undefined;
@@ -399,13 +399,13 @@ export const streamGoogleGeminiCli: StreamFunction<"google-gemini-cli", GoogleGe
 
 					const errorText = await response.text();
 
-					// Check if retryable
+					// 检查是否可重试
 					if (attempt < MAX_RETRIES && isRetryableError(response.status, errorText)) {
-						// Use server-provided delay or exponential backoff
+						// 使用服务器提供的延迟或指数退避
 						const serverDelay = extractRetryDelay(errorText, response);
 						const delayMs = serverDelay ?? BASE_DELAY_MS * 2 ** attempt;
 
-						// Check if server delay exceeds max allowed (default: 60s)
+						// 检查服务器延迟是否超过最大允许值（默认：60s）
 						const maxDelayMs = options?.maxRetryDelayMs ?? 60000;
 						if (maxDelayMs > 0 && serverDelay && serverDelay > maxDelayMs) {
 							const delaySeconds = Math.ceil(serverDelay / 1000);
@@ -418,21 +418,21 @@ export const streamGoogleGeminiCli: StreamFunction<"google-gemini-cli", GoogleGe
 						continue;
 					}
 
-					// Not retryable or max retries exceeded
+					// 不可重试或超过最大重试次数
 					throw new Error(`Cloud Code Assist API error (${response.status}): ${extractErrorMessage(errorText)}`);
 				} catch (error) {
-					// Check for abort - fetch throws AbortError, our code throws "Request was aborted"
+					// 检查是否中止 - fetch 抛出 AbortError，我们的代码抛出 "Request was aborted"
 					if (error instanceof Error) {
 						if (error.name === "AbortError" || error.message === "Request was aborted") {
 							throw new Error("Request was aborted");
 						}
 					}
-					// Extract detailed error message from fetch errors (Node includes cause)
+					// 从 fetch 错误中提取详细错误消息（Node 包含 cause）
 					lastError = error instanceof Error ? error : new Error(String(error));
 					if (lastError.message === "fetch failed" && lastError.cause instanceof Error) {
 						lastError = new Error(`Network error: ${lastError.cause.message}`);
 					}
-					// Network errors are retryable
+					// 网络错误是可重试的
 					if (attempt < MAX_RETRIES) {
 						const delayMs = BASE_DELAY_MS * 2 ** attempt;
 						await sleep(delayMs, options?.signal);
@@ -657,7 +657,7 @@ export const streamGoogleGeminiCli: StreamFunction<"google-gemini-cli", GoogleGe
 							}
 
 							if (responseData.usageMetadata) {
-								// promptTokenCount includes cachedContentTokenCount, so subtract to get fresh input
+								// promptTokenCount 包含 cachedContentTokenCount，因此减去以获得新的输入
 								const promptTokens = responseData.usageMetadata.promptTokenCount || 0;
 								const cacheReadTokens = responseData.usageMetadata.cachedContentTokenCount || 0;
 								output.usage = {

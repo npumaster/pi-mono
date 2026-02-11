@@ -1,14 +1,14 @@
 /**
- * Removes unpaired Unicode surrogate characters from a string.
+ * 从字符串中移除不成对的 Unicode 代理字符。
  *
- * Unpaired surrogates (high surrogates 0xD800-0xDBFF without matching low surrogates 0xDC00-0xDFFF,
- * or vice versa) cause JSON serialization errors in many API providers.
+ * 不成对的代理（没有匹配低代理 0xDC00-0xDFFF 的高代理 0xD800-0xDBFF，
+ * 或反之亦然）会导致许多 API 提供商的 JSON 序列化错误。
  *
- * Valid emoji and other characters outside the Basic Multilingual Plane use properly paired
- * surrogates and will NOT be affected by this function.
+ * 基本多语言平面之外的有效表情符号和其他字符使用正确配对的
+ * 代理，并且不会受到此函数的影响。
  *
- * @param text - The text to sanitize
- * @returns The sanitized text with unpaired surrogates removed
+ * @param text - 要清理的文本
+ * @returns 移除了不成对代理的清理后的文本
  *
  * @example
  * // Valid emoji (properly paired surrogates) are preserved
@@ -19,7 +19,7 @@
  * sanitizeSurrogates(`Text ${unpaired} here`) // => "Text  here"
  */
 export function sanitizeSurrogates(text: string): string {
-	// Replace unpaired high surrogates (0xD800-0xDBFF not followed by low surrogate)
-	// Replace unpaired low surrogates (0xDC00-0xDFFF not preceded by high surrogate)
+	// 替换不成对的高代理（0xD800-0xDBFF 后面没有低代理）
+	// 替换不成对的低代理（0xDC00-0xDFFF 前面没有高代理）
 	return text.replace(/[\uD800-\uDBFF](?![\uDC00-\uDFFF])|(?<![\uD800-\uDBFF])[\uDC00-\uDFFF]/g, "");
 }

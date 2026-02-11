@@ -49,11 +49,11 @@ export interface BedrockOptions extends StreamOptions {
 	region?: string;
 	profile?: string;
 	toolChoice?: "auto" | "any" | "none" | { type: "tool"; name: string };
-	/* See https://docs.aws.amazon.com/bedrock/latest/userguide/inference-reasoning.html for supported models. */
+	/* 有关支持的模型，请参阅 https://docs.aws.amazon.com/bedrock/latest/userguide/inference-reasoning.html。 */
 	reasoning?: ThinkingLevel;
-	/* Custom token budgets per thinking level. Overrides default budgets. */
+	/* 每个思考级别的自定义 token 预算。覆盖默认预算。 */
 	thinkingBudgets?: ThinkingBudgets;
-	/* Only supported by Claude 4.x models, see https://docs.aws.amazon.com/bedrock/latest/userguide/claude-messages-extended-thinking.html#claude-messages-extended-thinking-tool-use-interleaved */
+	/* 仅 Claude 4.x 模型支持，请参阅 https://docs.aws.amazon.com/bedrock/latest/userguide/claude-messages-extended-thinking.html#claude-messages-extended-thinking-tool-use-interleaved */
 	interleavedThinking?: boolean;
 }
 
@@ -92,11 +92,11 @@ export const streamBedrock: StreamFunction<"bedrock-converse-stream", BedrockOpt
 			profile: options.profile,
 		};
 
-		// in Node.js/Bun environment only
+		// 仅在 Node.js/Bun 环境中
 		if (typeof process !== "undefined" && (process.versions?.node || process.versions?.bun)) {
 			config.region = config.region || process.env.AWS_REGION || process.env.AWS_DEFAULT_REGION;
 
-			// Support proxies that don't need authentication
+			// 支持不需要身份验证的代理
 			if (process.env.AWS_BEDROCK_SKIP_AUTH === "1") {
 				config.credentials = {
 					accessKeyId: "dummy-access-key",
@@ -117,15 +117,15 @@ export const streamBedrock: StreamFunction<"bedrock-converse-stream", BedrockOpt
 
 				const agent = new proxyAgent.ProxyAgent();
 
-				// Bedrock runtime uses NodeHttp2Handler by default since v3.798.0, which is based
-				// on `http2` module and has no support for http agent.
-				// Use NodeHttpHandler to support http agent.
+				// Bedrock 运行时自 v3.798.0 起默认使用 NodeHttp2Handler，
+				// 基于 `http2` 模块，不支持 http 代理。
+				// 使用 NodeHttpHandler 以支持 http 代理。
 				config.requestHandler = new nodeHttpHandler.NodeHttpHandler({
 					httpAgent: agent,
 					httpsAgent: agent,
 				});
 			} else if (process.env.AWS_BEDROCK_FORCE_HTTP1 === "1") {
-				// Some custom endpoints require HTTP/1.1 instead of HTTP/2
+				// 某些自定义端点需要 HTTP/1.1 而不是 HTTP/2
 				const nodeHttpHandler = await import("@smithy/node-http-handler");
 				config.requestHandler = new nodeHttpHandler.NodeHttpHandler();
 			}
@@ -283,7 +283,7 @@ function handleContentBlockDelta(
 	let block = blocks[index];
 
 	if (delta?.text !== undefined) {
-		// If no text block exists yet, create one, as `handleContentBlockStart` is not sent for text blocks
+		// 如果尚不存在文本块，则创建一个，因为不会为文本块发送 handleContentBlockStart
 		if (!block) {
 			const newBlock: Block = { type: "text", text: "", index: contentBlockIndex };
 			output.content.push(newBlock);
@@ -371,7 +371,7 @@ function handleContentBlockStop(
 }
 
 /**
- * Check if the model supports adaptive thinking (Opus 4.6+).
+ * 检查模型是否支持自适应思考 (Opus 4.6+)。
  */
 function supportsAdaptiveThinking(modelId: string): boolean {
 	return modelId.includes("opus-4-6") || modelId.includes("opus-4.6");
@@ -394,8 +394,8 @@ function mapThinkingLevelToEffort(level: SimpleStreamOptions["reasoning"]): "low
 }
 
 /**
- * Resolve cache retention preference.
- * Defaults to "short" and uses PI_CACHE_RETENTION for backward compatibility.
+ * 解析缓存保留偏好。
+ * 默认为 "short"，并使用 PI_CACHE_RETENTION 进行向后兼容。
  */
 function resolveCacheRetention(cacheRetention?: CacheRetention): CacheRetention {
 	if (cacheRetention) {
@@ -408,8 +408,8 @@ function resolveCacheRetention(cacheRetention?: CacheRetention): CacheRetention 
 }
 
 /**
- * Check if the model supports prompt caching.
- * Supported: Claude 3.5 Haiku, Claude 3.7 Sonnet, Claude 4.x models
+ * 检查模型是否支持提示缓存。
+ * 支持：Claude 3.5 Haiku, Claude 3.7 Sonnet, Claude 4.x models
  */
 function supportsPromptCaching(model: Model<"bedrock-converse-stream">): boolean {
 	if (model.cost.cacheRead || model.cost.cacheWrite) {
@@ -427,9 +427,9 @@ function supportsPromptCaching(model: Model<"bedrock-converse-stream">): boolean
 }
 
 /**
- * Check if the model supports thinking signatures in reasoningContent.
- * Only Anthropic Claude models support the signature field.
- * Other models (OpenAI, Qwen, Minimax, Moonshot, etc.) reject it with:
+ * 检查模型是否支持 reasoningContent 中的思考签名。
+ * 只有 Anthropic Claude 模型支持 signature 字段。
+ * 其他模型（OpenAI、Qwen、Minimax、Moonshot 等）会拒绝它：
  * "This model doesn't support the reasoningContent.reasoningText.signature field"
  */
 function supportsThinkingSignature(model: Model<"bedrock-converse-stream">): boolean {
@@ -446,7 +446,7 @@ function buildSystemPrompt(
 
 	const blocks: SystemContentBlock[] = [{ text: sanitizeSurrogates(systemPrompt) }];
 
-	// Add cache point for supported Claude models when caching is enabled
+	// 当启用缓存时，为支持的 Claude 模型添加缓存点
 	if (cacheRetention !== "none" && supportsPromptCaching(model)) {
 		blocks.push({
 			cachePoint: { type: CachePointType.DEFAULT, ...(cacheRetention === "long" ? { ttl: CacheTTL.ONE_HOUR } : {}) },
@@ -679,7 +679,7 @@ function buildAdditionalModelRequestFields(
 						xhigh: 16384, // Claude doesn't support xhigh, clamp to high
 					};
 
-					// Custom budgets override defaults (xhigh not in ThinkingBudgets, use high)
+					// 自定义预算覆盖默认值（xhigh 不在 ThinkingBudgets 中，使用 high）
 					const level = options.reasoning === "xhigh" ? "high" : options.reasoning;
 					const budget = options.thinkingBudgets?.[level] ?? defaultBudgets[options.reasoning];
 

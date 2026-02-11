@@ -37,12 +37,12 @@ export interface GoogleOptions extends StreamOptions {
 	toolChoice?: "auto" | "none" | "any";
 	thinking?: {
 		enabled: boolean;
-		budgetTokens?: number; // -1 for dynamic, 0 to disable
+		budgetTokens?: number; // -1 表示动态，0 表示禁用
 		level?: GoogleThinkingLevel;
 	};
 }
 
-// Counter for generating unique tool call IDs
+// 生成唯一工具调用 ID 的计数器
 let toolCallCounter = 0;
 
 export const streamGoogle: StreamFunction<"google-generative-ai", GoogleOptions> = (
@@ -167,7 +167,7 @@ export const streamGoogle: StreamFunction<"google-generative-ai", GoogleOptions>
 								currentBlock = null;
 							}
 
-							// Generate unique ID if not provided or if it's a duplicate
+							// 生成唯一 ID 如果未提供或是重复的
 							const providedId = part.functionCall.id;
 							const needsNewId =
 								!providedId || output.content.some((b) => b.type === "toolCall" && b.id === providedId);
@@ -313,7 +313,7 @@ function createClient(
 	const httpOptions: { baseUrl?: string; apiVersion?: string; headers?: Record<string, string> } = {};
 	if (model.baseUrl) {
 		httpOptions.baseUrl = model.baseUrl;
-		httpOptions.apiVersion = ""; // baseUrl already includes version path, don't append
+		httpOptions.apiVersion = ""; // baseUrl 已经包含版本路径，不要追加
 	}
 	if (model.headers || optionsHeaders) {
 		httpOptions.headers = { ...model.headers, ...optionsHeaders };
@@ -359,7 +359,7 @@ function buildParams(
 	if (options.thinking?.enabled && model.reasoning) {
 		const thinkingConfig: ThinkingConfig = { includeThoughts: true };
 		if (options.thinking.level !== undefined) {
-			// Cast to any since our GoogleThinkingLevel mirrors Google's ThinkingLevel enum values
+			// 转换为 any，因为我们的 GoogleThinkingLevel 镜像了 Google 的 ThinkingLevel 枚举值
 			thinkingConfig.thinkingLevel = options.thinking.level as any;
 		} else if (options.thinking.budgetTokens !== undefined) {
 			thinkingConfig.thinkingBudget = options.thinking.budgetTokens;

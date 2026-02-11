@@ -1,4 +1,4 @@
-// NEVER convert to top-level import - breaks browser/Vite builds (web-ui)
+// 切勿转换为顶层导入 - 会破坏浏览器/Vite 构建 (web-ui)
 let _os: typeof import("node:os") | null = null;
 if (typeof process !== "undefined" && (process.versions?.node || process.versions?.bun)) {
 	import("node:os").then((m) => {
@@ -23,7 +23,7 @@ import { convertResponsesMessages, convertResponsesTools, processResponsesStream
 import { buildBaseOptions, clampReasoning } from "./simple-options.js";
 
 // ============================================================================
-// Configuration
+// 配置
 // ============================================================================
 
 const DEFAULT_CODEX_BASE_URL = "https://chatgpt.com/backend-api";
@@ -42,7 +42,7 @@ const CODEX_RESPONSE_STATUSES = new Set<CodexResponseStatus>([
 ]);
 
 // ============================================================================
-// Types
+// 类型
 // ============================================================================
 
 export interface OpenAICodexResponsesOptions extends StreamOptions {
@@ -71,7 +71,7 @@ interface RequestBody {
 }
 
 // ============================================================================
-// Retry Helpers
+// 重试助手
 // ============================================================================
 
 function isRetryableError(status: number, errorText: string): boolean {
@@ -96,7 +96,7 @@ function sleep(ms: number, signal?: AbortSignal): Promise<void> {
 }
 
 // ============================================================================
-// Main Stream Function
+// 主流函数
 // ============================================================================
 
 export const streamOpenAICodexResponses: StreamFunction<"openai-codex-responses", OpenAICodexResponsesOptions> = (
@@ -165,7 +165,7 @@ export const streamOpenAICodexResponses: StreamFunction<"openai-codex-responses"
 						continue;
 					}
 
-					// Parse error for friendly message on final attempt or non-retryable error
+					// 解析错误以在最后一次尝试或不可重试错误时提供友好的消息
 					const fakeResponse = new Response(errorText, {
 						status: response.status,
 						statusText: response.statusText,
@@ -297,7 +297,7 @@ function resolveCodexUrl(baseUrl?: string): string {
 }
 
 // ============================================================================
-// Response Processing
+// 响应处理
 // ============================================================================
 
 async function processStream(
@@ -382,7 +382,7 @@ async function* parseSSE(response: Response): AsyncGenerator<Record<string, unkn
 }
 
 // ============================================================================
-// Error Handling
+// 错误处理
 // ============================================================================
 
 async function parseErrorResponse(response: Response): Promise<{ message: string; friendlyMessage?: string }> {

@@ -9,7 +9,7 @@ export type OAuthCredentials = {
 
 export type OAuthProviderId = string;
 
-/** @deprecated Use OAuthProviderId instead */
+/** @deprecated 请改用 OAuthProviderId */
 export type OAuthProvider = OAuthProviderId;
 
 export type OAuthPrompt = {
@@ -35,23 +35,23 @@ export interface OAuthProviderInterface {
 	readonly id: OAuthProviderId;
 	readonly name: string;
 
-	/** Run the login flow, return credentials to persist */
+	/** 运行登录流程，返回凭据以持久保存 */
 	login(callbacks: OAuthLoginCallbacks): Promise<OAuthCredentials>;
 
-	/** Whether login uses a local callback server and supports manual code input. */
+	/** 登录是否使用本地回调服务器并支持手动输入代码。 */
 	usesCallbackServer?: boolean;
 
-	/** Refresh expired credentials, return updated credentials to persist */
+	/** 刷新过期的凭据，返回更新后的凭据以持久保存 */
 	refreshToken(credentials: OAuthCredentials): Promise<OAuthCredentials>;
 
-	/** Convert credentials to API key string for the provider */
+	/** 将凭据转换为提供商的 API 密钥字符串 */
 	getApiKey(credentials: OAuthCredentials): string;
 
-	/** Optional: modify models for this provider (e.g., update baseUrl) */
+	/** 可选：修改此提供商的模型（例如，更新 baseUrl） */
 	modifyModels?(models: Model<Api>[], credentials: OAuthCredentials): Model<Api>[];
 }
 
-/** @deprecated Use OAuthProviderInterface instead */
+/** @deprecated 请改用 OAuthProviderInterface */
 export interface OAuthProviderInfo {
 	id: OAuthProviderId;
 	name: string;

@@ -31,10 +31,10 @@ import { sanitizeSurrogates } from "../utils/sanitize-unicode.js";
 import { transformMessages } from "./transform-messages.js";
 
 // =============================================================================
-// Utilities
+// 实用程序
 // =============================================================================
 
-/** Fast deterministic hash to shorten long strings */
+/** 快速确定性哈希，用于缩短长字符串 */
 function shortHash(str: string): string {
 	let h1 = 0xdeadbeef;
 	let h2 = 0x41c6ce57;
@@ -65,7 +65,7 @@ export interface ConvertResponsesToolsOptions {
 }
 
 // =============================================================================
-// Message conversion
+// 消息转换
 // =============================================================================
 
 export function convertResponsesMessages<TApi extends Api>(
@@ -82,11 +82,11 @@ export function convertResponsesMessages<TApi extends Api>(
 		const [callId, itemId] = id.split("|");
 		const sanitizedCallId = callId.replace(/[^a-zA-Z0-9_-]/g, "_");
 		let sanitizedItemId = itemId.replace(/[^a-zA-Z0-9_-]/g, "_");
-		// OpenAI Responses API requires item id to start with "fc"
+		// OpenAI Responses API 要求项目 id 以 "fc" 开头
 		if (!sanitizedItemId.startsWith("fc")) {
 			sanitizedItemId = `fc_${sanitizedItemId}`;
 		}
-		// Truncate to 64 chars and strip trailing underscores (OpenAI Codex rejects them)
+		// 截断为 64 个字符并去除尾随下划线（OpenAI Codex 拒绝它们）
 		let normalizedCallId = sanitizedCallId.length > 64 ? sanitizedCallId.slice(0, 64) : sanitizedCallId;
 		let normalizedItemId = sanitizedItemId.length > 64 ? sanitizedItemId.slice(0, 64) : sanitizedItemId;
 		normalizedCallId = normalizedCallId.replace(/_+$/, "");
@@ -152,7 +152,7 @@ export function convertResponsesMessages<TApi extends Api>(
 					}
 				} else if (block.type === "text") {
 					const textBlock = block as TextContent;
-					// OpenAI requires id to be max 64 characters
+					// OpenAI 要求 id 最多 64 个字符
 					let msgId = textBlock.textSignature;
 					if (!msgId) {
 						msgId = `msg_${msgIndex}`;
@@ -171,9 +171,9 @@ export function convertResponsesMessages<TApi extends Api>(
 					const [callId, itemIdRaw] = toolCall.id.split("|");
 					let itemId: string | undefined = itemIdRaw;
 
-					// For different-model messages, set id to undefined to avoid pairing validation.
-					// OpenAI tracks which fc_xxx IDs were paired with rs_xxx reasoning items.
-					// By omitting the id, we avoid triggering that validation (like cross-provider does).
+					// 对于不同模型的消息，将 id 设置为 undefined 以避免配对验证。
+					// OpenAI 跟踪哪些 fc_xxx ID 与 rs_xxx 推理项目配对。
+					// 通过省略 id，我们避免触发该验证（如跨提供商所做的那样）。
 					if (isDifferentModel && itemId?.startsWith("fc_")) {
 						itemId = undefined;
 					}
@@ -190,14 +190,14 @@ export function convertResponsesMessages<TApi extends Api>(
 			if (output.length === 0) continue;
 			messages.push(...output);
 		} else if (msg.role === "toolResult") {
-			// Extract text and image content
+			// 提取文本和图像内容
 			const textResult = msg.content
 				.filter((c): c is TextContent => c.type === "text")
 				.map((c) => c.text)
 				.join("\n");
 			const hasImages = msg.content.some((c): c is ImageContent => c.type === "image");
 
-			// Always send function_call_output with text (or placeholder if only images)
+			// 始终发送带有文本的 function_call_output（如果只有图像，则发送占位符）
 			const hasText = textResult.length > 0;
 			const [callId] = msg.toolCallId.split("|");
 			messages.push({
@@ -206,17 +206,17 @@ export function convertResponsesMessages<TApi extends Api>(
 				output: sanitizeSurrogates(hasText ? textResult : "(see attached image)"),
 			});
 
-			// If there are images and model supports them, send a follow-up user message with images
+			// 如果有图像且模型支持它们，发送带有图像的后续用户消息
 			if (hasImages && model.input.includes("image")) {
 				const contentParts: ResponseInputContent[] = [];
 
-				// Add text prefix
+				// 添加文本前缀
 				contentParts.push({
 					type: "input_text",
 					text: "Attached image(s) from tool result:",
 				} satisfies ResponseInputText);
 
-				// Add images
+				// 添加图像
 				for (const block of msg.content) {
 					if (block.type === "image") {
 						contentParts.push({
@@ -240,7 +240,7 @@ export function convertResponsesMessages<TApi extends Api>(
 }
 
 // =============================================================================
-// Tool conversion
+// 工具转换
 // =============================================================================
 
 export function convertResponsesTools(tools: Tool[], options?: ConvertResponsesToolsOptions): OpenAITool[] {
@@ -249,13 +249,13 @@ export function convertResponsesTools(tools: Tool[], options?: ConvertResponsesT
 		type: "function",
 		name: tool.name,
 		description: tool.description,
-		parameters: tool.parameters as any, // TypeBox already generates JSON Schema
+		parameters: tool.parameters as any, // TypeBox 已经生成 JSON Schema
 		strict,
 	}));
 }
 
 // =============================================================================
-// Stream processing
+// 流处理
 // =============================================================================
 
 export async function processResponsesStream<TApi extends Api>(
@@ -333,7 +333,7 @@ export async function processResponsesStream<TApi extends Api>(
 		} else if (event.type === "response.content_part.added") {
 			if (currentItem?.type === "message") {
 				currentItem.content = currentItem.content || [];
-				// Filter out ReasoningText, only accept output_text and refusal
+				// 过滤掉 ReasoningText，只接受 output_text 和 refusal
 				if (event.part.type === "output_text" || event.part.type === "refusal") {
 					currentItem.content.push(event.part);
 				}
@@ -431,7 +431,7 @@ export async function processResponsesStream<TApi extends Api>(
 			if (response?.usage) {
 				const cachedTokens = response.usage.input_tokens_details?.cached_tokens || 0;
 				output.usage = {
-					// OpenAI includes cached tokens in input_tokens, so subtract to get non-cached input
+					// OpenAI 在 input_tokens 中包含缓存的令牌，因此减去以获得非缓存输入
 					input: (response.usage.input_tokens || 0) - cachedTokens,
 					output: response.usage.output_tokens || 0,
 					cacheRead: cachedTokens,
@@ -445,7 +445,7 @@ export async function processResponsesStream<TApi extends Api>(
 				const serviceTier = response?.service_tier ?? options.serviceTier;
 				options.applyServiceTierPricing(output.usage, serviceTier);
 			}
-			// Map status to stop reason
+			// 将状态映射到停止原因
 			output.stopReason = mapStopReason(response?.status);
 			if (output.content.some((b) => b.type === "toolCall") && output.stopReason === "stop") {
 				output.stopReason = "toolUse";
@@ -468,7 +468,7 @@ function mapStopReason(status: OpenAI.Responses.ResponseStatus | undefined): Sto
 		case "failed":
 		case "cancelled":
 			return "error";
-		// These two are wonky ...
+		// 这两个有点奇怪...
 		case "in_progress":
 		case "queued":
 			return "stop";

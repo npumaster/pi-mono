@@ -39,7 +39,7 @@ function resolveDeploymentName(model: Model<"azure-openai-responses">, options?:
 	return mappedDeployment || model.id;
 }
 
-// Azure OpenAI Responses-specific options
+// Azure OpenAI Responses 特定的选项
 export interface AzureOpenAIResponsesOptions extends StreamOptions {
 	reasoningEffort?: "minimal" | "low" | "medium" | "high" | "xhigh";
 	reasoningSummary?: "auto" | "detailed" | "concise" | null;
@@ -50,7 +50,7 @@ export interface AzureOpenAIResponsesOptions extends StreamOptions {
 }
 
 /**
- * Generate function for Azure OpenAI Responses API
+ * Azure OpenAI Responses API 的生成函数
  */
 export const streamAzureOpenAIResponses: StreamFunction<"azure-openai-responses", AzureOpenAIResponsesOptions> = (
 	model: Model<"azure-openai-responses">,
@@ -59,7 +59,7 @@ export const streamAzureOpenAIResponses: StreamFunction<"azure-openai-responses"
 ): AssistantMessageEventStream => {
 	const stream = new AssistantMessageEventStream();
 
-	// Start async processing
+	// 开始异步处理
 	(async () => {
 		const deploymentName = resolveDeploymentName(model, options);
 

@@ -1,12 +1,11 @@
 import type { AssistantMessage } from "../types.js";
 
 /**
- * Regex patterns to detect context overflow errors from different providers.
+ * 检测来自不同提供商的上下文溢出错误的正则表达式模式。
  *
- * These patterns match error messages returned when the input exceeds
- * the model's context window.
+ * 这些模式匹配当输入超过模型上下文窗口时返回的错误消息。
  *
- * Provider-specific patterns (with example error messages):
+ * 特定于提供商的模式（带有错误消息示例）：
  *
  * - Anthropic: "prompt is too long: 213462 tokens > 200000 maximum"
  * - OpenAI: "Your input exceeds the context window of this model"
@@ -19,10 +18,10 @@ import type { AssistantMessage } from "../types.js";
  * - GitHub Copilot: "prompt token count of X exceeds the limit of Y"
  * - MiniMax: "invalid params, context window exceeds limit"
  * - Kimi For Coding: "Your request exceeded model token limit: X (requested: Y)"
- * - Cerebras: Returns "400/413 status code (no body)" - handled separately below
- * - Mistral: Returns "400/413 status code (no body)" - handled separately below
- * - z.ai: Does NOT error, accepts overflow silently - handled via usage.input > contextWindow
- * - Ollama: Silently truncates input - not detectable via error message
+ * - Cerebras: 返回 "400/413 status code (no body)" - 下面单独处理
+ * - Mistral: 返回 "400/413 status code (no body)" - 下面单独处理
+ * - z.ai: 不会报错，静默接受溢出 - 通过 usage.input > contextWindow 处理
+ * - Ollama: 静默截断输入 - 无法通过错误消息检测
  */
 const OVERFLOW_PATTERNS = [
 	/prompt is too long/i, // Anthropic
@@ -37,23 +36,23 @@ const OVERFLOW_PATTERNS = [
 	/greater than the context length/i, // LM Studio
 	/context window exceeds limit/i, // MiniMax
 	/exceeded model token limit/i, // Kimi For Coding
-	/context[_ ]length[_ ]exceeded/i, // Generic fallback
-	/too many tokens/i, // Generic fallback
-	/token limit exceeded/i, // Generic fallback
+	/context[_ ]length[_ ]exceeded/i, // 通用回退
+	/too many tokens/i, // 通用回退
+	/token limit exceeded/i, // 通用回退
 ];
 
 /**
- * Check if an assistant message represents a context overflow error.
+ * 检查助手消息是否表示上下文溢出错误。
  *
- * This handles two cases:
- * 1. Error-based overflow: Most providers return stopReason "error" with a
- *    specific error message pattern.
- * 2. Silent overflow: Some providers accept overflow requests and return
- *    successfully. For these, we check if usage.input exceeds the context window.
+ * 这处理两种情况：
+ * 1. 基于错误的溢出：大多数提供商返回 stopReason "error" 并带有
+ *    特定的错误消息模式。
+ * 2. 静默溢出：一些提供商接受溢出请求并成功返回。
+ *    对于这些，我们检查 usage.input 是否超过上下文窗口。
  *
- * ## Reliability by Provider
+ * ## 按提供商的可靠性
  *
- * **Reliable detection (returns error with detectable message):**
+ * **可靠检测（返回带有可检测消息的错误）：**
  * - Anthropic: "prompt is too long: X tokens > Y maximum"
  * - OpenAI (Completions & Responses): "exceeds the context window"
  * - Google Gemini: "input token count exceeds the maximum"
@@ -61,36 +60,36 @@ const OVERFLOW_PATTERNS = [
  * - Groq: "reduce the length of the messages"
  * - Cerebras: 400/413 status code (no body)
  * - Mistral: 400/413 status code (no body)
- * - OpenRouter (all backends): "maximum context length is X tokens"
+ * - OpenRouter (所有后端): "maximum context length is X tokens"
  * - llama.cpp: "exceeds the available context size"
  * - LM Studio: "greater than the context length"
  * - Kimi For Coding: "exceeded model token limit: X (requested: Y)"
  *
- * **Unreliable detection:**
- * - z.ai: Sometimes accepts overflow silently (detectable via usage.input > contextWindow),
- *   sometimes returns rate limit errors. Pass contextWindow param to detect silent overflow.
- * - Ollama: Silently truncates input without error. Cannot be detected via this function.
- *   The response will have usage.input < expected, but we don't know the expected value.
+ * **不可靠检测：**
+ * - z.ai: 有时静默接受溢出（可通过 usage.input > contextWindow 检测），
+ *   有时返回速率限制错误。传递 contextWindow 参数以检测静默溢出。
+ * - Ollama: 静默截断输入而不报错。无法通过此函数检测。
+ *   响应将具有 usage.input < expected，但我们不知道预期值。
  *
- * ## Custom Providers
+ * ## 自定义提供商
  *
- * If you've added custom models via settings.json, this function may not detect
- * overflow errors from those providers. To add support:
+ * 如果您通过 settings.json 添加了自定义模型，此函数可能无法检测
+ * 来自这些提供商的溢出错误。要添加支持：
  *
- * 1. Send a request that exceeds the model's context window
- * 2. Check the errorMessage in the response
- * 3. Create a regex pattern that matches the error
- * 4. The pattern should be added to OVERFLOW_PATTERNS in this file, or
- *    check the errorMessage yourself before calling this function
+ * 1. 发送超过模型上下文窗口的请求
+ * 2. 检查响应中的 errorMessage
+ * 3. 创建匹配错误的正则表达式模式
+ * 4. 该模式应添加到此文件中的 OVERFLOW_PATTERNS，或者
+ *    在调用此函数之前自行检查 errorMessage
  *
- * @param message - The assistant message to check
- * @param contextWindow - Optional context window size for detecting silent overflow (z.ai)
- * @returns true if the message indicates a context overflow
+ * @param message - 要检查的助手消息
+ * @param contextWindow - 用于检测静默溢出 (z.ai) 的可选上下文窗口大小
+ * @returns 如果消息指示上下文溢出，则为 true
  */
 export function isContextOverflow(message: AssistantMessage, contextWindow?: number): boolean {
-	// Case 1: Check error message patterns
+	// 情况 1：检查错误消息模式
 	if (message.stopReason === "error" && message.errorMessage) {
-		// Check known patterns
+		// 检查已知模式
 		if (OVERFLOW_PATTERNS.some((p) => p.test(message.errorMessage!))) {
 			return true;
 		}
@@ -102,7 +101,7 @@ export function isContextOverflow(message: AssistantMessage, contextWindow?: num
 		}
 	}
 
-	// Case 2: Silent overflow (z.ai style) - successful but usage exceeds context
+	// 情况 2：静默溢出 (z.ai 风格) - 成功但使用量超过上下文
 	if (contextWindow && message.stopReason === "stop") {
 		const inputTokens = message.usage.input + message.usage.cacheRead;
 		if (inputTokens > contextWindow) {
@@ -114,7 +113,7 @@ export function isContextOverflow(message: AssistantMessage, contextWindow?: num
 }
 
 /**
- * Get the overflow patterns for testing purposes.
+ * 获取用于测试目的的溢出模式。
  */
 export function getOverflowPatterns(): RegExp[] {
 	return [...OVERFLOW_PATTERNS];

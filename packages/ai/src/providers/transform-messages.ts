@@ -1,26 +1,26 @@
 import type { Api, AssistantMessage, Message, Model, ToolCall, ToolResultMessage } from "../types.js";
 
 /**
- * Normalize tool call ID for cross-provider compatibility.
- * OpenAI Responses API generates IDs that are 450+ chars with special characters like `|`.
- * Anthropic APIs require IDs matching ^[a-zA-Z0-9_-]+$ (max 64 chars).
+ * 标准化工具调用 ID 以实现跨提供商兼容性。
+ * OpenAI Responses API 生成的 ID 超过 450 个字符，且包含 `|` 等特殊字符。
+ * Anthropic API 要求 ID 匹配 ^[a-zA-Z0-9_-]+$（最多 64 个字符）。
  */
 export function transformMessages<TApi extends Api>(
 	messages: Message[],
 	model: Model<TApi>,
 	normalizeToolCallId?: (id: string, model: Model<TApi>, source: AssistantMessage) => string,
 ): Message[] {
-	// Build a map of original tool call IDs to normalized IDs
+	// 建立原始工具调用 ID 到标准化 ID 的映射
 	const toolCallIdMap = new Map<string, string>();
 
-	// First pass: transform messages (thinking blocks, tool call ID normalization)
+	// 第一遍：转换消息（思考块，工具调用 ID 标准化）
 	const transformed = messages.map((msg) => {
-		// User messages pass through unchanged
+		// 用户消息保持不变
 		if (msg.role === "user") {
 			return msg;
 		}
 
-		// Handle toolResult messages - normalize toolCallId if we have a mapping
+		// 处理 toolResult 消息 - 如果我们有映射，则标准化 toolCallId
 		if (msg.role === "toolResult") {
 			const normalizedId = toolCallIdMap.get(msg.toolCallId);
 			if (normalizedId && normalizedId !== msg.toolCallId) {
@@ -29,7 +29,7 @@ export function transformMessages<TApi extends Api>(
 			return msg;
 		}
 
-		// Assistant messages need transformation check
+		// 助手消息需要检查转换
 		if (msg.role === "assistant") {
 			const assistantMsg = msg as AssistantMessage;
 			const isSameModel =
@@ -39,10 +39,10 @@ export function transformMessages<TApi extends Api>(
 
 			const transformedContent = assistantMsg.content.flatMap((block) => {
 				if (block.type === "thinking") {
-					// For same model: keep thinking blocks with signatures (needed for replay)
-					// even if the thinking text is empty (OpenAI encrypted reasoning)
+					// 对于相同模型：保留带有签名的思考块（回放所需）
+					// 即使思考文本为空（OpenAI 加密推理）
 					if (isSameModel && block.thinkingSignature) return block;
-					// Skip empty thinking blocks, convert others to plain text
+					// 跳过空的思考块，将其他转换为纯文本
 					if (!block.thinking || block.thinking.trim() === "") return [];
 					if (isSameModel) return block;
 					return {
@@ -90,8 +90,8 @@ export function transformMessages<TApi extends Api>(
 		return msg;
 	});
 
-	// Second pass: insert synthetic empty tool results for orphaned tool calls
-	// This preserves thinking signatures and satisfies API requirements
+	// 第二遍：为孤立的工具调用插入合成的空工具结果
+	// 这保留了思考签名并满足 API 要求
 	const result: Message[] = [];
 	let pendingToolCalls: ToolCall[] = [];
 	let existingToolResultIds = new Set<string>();
@@ -100,7 +100,7 @@ export function transformMessages<TApi extends Api>(
 		const msg = transformed[i];
 
 		if (msg.role === "assistant") {
-			// If we have pending orphaned tool calls from a previous assistant, insert synthetic results now
+			// 如果我们有来自上一个助手的待处理孤立工具调用，现在插入合成结果
 			if (pendingToolCalls.length > 0) {
 				for (const tc of pendingToolCalls) {
 					if (!existingToolResultIds.has(tc.id)) {
@@ -118,17 +118,17 @@ export function transformMessages<TApi extends Api>(
 				existingToolResultIds = new Set();
 			}
 
-			// Skip errored/aborted assistant messages entirely.
-			// These are incomplete turns that shouldn't be replayed:
-			// - May have partial content (reasoning without message, incomplete tool calls)
-			// - Replaying them can cause API errors (e.g., OpenAI "reasoning without following item")
-			// - The model should retry from the last valid state
+			// 完全跳过错误/中止的助手消息。
+			// 这些是不完整的轮次，不应该被回放：
+			// - 可能有部分内容（没有消息的推理，不完整的工具调用）
+			// - 回放它们可能会导致 API 错误（例如，OpenAI "reasoning without following item"）
+			// - 模型应该从最后一个有效状态重试
 			const assistantMsg = msg as AssistantMessage;
 			if (assistantMsg.stopReason === "error" || assistantMsg.stopReason === "aborted") {
 				continue;
 			}
 
-			// Track tool calls from this assistant message
+			// 跟踪来自此助手消息的工具调用
 			const toolCalls = assistantMsg.content.filter((b) => b.type === "toolCall") as ToolCall[];
 			if (toolCalls.length > 0) {
 				pendingToolCalls = toolCalls;
@@ -140,7 +140,7 @@ export function transformMessages<TApi extends Api>(
 			existingToolResultIds.add(msg.toolCallId);
 			result.push(msg);
 		} else if (msg.role === "user") {
-			// User message interrupts tool flow - insert synthetic results for orphaned calls
+			// 用户消息中断工具流程 - 为孤立的调用插入合成结果
 			if (pendingToolCalls.length > 0) {
 				for (const tc of pendingToolCalls) {
 					if (!existingToolResultIds.has(tc.id)) {
