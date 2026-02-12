@@ -56,58 +56,58 @@ export class EventsWatcher {
 	}
 
 	/**
-	 * Start watching for events. Call this after SlackBot is ready.
+	 * 开始监听事件。在 SlackBot 就绪后调用此方法。
 	 */
 	start(): void {
-		// Ensure events directory exists
+		// 确保事件目录存在
 		if (!existsSync(this.eventsDir)) {
 			mkdirSync(this.eventsDir, { recursive: true });
 		}
 
-		log.logInfo(`Events watcher starting, dir: ${this.eventsDir}`);
+		log.logInfo(`事件监听器启动中，目录: ${this.eventsDir}`);
 
-		// Scan existing files
+		// 扫描现有文件
 		this.scanExisting();
 
-		// Watch for changes
+		// 监听更改
 		this.watcher = watch(this.eventsDir, (_eventType, filename) => {
 			if (!filename || !filename.endsWith(".json")) return;
 			this.debounce(filename, () => this.handleFileChange(filename));
 		});
 
-		log.logInfo(`Events watcher started, tracking ${this.knownFiles.size} files`);
+		log.logInfo(`事件监听器已启动，正在跟踪 ${this.knownFiles.size} 个文件`);
 	}
 
 	/**
-	 * Stop watching and cancel all scheduled events.
+	 * 停止监听并取消所有调度的事件。
 	 */
 	stop(): void {
-		// Stop fs watcher
+		// 停止文件系统监听器
 		if (this.watcher) {
 			this.watcher.close();
 			this.watcher = null;
 		}
 
-		// Cancel all debounce timers
+		// 取消所有防抖计时器
 		for (const timer of this.debounceTimers.values()) {
 			clearTimeout(timer);
 		}
 		this.debounceTimers.clear();
 
-		// Cancel all scheduled timers
+		// 取消所有调度的计时器
 		for (const timer of this.timers.values()) {
 			clearTimeout(timer);
 		}
 		this.timers.clear();
 
-		// Cancel all cron jobs
+		// 取消所有 cron 作业
 		for (const cron of this.crons.values()) {
 			cron.stop();
 		}
 		this.crons.clear();
 
 		this.knownFiles.clear();
-		log.logInfo("Events watcher stopped");
+		log.logInfo("事件监听器已停止");
 	}
 
 	private debounce(filename: string, fn: () => void): void {

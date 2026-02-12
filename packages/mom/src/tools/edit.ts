@@ -4,7 +4,7 @@ import * as Diff from "diff";
 import type { Executor } from "../sandbox.js";
 
 /**
- * Generate a unified diff string with line numbers and context
+ * 生成带有行号和上下文的统一 diff 字符串
  */
 function generateDiffString(oldContent: string, newContent: string, contextLines = 4): string {
 	const parts = Diff.diffLines(oldContent, newContent);
@@ -87,10 +87,10 @@ function generateDiffString(oldContent: string, newContent: string, contextLines
 }
 
 const editSchema = Type.Object({
-	label: Type.String({ description: "Brief description of the edit you're making (shown to user)" }),
-	path: Type.String({ description: "Path to the file to edit (relative or absolute)" }),
-	oldText: Type.String({ description: "Exact text to find and replace (must match exactly)" }),
-	newText: Type.String({ description: "New text to replace the old text with" }),
+	label: Type.String({ description: "你正在进行的编辑的简短说明（显示给用户）" }),
+	path: Type.String({ description: "要编辑的文件路径（相对或绝对）" }),
+	oldText: Type.String({ description: "要查找并替换的确切文本（必须完全匹配）" }),
+	newText: Type.String({ description: "用于替换旧文本的新文本" }),
 });
 
 export function createEditTool(executor: Executor): AgentTool<typeof editSchema> {
@@ -98,14 +98,14 @@ export function createEditTool(executor: Executor): AgentTool<typeof editSchema>
 		name: "edit",
 		label: "edit",
 		description:
-			"Edit a file by replacing exact text. The oldText must match exactly (including whitespace). Use this for precise, surgical edits.",
+			"通过替换确切文本来编辑文件。oldText 必须完全匹配（包括空白字符）。用于精确的外科手术式编辑。",
 		parameters: editSchema,
 		execute: async (
 			_toolCallId: string,
 			{ path, oldText, newText }: { label: string; path: string; oldText: string; newText: string },
 			signal?: AbortSignal,
 		) => {
-			// Read the file
+			// 读取文件
 			const readResult = await executor.exec(`cat ${shellEscape(path)}`, { signal });
 			if (readResult.code !== 0) {
 				throw new Error(readResult.stderr || `File not found: ${path}`);
@@ -113,14 +113,14 @@ export function createEditTool(executor: Executor): AgentTool<typeof editSchema>
 
 			const content = readResult.stdout;
 
-			// Check if old text exists
+			// 检查旧文本是否存在
 			if (!content.includes(oldText)) {
 				throw new Error(
 					`Could not find the exact text in ${path}. The old text must match exactly including all whitespace and newlines.`,
 				);
 			}
 
-			// Count occurrences
+			// 计算出现次数
 			const occurrences = content.split(oldText).length - 1;
 
 			if (occurrences > 1) {
@@ -129,7 +129,7 @@ export function createEditTool(executor: Executor): AgentTool<typeof editSchema>
 				);
 			}
 
-			// Perform replacement
+			// 执行替换
 			const index = content.indexOf(oldText);
 			const newContent = content.substring(0, index) + newText + content.substring(index + oldText.length);
 
@@ -139,7 +139,7 @@ export function createEditTool(executor: Executor): AgentTool<typeof editSchema>
 				);
 			}
 
-			// Write the file back
+			// 将文件写回
 			const writeResult = await executor.exec(`printf '%s' ${shellEscape(newContent)} > ${shellEscape(path)}`, {
 				signal,
 			});

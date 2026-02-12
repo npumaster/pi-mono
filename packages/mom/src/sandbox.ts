@@ -67,7 +67,7 @@ function execSimple(cmd: string, args: string[]): Promise<string> {
 }
 
 /**
- * Create an executor that runs commands either on host or in Docker container
+ * 创建一个在主机或 Docker 容器中运行命令的执行器
  */
 export function createExecutor(config: SandboxConfig): Executor {
 	if (config.type === "host") {
@@ -76,16 +76,19 @@ export function createExecutor(config: SandboxConfig): Executor {
 	return new DockerExecutor(config.container);
 }
 
+/**
+ * 运行 bash 命令的接口。可以是本地（host）或 Docker 内部。
+ */
 export interface Executor {
 	/**
-	 * Execute a bash command
+	 * 执行 bash 命令
 	 */
 	exec(command: string, options?: ExecOptions): Promise<ExecResult>;
 
 	/**
-	 * Get the workspace path prefix for this executor
-	 * Host: returns the actual path
-	 * Docker: returns /workspace
+	 * 获取此执行器的工作区路径前缀
+	 * 主机：返回实际路径
+	 * Docker：返回 /workspace
 	 */
 	getWorkspacePath(hostPath: string): string;
 }

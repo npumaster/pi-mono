@@ -1,13 +1,13 @@
 /**
- * Context management for mom.
+ * mom 的上下文管理。
  *
- * Mom uses two files per channel:
- * - context.jsonl: Structured API messages for LLM context (same format as coding-agent sessions)
- * - log.jsonl: Human-readable channel history for grep (no tool results)
+ * mom 每个频道使用两个文件：
+ * - context.jsonl：用于 LLM 上下文的结构化 API 消息（与 coding-agent 会话格式相同）
+ * - log.jsonl：用于 grep 的人类可读频道历史记录（无工具结果）
  *
- * This module provides:
- * - syncLogToSessionManager: Syncs messages from log.jsonl to SessionManager
- * - MomSettingsManager: Simple settings for mom (compaction, retry, model preferences)
+ * 此模块提供：
+ * - syncLogToSessionManager：将消息从 log.jsonl 同步到 SessionManager
+ * - MomSettingsManager：mom 的简单设置（压缩、重试、模型偏好）
  */
 
 import type { UserMessage } from "@mariozechner/pi-ai";

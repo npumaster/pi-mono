@@ -244,27 +244,27 @@ const handler: MomHandler = {
 		if (state?.running) {
 			state.stopRequested = true;
 			state.runner.abort();
-			const ts = await slack.postMessage(channelId, "_Stopping..._");
-			state.stopMessageTs = ts; // Save for updating later
+			const ts = await slack.postMessage(channelId, "_正在停止..._");
+			state.stopMessageTs = ts; // 保存以便稍后更新
 		} else {
-			await slack.postMessage(channelId, "_Nothing running_");
+			await slack.postMessage(channelId, "_当前没有运行中的任务_");
 		}
 	},
 
 	async handleEvent(event: SlackEvent, slack: SlackBot, isEvent?: boolean): Promise<void> {
 		const state = getState(event.channel);
 
-		// Start run
+		// 开始运行
 		state.running = true;
 		state.stopRequested = false;
 
-		log.logInfo(`[${event.channel}] Starting run: ${event.text.substring(0, 50)}`);
+		log.logInfo(`[${event.channel}] 开始运行: ${event.text.substring(0, 50)}`);
 
 		try {
-			// Create context adapter
+			// 创建上下文适配器
 			const ctx = createSlackContext(event, slack, state, isEvent);
 
-			// Run the agent
+			// 运行 agent
 			await ctx.setTyping(true);
 			await ctx.setWorking(true);
 			const result = await state.runner.run(ctx as any, state.store);
@@ -272,14 +272,14 @@ const handler: MomHandler = {
 
 			if (result.stopReason === "aborted" && state.stopRequested) {
 				if (state.stopMessageTs) {
-					await slack.updateMessage(event.channel, state.stopMessageTs, "_Stopped_");
+					await slack.updateMessage(event.channel, state.stopMessageTs, "_已停止_");
 					state.stopMessageTs = undefined;
 				} else {
-					await slack.postMessage(event.channel, "_Stopped_");
+					await slack.postMessage(event.channel, "_已停止_");
 				}
 			}
 		} catch (err) {
-			log.logWarning(`[${event.channel}] Run error`, err instanceof Error ? err.message : String(err));
+			log.logWarning(`[${event.channel}] 运行出错`, err instanceof Error ? err.message : String(err));
 		} finally {
 			state.running = false;
 		}

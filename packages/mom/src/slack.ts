@@ -16,7 +16,7 @@ export interface SlackEvent {
 	user: string;
 	text: string;
 	files?: Array<{ name?: string; url_private_download?: string; url_private?: string }>;
-	/** Processed attachments with local paths (populated after logUserMessage) */
+	/** 处理后的带有本地路径的附件（在 logUserMessage 后填充） */
 	attachments?: Attachment[];
 }
 
@@ -67,20 +67,20 @@ export interface SlackContext {
 
 export interface MomHandler {
 	/**
-	 * Check if channel is currently running (SYNC)
+	 * 检查频道当前是否正在运行（同步）
 	 */
 	isRunning(channelId: string): boolean;
 
 	/**
-	 * Handle an event that triggers mom (ASYNC)
-	 * Called only when isRunning() returned false for user messages.
-	 * Events always queue and pass isEvent=true.
+	 * 处理触发 mom 的事件（异步）
+	 * 仅当用户消息的 isRunning() 返回 false 时调用。
+	 * 事件总是入队并传递 isEvent=true。
 	 */
 	handleEvent(event: SlackEvent, slack: SlackBot, isEvent?: boolean): Promise<void>;
 
 	/**
-	 * Handle stop command (ASYNC)
-	 * Called when user says "stop" while mom is running
+	 * 处理停止命令（异步）
+	 * 当用户在 mom 运行时说 "stop" 时调用
 	 */
 	handleStop(channelId: string, slack: SlackBot): Promise<void>;
 }

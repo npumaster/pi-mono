@@ -30,20 +30,20 @@ function formatMessage(ts: string, user: string, text: string, indent = ""): str
 export async function downloadChannel(channelId: string, botToken: string): Promise<void> {
 	const client = new WebClient(botToken, { logLevel: LogLevel.ERROR });
 
-	console.error(`Fetching channel info for ${channelId}...`);
+	console.error(`正在获取 ${channelId} 的频道信息...`);
 
-	// Get channel info
+	// 获取频道信息
 	let channelName = channelId;
 	try {
 		const info = await client.conversations.info({ channel: channelId });
 		channelName = (info.channel as any)?.name || channelId;
 	} catch {
-		// DM channels don't have names, that's fine
+		// DM 频道没有名称，这没关系
 	}
 
-	console.error(`Downloading history for #${channelName} (${channelId})...`);
+	console.error(`正在下载 #${channelName} (${channelId}) 的历史记录...`);
 
-	// Fetch all messages
+	// 获取所有消息
 	const messages: Message[] = [];
 	let cursor: string | undefined;
 
@@ -59,7 +59,7 @@ export async function downloadChannel(channelId: string, botToken: string): Prom
 		}
 
 		cursor = response.response_metadata?.next_cursor;
-		console.error(`  Fetched ${messages.length} messages...`);
+		console.error(`  已获取 ${messages.length} 条消息...`);
 	} while (cursor);
 
 	// Reverse to chronological order

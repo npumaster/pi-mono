@@ -8,7 +8,7 @@ import type { Executor } from "../sandbox.js";
 import { DEFAULT_MAX_BYTES, DEFAULT_MAX_LINES, formatSize, type TruncationResult, truncateTail } from "./truncate.js";
 
 /**
- * Generate a unique temp file path for bash output
+ * 为 bash 输出生成唯一的临时文件路径
  */
 function getTempFilePath(): string {
 	const id = randomBytes(8).toString("hex");
@@ -16,9 +16,9 @@ function getTempFilePath(): string {
 }
 
 const bashSchema = Type.Object({
-	label: Type.String({ description: "Brief description of what this command does (shown to user)" }),
-	command: Type.String({ description: "Bash command to execute" }),
-	timeout: Type.Optional(Type.Number({ description: "Timeout in seconds (optional, no default timeout)" })),
+	label: Type.String({ description: "此命令执行操作的简短说明（显示给用户）" }),
+	command: Type.String({ description: "要执行的 bash 命令" }),
+	timeout: Type.Optional(Type.Number({ description: "超时时间（秒）（可选，无默认超时）" })),
 });
 
 interface BashToolDetails {
@@ -30,14 +30,14 @@ export function createBashTool(executor: Executor): AgentTool<typeof bashSchema>
 	return {
 		name: "bash",
 		label: "bash",
-		description: `Execute a bash command in the current working directory. Returns stdout and stderr. Output is truncated to last ${DEFAULT_MAX_LINES} lines or ${DEFAULT_MAX_BYTES / 1024}KB (whichever is hit first). If truncated, full output is saved to a temp file. Optionally provide a timeout in seconds.`,
+		description: `在当前工作目录中执行 bash 命令。返回 stdout 和 stderr。输出将被截断为最后 ${DEFAULT_MAX_LINES} 行或 ${DEFAULT_MAX_BYTES / 1024}KB（以先达到的为准）。如果被截断，完整输出将保存到临时文件中。可选提供以秒为单位的超时时间。`,
 		parameters: bashSchema,
 		execute: async (
 			_toolCallId: string,
 			{ command, timeout }: { label: string; command: string; timeout?: number },
 			signal?: AbortSignal,
 		) => {
-			// Track output for potential temp file writing
+			// 跟踪输出以便可能写入临时文件
 			let tempFilePath: string | undefined;
 			let tempFileStream: ReturnType<typeof createWriteStream> | undefined;
 
@@ -51,7 +51,7 @@ export function createBashTool(executor: Executor): AgentTool<typeof bashSchema>
 
 			const totalBytes = Buffer.byteLength(output, "utf-8");
 
-			// Write to temp file if output exceeds limit
+			// 如果输出超过限制，则写入临时文件
 			if (totalBytes > DEFAULT_MAX_BYTES) {
 				tempFilePath = getTempFilePath();
 				tempFileStream = createWriteStream(tempFilePath);
@@ -59,11 +59,11 @@ export function createBashTool(executor: Executor): AgentTool<typeof bashSchema>
 				tempFileStream.end();
 			}
 
-			// Apply tail truncation
+			// 应用末尾截断
 			const truncation = truncateTail(output);
 			let outputText = truncation.content || "(no output)";
 
-			// Build details with truncation info
+			// 构建带有截断详情的信息
 			let details: BashToolDetails | undefined;
 
 			if (truncation.truncated) {
@@ -72,12 +72,12 @@ export function createBashTool(executor: Executor): AgentTool<typeof bashSchema>
 					fullOutputPath: tempFilePath,
 				};
 
-				// Build actionable notice
+				// 构建可操作的通知
 				const startLine = truncation.totalLines - truncation.outputLines + 1;
 				const endLine = truncation.totalLines;
 
 				if (truncation.lastLinePartial) {
-					// Edge case: last line alone > 50KB
+					// 边缘情况：仅最后一行就超过 50KB
 					const lastLineSize = formatSize(Buffer.byteLength(output.split("\n").pop() || "", "utf-8"));
 					outputText += `\n\n[Showing last ${formatSize(truncation.outputBytes)} of line ${endLine} (line is ${lastLineSize}). Full output: ${tempFilePath}]`;
 				} else if (truncation.truncatedBy === "lines") {

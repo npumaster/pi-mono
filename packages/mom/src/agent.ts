@@ -34,11 +34,17 @@ export interface PendingMessage {
 }
 
 export interface AgentRunner {
+	/**
+	 * 运行代理以处理频道中的消息。
+	 */
 	run(
 		ctx: SlackContext,
 		store: ChannelStore,
 		pendingMessages?: PendingMessage[],
 	): Promise<{ stopReason: string; errorMessage?: string }>;
+	/**
+	 * 中止当前运行。
+	 */
 	abort(): void;
 }
 

@@ -159,6 +159,9 @@ export function logStopRequest(ctx: LogContext): void {
 	console.log(chalk.yellow(`${timestamp()} ${formatContext(ctx)} ⊗ Stop requested - aborting`));
 }
 
+/**
+ * 简单的日志工具，具有时间戳。
+ */
 // System
 export function logInfo(message: string): void {
 	console.log(chalk.blue(`${timestamp()} [system] ${message}`));
