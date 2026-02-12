@@ -2,7 +2,7 @@ import chalk from "chalk";
 import { getActivePod, loadConfig } from "../config.js";
 
 // ────────────────────────────────────────────────────────────────────────────────
-// Types
+// 类型
 // ────────────────────────────────────────────────────────────────────────────────
 
 interface PromptOptions {
@@ -11,15 +11,15 @@ interface PromptOptions {
 }
 
 // ────────────────────────────────────────────────────────────────────────────────
-// Main prompt function
+// 主提示函数
 // ────────────────────────────────────────────────────────────────────────────────
 
 export async function promptModel(modelName: string, userArgs: string[], opts: PromptOptions = {}) {
-	// Get pod and model configuration
+	// 获取 pod 和模型配置
 	const activePod = opts.pod ? { name: opts.pod, pod: loadConfig().pods[opts.pod] } : getActivePod();
 
 	if (!activePod) {
-		console.error(chalk.red("No active pod. Use 'pi pods active <name>' to set one."));
+		console.error(chalk.red("没有激活的 pod。请使用 'pi pods active <name>' 设置一个。"));
 		process.exit(1);
 	}
 
@@ -27,36 +27,36 @@ export async function promptModel(modelName: string, userArgs: string[], opts: P
 	const modelConfig = pod.models[modelName];
 
 	if (!modelConfig) {
-		console.error(chalk.red(`Model '${modelName}' not found on pod '${podName}'`));
+		console.error(chalk.red(`在 pod '${podName}' 上未找到模型 '${modelName}'`));
 		process.exit(1);
 	}
 
-	// Extract host from SSH string
+	// 从 SSH 字符串中提取主机名
 	const host =
 		pod.ssh
 			.split(" ")
 			.find((p) => p.includes("@"))
 			?.split("@")[1] ?? "localhost";
 
-	// Build the system prompt for code navigation
-	const systemPrompt = `You help the user understand and navigate the codebase in the current working directory.
+	// 为代码导航构建系统提示词
+	const systemPrompt = `您帮助用户理解和导航当前工作目录中的代码库。
 
-You can read files, list directories, and execute shell commands via the respective tools.
+您可以通过相应的工具读取文件、列出目录和执行 shell 命令。
 
-Do not output file contents you read via the read_file tool directly, unless asked to.
+除非被要求，否则不要直接输出您通过 read_file 工具读取的文件内容。
 
-Do not output markdown tables as part of your responses.
+不要在您的回复中输出 markdown 表格。
 
-Keep your responses concise and relevant to the user's request.
+保持您的回答简洁且与用户的请求相关。
 
-File paths you output must include line numbers where possible, e.g. "src/index.ts:10-20" for lines 10 to 20 in src/index.ts.
+您输出的文件路径必须尽可能包含行号，例如 "src/index.ts:10-20" 表示 src/index.ts 的第 10 到 20 行。
 
-Current working directory: ${process.cwd()}`;
+当前工作目录: ${process.cwd()}`;
 
-	// Build arguments for agent main function
+	// 为 agent 主函数构建参数
 	const args: string[] = [];
 
-	// Add base configuration that we control
+	// 添加我们控制的基础配置
 	args.push(
 		"--base-url",
 		`http://${host}:${modelConfig.port}/v1`,
@@ -70,15 +70,15 @@ Current working directory: ${process.cwd()}`;
 		systemPrompt,
 	);
 
-	// Pass through all user-provided arguments
-	// This includes messages, --continue, --json, etc.
+	// 透传所有用户提供的参数
+	// 这包括消息、--continue、--json 等
 	args.push(...userArgs);
 
-	// Call agent main function directly
+	// 直接调用 agent 主函数
 	try {
-		throw new Error("Not implemented");
+		throw new Error("尚未实现");
 	} catch (err: any) {
-		console.error(chalk.red(`Agent error: ${err.message}`));
+		console.error(chalk.red(`Agent 错误: ${err.message}`));
 		process.exit(1);
 	}
 }

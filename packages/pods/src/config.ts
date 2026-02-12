@@ -3,7 +3,7 @@ import { homedir } from "os";
 import { join } from "path";
 import type { Config, Pod } from "./types.js";
 
-// Get config directory from env or use default
+// 从环境变量获取配置目录或使用默认值
 const getConfigDir = (): string => {
 	const configDir = process.env.PI_CONFIG_DIR || join(homedir(), ".pi");
 	if (!existsSync(configDir)) {
@@ -19,7 +19,7 @@ const getConfigPath = (): string => {
 export const loadConfig = (): Config => {
 	const configPath = getConfigPath();
 	if (!existsSync(configPath)) {
-		// Return empty config if file doesn't exist
+		// 如果文件不存在，返回空配置
 		return { pods: {} };
 	}
 	try {
@@ -52,7 +52,7 @@ export const getActivePod = (): { name: string; pod: Pod } | null => {
 export const addPod = (name: string, pod: Pod): void => {
 	const config = loadConfig();
 	config.pods[name] = pod;
-	// If no active pod, make this one active
+	// 如果没有激活的 pod，将此 pod 设为激活状态
 	if (!config.active) {
 		config.active = name;
 	}
@@ -62,7 +62,7 @@ export const addPod = (name: string, pod: Pod): void => {
 export const removePod = (name: string): void => {
 	const config = loadConfig();
 	delete config.pods[name];
-	// If this was the active pod, clear active
+	// 如果这是激活的 pod，则清除激活状态
 	if (config.active === name) {
 		config.active = undefined;
 	}

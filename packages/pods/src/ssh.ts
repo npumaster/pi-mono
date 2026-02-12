@@ -7,7 +7,7 @@ export interface SSHResult {
 }
 
 /**
- * Execute an SSH command and return the result
+ * 执行 SSH 命令并返回结果
  */
 export const sshExec = async (
 	sshCmd: string,
@@ -15,15 +15,15 @@ export const sshExec = async (
 	options?: { keepAlive?: boolean },
 ): Promise<SSHResult> => {
 	return new Promise((resolve) => {
-		// Parse SSH command (e.g., "ssh root@1.2.3.4" or "ssh -p 22 root@1.2.3.4")
+		// 解析 SSH 命令（例如 "ssh root@1.2.3.4" 或 "ssh -p 22 root@1.2.3.4"）
 		const sshParts = sshCmd.split(" ").filter((p) => p);
 		const sshBinary = sshParts[0];
 		let sshArgs = [...sshParts.slice(1)];
 
-		// Add SSH keepalive options for long-running commands
+		// 为长时间运行的命令添加 SSH 保持连接选项
 		if (options?.keepAlive) {
-			// ServerAliveInterval=30 sends keepalive every 30 seconds
-			// ServerAliveCountMax=120 allows up to 120 failures (60 minutes total)
+			// ServerAliveInterval=30 每 30 秒发送一次保持连接信号
+			// ServerAliveCountMax=120 允许最多 120 次失败（共 60 分钟）
 			sshArgs = ["-o", "ServerAliveInterval=30", "-o", "ServerAliveCountMax=120", ...sshArgs];
 		}
 
@@ -63,7 +63,7 @@ export const sshExec = async (
 };
 
 /**
- * Execute an SSH command with streaming output to console
+ * 执行 SSH 命令并将输出流式传输到控制台
  */
 export const sshExecStream = async (
 	sshCmd: string,
@@ -74,18 +74,18 @@ export const sshExecStream = async (
 		const sshParts = sshCmd.split(" ").filter((p) => p);
 		const sshBinary = sshParts[0];
 
-		// Build SSH args
+		// 构建 SSH 参数
 		let sshArgs = [...sshParts.slice(1)];
 
-		// Add -t flag if requested and not already present
+		// 如果有要求且尚未存在，则添加 -t 标志
 		if (options?.forceTTY && !sshParts.includes("-t")) {
 			sshArgs = ["-t", ...sshArgs];
 		}
 
-		// Add SSH keepalive options for long-running commands
+		// 为长时间运行的命令添加 SSH 保持连接选项
 		if (options?.keepAlive) {
-			// ServerAliveInterval=30 sends keepalive every 30 seconds
-			// ServerAliveCountMax=120 allows up to 120 failures (60 minutes total)
+			// ServerAliveInterval=30 每 30 秒发送一次保持连接信号
+			// ServerAliveCountMax=120 允许最多 120 次失败（共 60 分钟）
 			sshArgs = ["-o", "ServerAliveInterval=30", "-o", "ServerAliveCountMax=120", ...sshArgs];
 		}
 
@@ -108,14 +108,14 @@ export const sshExecStream = async (
 };
 
 /**
- * Copy a file to remote via SCP
+ * 通过 SCP 将文件复制到远程
  */
 export const scpFile = async (sshCmd: string, localPath: string, remotePath: string): Promise<boolean> => {
-	// Extract host from SSH command
+	// 从 SSH 命令中提取主机名
 	const sshParts = sshCmd.split(" ").filter((p) => p);
 	let host = "";
 	let port = "22";
-	let i = 1; // Skip 'ssh'
+	let i = 1; // 跳过 'ssh'
 
 	while (i < sshParts.length) {
 		if (sshParts[i] === "-p" && i + 1 < sshParts.length) {
@@ -134,7 +134,7 @@ export const scpFile = async (sshCmd: string, localPath: string, remotePath: str
 		return false;
 	}
 
-	// Build SCP command
+	// 构建 SCP 命令
 	const scpArgs = ["-P", port, localPath, `${host}:${remotePath}`];
 
 	return new Promise((resolve) => {

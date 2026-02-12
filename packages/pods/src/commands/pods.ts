@@ -9,129 +9,129 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
 /**
- * List all pods
+ * 列出所有 pod
  */
 export const listPods = () => {
 	const config = loadConfig();
 	const podNames = Object.keys(config.pods);
 
 	if (podNames.length === 0) {
-		console.log("No pods configured. Use 'pi pods setup' to add a pod.");
+		console.log("未配置 pod。使用 'pi pods setup' 添加 pod。");
 		return;
 	}
 
-	console.log("Configured pods:");
+	console.log("已配置的 pod:");
 	for (const name of podNames) {
 		const pod = config.pods[name];
 		const isActive = config.active === name;
 		const marker = isActive ? chalk.green("*") : " ";
 		const gpuCount = pod.gpus?.length || 0;
-		const gpuInfo = gpuCount > 0 ? `${gpuCount}x ${pod.gpus[0].name}` : "no GPUs detected";
+		const gpuInfo = gpuCount > 0 ? `${gpuCount}x ${pod.gpus[0].name}` : "未检测到 GPU";
 		const vllmInfo = pod.vllmVersion ? ` (vLLM: ${pod.vllmVersion})` : "";
 		console.log(`${marker} ${chalk.bold(name)} - ${gpuInfo}${vllmInfo} - ${pod.ssh}`);
 		if (pod.modelsPath) {
-			console.log(`    Models: ${pod.modelsPath}`);
+			console.log(`    模型路径: ${pod.modelsPath}`);
 		}
 		if (pod.vllmVersion === "gpt-oss") {
-			console.log(chalk.yellow(`    ⚠️  GPT-OSS build - only for GPT-OSS models`));
+			console.log(chalk.yellow(`    ⚠️  GPT-OSS 版本 - 仅适用于 GPT-OSS 模型`));
 		}
 	}
 };
 
 /**
- * Setup a new pod
+ * 设置一个新 pod
  */
 export const setupPod = async (
 	name: string,
 	sshCmd: string,
 	options: { mount?: string; modelsPath?: string; vllm?: "release" | "nightly" | "gpt-oss" },
 ) => {
-	// Validate environment variables
+	// 验证环境变量
 	const hfToken = process.env.HF_TOKEN;
 	const vllmApiKey = process.env.PI_API_KEY;
 
 	if (!hfToken) {
-		console.error(chalk.red("ERROR: HF_TOKEN environment variable is required"));
-		console.error("Get a token from: https://huggingface.co/settings/tokens");
-		console.error("Then run: export HF_TOKEN=your_token_here");
+		console.error(chalk.red("错误: 需要 HF_TOKEN 环境变量"));
+		console.error("从此处获取令牌: https://huggingface.co/settings/tokens");
+		console.error("然后运行: export HF_TOKEN=您的令牌");
 		process.exit(1);
 	}
 
 	if (!vllmApiKey) {
-		console.error(chalk.red("ERROR: PI_API_KEY environment variable is required"));
-		console.error("Set an API key: export PI_API_KEY=your_api_key_here");
+		console.error(chalk.red("错误: 需要 PI_API_KEY 环境变量"));
+		console.error("设置 API 密钥: export PI_API_KEY=您的密钥");
 		process.exit(1);
 	}
 
-	// Determine models path
+	// 确定模型路径
 	let modelsPath = options.modelsPath;
 	if (!modelsPath && options.mount) {
-		// Extract path from mount command if not explicitly provided
-		// e.g., "mount -t nfs ... /mnt/sfs" -> "/mnt/sfs"
+		// 如果没有明确提供，则从挂载命令中提取路径
+		// 例如 "mount -t nfs ... /mnt/sfs" -> "/mnt/sfs"
 		const parts = options.mount.split(" ");
 		modelsPath = parts[parts.length - 1];
 	}
 
 	if (!modelsPath) {
-		console.error(chalk.red("ERROR: --models-path is required (or must be extractable from --mount)"));
+		console.error(chalk.red("错误: 需要 --models-path (或必须能从 --mount 中提取)"));
 		process.exit(1);
 	}
 
-	console.log(chalk.green(`Setting up pod '${name}'...`));
+	console.log(chalk.green(`正在设置 pod '${name}'...`));
 	console.log(`SSH: ${sshCmd}`);
-	console.log(`Models path: ${modelsPath}`);
+	console.log(`模型路径: ${modelsPath}`);
 	console.log(
-		`vLLM version: ${options.vllm || "release"} ${options.vllm === "gpt-oss" ? chalk.yellow("(GPT-OSS special build)") : ""}`,
+		`vLLM 版本: ${options.vllm || "release"} ${options.vllm === "gpt-oss" ? chalk.yellow("(GPT-OSS 特殊版本)") : ""}`,
 	);
 	if (options.mount) {
-		console.log(`Mount command: ${options.mount}`);
+		console.log(`挂载命令: ${options.mount}`);
 	}
 	console.log("");
 
-	// Test SSH connection
-	console.log("Testing SSH connection...");
+	// 测试 SSH 连接
+	console.log("正在测试 SSH 连接...");
 	const testResult = await sshExec(sshCmd, "echo 'SSH OK'");
 	if (testResult.exitCode !== 0) {
-		console.error(chalk.red("Failed to connect via SSH"));
+		console.error(chalk.red("SSH 连接失败"));
 		console.error(testResult.stderr);
 		process.exit(1);
 	}
-	console.log(chalk.green("✓ SSH connection successful"));
+	console.log(chalk.green("✓ SSH 连接成功"));
 
-	// Copy setup script
-	console.log("Copying setup script...");
+	// 复制设置脚本
+	console.log("正在复制设置脚本...");
 	const scriptPath = join(__dirname, "../../scripts/pod_setup.sh");
 	const success = await scpFile(sshCmd, scriptPath, "/tmp/pod_setup.sh");
 	if (!success) {
-		console.error(chalk.red("Failed to copy setup script"));
+		console.error(chalk.red("复制设置脚本失败"));
 		process.exit(1);
 	}
-	console.log(chalk.green("✓ Setup script copied"));
+	console.log(chalk.green("✓ 设置脚本已复制"));
 
-	// Build setup command
+	// 构建设置命令
 	let setupCmd = `bash /tmp/pod_setup.sh --models-path '${modelsPath}' --hf-token '${hfToken}' --vllm-api-key '${vllmApiKey}'`;
 	if (options.mount) {
 		setupCmd += ` --mount '${options.mount}'`;
 	}
-	// Add vLLM version flag
+	// 添加 vLLM 版本标志
 	const vllmVersion = options.vllm || "release";
 	setupCmd += ` --vllm '${vllmVersion}'`;
 
-	// Run setup script
+	// 运行设置脚本
 	console.log("");
-	console.log(chalk.yellow("Running setup (this will take 2-5 minutes)..."));
+	console.log(chalk.yellow("正在运行设置 (大约需要 2-5 分钟)..."));
 	console.log("");
 
-	// Use forceTTY to preserve colors from apt, pip, etc.
+	// 使用 forceTTY 以保留来自 apt, pip 等命令的颜色
 	const exitCode = await sshExecStream(sshCmd, setupCmd, { forceTTY: true });
 	if (exitCode !== 0) {
-		console.error(chalk.red("\nSetup failed. Check the output above for errors."));
+		console.error(chalk.red("\n设置失败。请检查上方输出中的错误。"));
 		process.exit(1);
 	}
 
-	// Parse GPU info from setup output
+	// 从设置输出中解析 GPU 信息
 	console.log("");
-	console.log("Detecting GPU configuration...");
+	console.log("正在检测 GPU 配置...");
 	const gpuResult = await sshExec(sshCmd, "nvidia-smi --query-gpu=index,name,memory.total --format=csv,noheader");
 
 	const gpus: GPU[] = [];
@@ -142,19 +142,19 @@ export const setupPod = async (
 			if (id !== undefined) {
 				gpus.push({
 					id: parseInt(id, 10),
-					name: name || "Unknown",
-					memory: memory || "Unknown",
+					name: name || "未知",
+					memory: memory || "未知",
 				});
 			}
 		}
 	}
 
-	console.log(chalk.green(`✓ Detected ${gpus.length} GPU(s)`));
+	console.log(chalk.green(`✓ 检测到 ${gpus.length} 个 GPU`));
 	for (const gpu of gpus) {
 		console.log(`  GPU ${gpu.id}: ${gpu.name} (${gpu.memory})`);
 	}
 
-	// Save pod configuration
+	// 保存 pod 配置
 	const pod: Pod = {
 		ssh: sshCmd,
 		gpus,
@@ -165,20 +165,20 @@ export const setupPod = async (
 
 	addPod(name, pod);
 	console.log("");
-	console.log(chalk.green(`✓ Pod '${name}' setup complete and set as active pod`));
+	console.log(chalk.green(`✓ Pod '${name}' 设置完成并设为激活状态`));
 	console.log("");
-	console.log("You can now deploy models with:");
+	console.log("您现在可以使用以下命令部署模型:");
 	console.log(chalk.cyan(`  pi start <model> --name <name>`));
 };
 
 /**
- * Switch active pod
+ * 切换激活的 pod
  */
 export const switchActivePod = (name: string) => {
 	const config = loadConfig();
 	if (!config.pods[name]) {
-		console.error(chalk.red(`Pod '${name}' not found`));
-		console.log("\nAvailable pods:");
+		console.error(chalk.red(`未找到 Pod '${name}'`));
+		console.log("\n可用 pod:");
 		for (const podName of Object.keys(config.pods)) {
 			console.log(`  ${podName}`);
 		}
@@ -186,20 +186,20 @@ export const switchActivePod = (name: string) => {
 	}
 
 	setActivePod(name);
-	console.log(chalk.green(`✓ Switched active pod to '${name}'`));
+	console.log(chalk.green(`✓ 已将激活 pod 切换为 '${name}'`));
 };
 
 /**
- * Remove a pod from config
+ * 从配置中移除一个 pod
  */
 export const removePodCommand = (name: string) => {
 	const config = loadConfig();
 	if (!config.pods[name]) {
-		console.error(chalk.red(`Pod '${name}' not found`));
+		console.error(chalk.red(`未找到 Pod '${name}'`));
 		process.exit(1);
 	}
 
 	removePod(name);
-	console.log(chalk.green(`✓ Removed pod '${name}' from configuration`));
-	console.log(chalk.yellow("Note: This only removes the local configuration. The remote pod is not affected."));
+	console.log(chalk.green(`✓ 已从配置中移除 pod '${name}'`));
+	console.log(chalk.yellow("注意: 这仅移除本地配置。远程 pod 不受影响。"));
 };

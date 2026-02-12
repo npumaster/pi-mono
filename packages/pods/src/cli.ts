@@ -53,7 +53,7 @@ Environment:
   PI_CONFIG_DIR    Config directory (default: ~/.pi)`);
 }
 
-// Parse command line arguments
+// 解析命令行参数
 const args = process.argv.slice(2);
 
 if (args.length === 0 || args[0] === "--help" || args[0] === "-h") {
@@ -69,12 +69,12 @@ if (args[0] === "--version" || args[0] === "-v") {
 const command = args[0];
 const subcommand = args[1];
 
-// Main command handler
+// 主命令处理程序
 try {
-	// Handle "pi pods" commands
+	// 处理 "pi pods" 命令
 	if (command === "pods") {
 		if (!subcommand) {
-			// pi pods - list all pods
+			// pi pods - 列出所有 pod
 			listPods();
 		} else if (subcommand === "setup") {
 			// pi pods setup <name> "<ssh>" [--mount "<mount>"] [--models-path <path>] [--vllm release|nightly|gpt-oss]
@@ -88,7 +88,7 @@ try {
 				process.exit(1);
 			}
 
-			// Parse options
+			// 解析选项
 			const options: { mount?: string; modelsPath?: string; vllm?: "release" | "nightly" | "gpt-oss" } = {};
 			for (let i = 4; i < args.length; i++) {
 				if (args[i] === "--mount" && i + 1 < args.length) {
@@ -110,9 +110,9 @@ try {
 				}
 			}
 
-			// If --mount provided but no --models-path, try to extract path from mount command
+			// 如果提供了 --mount 但没有 --models-path，尝试从挂载命令中提取路径
 			if (options.mount && !options.modelsPath) {
-				// Extract last part of mount command as models path
+				// 提取挂载命令的最后一部分作为模型路径
 				const parts = options.mount.trim().split(" ");
 				const lastPart = parts[parts.length - 1];
 				if (lastPart?.startsWith("/")) {
@@ -142,19 +142,19 @@ try {
 			process.exit(1);
 		}
 	} else {
-		// Parse --pod override for model commands
+		// 解析模型命令的 --pod 覆盖参数
 		let podOverride: string | undefined;
 		const podIndex = args.indexOf("--pod");
 		if (podIndex !== -1 && podIndex + 1 < args.length) {
 			podOverride = args[podIndex + 1];
-			// Remove --pod and its value from args
+			// 从参数中移除 --pod 及其值
 			args.splice(podIndex, 2);
 		}
 
-		// Handle SSH/shell commands and model commands
+		// 处理 SSH/shell 命令和模型命令
 		switch (command) {
 			case "shell": {
-				// pi shell [<name>] - open interactive shell
+				// pi shell [<name>] - 打开交互式 shell
 				const podName = args[1];
 				let podInfo: { name: string; pod: import("./types.js").Pod } | null = null;
 
@@ -179,8 +179,8 @@ try {
 
 				console.log(chalk.green(`Connecting to pod '${podInfo.name}'...`));
 
-				// Execute SSH in interactive mode
-				const sshArgs = podInfo.pod.ssh.split(" ").slice(1); // Remove 'ssh' from command
+				// 在交互模式下执行 SSH
+				const sshArgs = podInfo.pod.ssh.split(" ").slice(1); // 从命令中移除 'ssh'
 				const sshProcess = spawn("ssh", sshArgs, {
 					stdio: "inherit",
 					env: process.env,
@@ -192,12 +192,12 @@ try {
 				break;
 			}
 			case "ssh": {
-				// pi ssh [<name>] "<command>" - run command via SSH
+				// pi ssh [<name>] "<command>" - 通过 SSH 运行命令
 				let podName: string | undefined;
 				let sshCommand: string;
 
 				if (args.length === 2) {
-					// pi ssh "<command>" - use active pod
+					// pi ssh "<command>" - 使用激活的 pod
 					sshCommand = args[1];
 				} else if (args.length === 3) {
 					// pi ssh <name> "<command>"

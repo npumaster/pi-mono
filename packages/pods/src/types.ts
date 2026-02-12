@@ -1,4 +1,4 @@
-// Core type definitions for pi
+// pi 的核心类型定义
 
 export interface GPU {
 	id: number;
@@ -9,7 +9,7 @@ export interface GPU {
 export interface Model {
 	model: string;
 	port: number;
-	gpu: number[]; // Array of GPU IDs for multi-GPU deployment
+	gpu: number[]; // 用于多 GPU 部署的 GPU ID 数组
 	pid: number;
 }
 
@@ -18,7 +18,7 @@ export interface Pod {
 	gpus: GPU[];
 	models: Record<string, Model>;
 	modelsPath?: string;
-	vllmVersion?: "release" | "nightly" | "gpt-oss"; // Track which vLLM version is installed
+	vllmVersion?: "release" | "nightly" | "gpt-oss"; // 跟踪已安装的 vLLM 版本
 }
 
 export interface Config {
