@@ -1,30 +1,29 @@
 import { eastAsianWidth } from "get-east-asian-width";
 
-// Grapheme segmenter (shared instance)
+// 字形分割器（共享实例）
 const segmenter = new Intl.Segmenter(undefined, { granularity: "grapheme" });
 
 /**
- * Get the shared grapheme segmenter instance.
+ * 获取共享的字形分割器实例。
  */
 export function getSegmenter(): Intl.Segmenter {
 	return segmenter;
 }
 
 /**
- * Check if a grapheme cluster (after segmentation) could possibly be an RGI emoji.
- * This is a fast heuristic to avoid the expensive rgiEmojiRegex test.
- * The tested Unicode blocks are deliberately broad to account for future
- * Unicode additions.
+ * 检查字形集群（分割后）是否可能是 RGI 表情符号。
+ * 这是一个快速启发式方法，用于避免昂贵的 rgiEmojiRegex 测试。
+ * 测试的 Unicode 块故意设置得比较宽，以适应未来的 Unicode 添加。
  */
 function couldBeEmoji(segment: string): boolean {
 	const cp = segment.codePointAt(0)!;
 	return (
-		(cp >= 0x1f000 && cp <= 0x1fbff) || // Emoji and Pictograph
-		(cp >= 0x2300 && cp <= 0x23ff) || // Misc technical
-		(cp >= 0x2600 && cp <= 0x27bf) || // Misc symbols, dingbats
-		(cp >= 0x2b50 && cp <= 0x2b55) || // Specific stars/circles
-		segment.includes("\uFE0F") || // Contains VS16 (emoji presentation selector)
-		segment.length > 2 // Multi-codepoint sequences (ZWJ, skin tones, etc.)
+		(cp >= 0x1f000 && cp <= 0x1fbff) || // 表情符号和象形文字
+		(cp >= 0x2300 && cp <= 0x23ff) || // 杂项技术符号
+		(cp >= 0x2600 && cp <= 0x27bf) || // 杂项符号、装饰符号
+		(cp >= 0x2b50 && cp <= 0x2b55) || // 特定的星星/圆圈
+		segment.includes("\uFE0F") || // 包含 VS16（表情符号呈现选择器）
+		segment.length > 2 // 多代码点序列（ZWJ、肤色等）
 	);
 }
 
@@ -204,23 +203,23 @@ class AnsiCodeTracker {
 
 		const params = match[1];
 		if (params === "" || params === "0") {
-			// Full reset
+			// 完全重置
 			this.reset();
 			return;
 		}
 
-		// Parse parameters (can be semicolon-separated)
+		// 解析参数（可以是分号分隔的）
 		const parts = params.split(";");
 		let i = 0;
 		while (i < parts.length) {
 			const code = Number.parseInt(parts[i], 10);
 
-			// Handle 256-color and RGB codes which consume multiple parameters
+			// 处理占用多个参数的 256 色和 RGB 代码
 			if (code === 38 || code === 48) {
-				// 38;5;N (256 color fg) or 38;2;R;G;B (RGB fg)
-				// 48;5;N (256 color bg) or 48;2;R;G;B (RGB bg)
+				// 38;5;N (256 色前景色) 或 38;2;R;G;B (RGB 前景色)
+				// 48;5;N (256 色背景色) 或 48;2;R;G;B (RGB 背景色)
 				if (parts[i + 1] === "5" && parts[i + 2] !== undefined) {
-					// 256 color: 38;5;N or 48;5;N
+					// 256 色：38;5;N 或 48;5;N
 					const colorCode = `${parts[i]};${parts[i + 1]};${parts[i + 2]}`;
 					if (code === 38) {
 						this.fgColor = colorCode;
@@ -230,7 +229,7 @@ class AnsiCodeTracker {
 					i += 3;
 					continue;
 				} else if (parts[i + 1] === "2" && parts[i + 4] !== undefined) {
-					// RGB color: 38;2;R;G;B or 48;2;R;G;B
+					// RGB 颜色：38;2;R;G;B 或 48;2;R;G;B
 					const colorCode = `${parts[i]};${parts[i + 1]};${parts[i + 2]};${parts[i + 3]};${parts[i + 4]}`;
 					if (code === 38) {
 						this.fgColor = colorCode;
@@ -242,7 +241,7 @@ class AnsiCodeTracker {
 				}
 			}
 
-			// Standard SGR codes
+			// 标准 SGR 代码
 			switch (code) {
 				case 0:
 					this.reset();
@@ -273,7 +272,7 @@ class AnsiCodeTracker {
 					break;
 				case 21:
 					this.bold = false;
-					break; // Some terminals
+					break; // 某些终端
 				case 22:
 					this.bold = false;
 					this.dim = false;
@@ -298,16 +297,16 @@ class AnsiCodeTracker {
 					break;
 				case 39:
 					this.fgColor = null;
-					break; // Default fg
+					break; // 默认前景色
 				case 49:
 					this.bgColor = null;
-					break; // Default bg
+					break; // 默认背景色
 				default:
-					// Standard foreground colors 30-37, 90-97
+					// 标准前景色 30-37, 90-97
 					if ((code >= 30 && code <= 37) || (code >= 90 && code <= 97)) {
 						this.fgColor = String(code);
 					}
-					// Standard background colors 40-47, 100-107
+					// 标准背景色 40-47, 100-107
 					else if ((code >= 40 && code <= 47) || (code >= 100 && code <= 107)) {
 						this.bgColor = String(code);
 					}
@@ -330,7 +329,7 @@ class AnsiCodeTracker {
 		this.bgColor = null;
 	}
 
-	/** Clear all state for reuse. */
+	/** 清除所有状态以便重用。 */
 	clear(): void {
 		this.reset();
 	}
@@ -368,15 +367,15 @@ class AnsiCodeTracker {
 	}
 
 	/**
-	 * Get reset codes for attributes that need to be turned off at line end,
-	 * specifically underline which bleeds into padding.
-	 * Returns empty string if no problematic attributes are active.
+	 * 获取需要在行尾关闭的属性的重置代码，
+	 * 特别是会溢出到填充区域的下划线。
+	 * 如果没有激活有问题的属性，则返回空字符串。
 	 */
 	getLineEndReset(): string {
-		// Only underline causes visual bleeding into padding
-		// Other attributes like colors don't visually bleed to padding
+		// 只有下划线会导致视觉溢出到填充区域
+		// 其他属性（如颜色）不会在视觉上溢出到填充区域
 		if (this.underline) {
-			return "\x1b[24m"; // Underline off only
+			return "\x1b[24m"; // 仅关闭下划线
 		}
 		return "";
 	}
@@ -396,19 +395,19 @@ function updateTrackerFromText(text: string, tracker: AnsiCodeTracker): void {
 }
 
 /**
- * Split text into words while keeping ANSI codes attached.
+ * 将文本拆分为单词，同时保持 ANSI 代码附着。
  */
 function splitIntoTokensWithAnsi(text: string): string[] {
 	const tokens: string[] = [];
 	let current = "";
-	let pendingAnsi = ""; // ANSI codes waiting to be attached to next visible content
+	let pendingAnsi = ""; // 等待附着到下一个可见内容的 ANSI 代码
 	let inWhitespace = false;
 	let i = 0;
 
 	while (i < text.length) {
 		const ansiResult = extractAnsiCode(text, i);
 		if (ansiResult) {
-			// Hold ANSI codes separately - they'll be attached to the next visible char
+			// 单独保存 ANSI 代码 - 它们将被附着到下一个可见字符
 			pendingAnsi += ansiResult.code;
 			i += ansiResult.length;
 			continue;
@@ -418,12 +417,12 @@ function splitIntoTokensWithAnsi(text: string): string[] {
 		const charIsSpace = char === " ";
 
 		if (charIsSpace !== inWhitespace && current) {
-			// Switching between whitespace and non-whitespace, push current token
+			// 在空白和非空白之间切换，推送当前标记
 			tokens.push(current);
 			current = "";
 		}
 
-		// Attach any pending ANSI codes to this visible character
+		// 将任何待处理的 ANSI 代码附着到此可见字符
 		if (pendingAnsi) {
 			current += pendingAnsi;
 			pendingAnsi = "";
@@ -434,7 +433,7 @@ function splitIntoTokensWithAnsi(text: string): string[] {
 		i++;
 	}
 
-	// Handle any remaining pending ANSI codes (attach to last token)
+	// 处理任何剩余的待处理 ANSI 代码（附着到最后一个标记）
 	if (pendingAnsi) {
 		current += pendingAnsi;
 	}
@@ -447,32 +446,32 @@ function splitIntoTokensWithAnsi(text: string): string[] {
 }
 
 /**
- * Wrap text with ANSI codes preserved.
+ * 在保留 ANSI 代码的情况下包装文本。
  *
- * ONLY does word wrapping - NO padding, NO background colors.
- * Returns lines where each line is <= width visible chars.
- * Active ANSI codes are preserved across line breaks.
+ * 仅进行分词包装 - 无填充，无背景颜色。
+ * 返回每一行可见字符数 <= width 的行。
+ * 激活的 ANSI 代码在换行时会被保留。
  *
- * @param text - Text to wrap (may contain ANSI codes and newlines)
- * @param width - Maximum visible width per line
- * @returns Array of wrapped lines (NOT padded to width)
+ * @param text - 要包装的文本（可能包含 ANSI 代码和换行符）
+ * @param width - 每行最大可见宽度
+ * @returns 包装后的行数组（不填充到 width）
  */
 export function wrapTextWithAnsi(text: string, width: number): string[] {
 	if (!text) {
 		return [""];
 	}
 
-	// Handle newlines by processing each line separately
-	// Track ANSI state across lines so styles carry over after literal newlines
+	// 通过分别处理每一行来处理换行符
+	// 跨行跟踪 ANSI 状态，以便样式在字面换行符后得以延续
 	const inputLines = text.split("\n");
 	const result: string[] = [];
 	const tracker = new AnsiCodeTracker();
 
 	for (const inputLine of inputLines) {
-		// Prepend active ANSI codes from previous lines (except for first line)
+		// 在前面的行（除第一行外）前置激活的 ANSI 代码
 		const prefix = result.length > 0 ? tracker.getActiveCodes() : "";
 		result.push(...wrapSingleLine(prefix + inputLine, width));
-		// Update tracker with codes from this line for next iteration
+		// 使用此行的代码更新跟踪器，以便下次迭代使用
 		updateTrackerFromText(inputLine, tracker);
 	}
 
@@ -500,10 +499,10 @@ function wrapSingleLine(line: string, width: number): string[] {
 		const tokenVisibleLength = visibleWidth(token);
 		const isWhitespace = token.trim() === "";
 
-		// Token itself is too long - break it character by character
+		// 标记本身太长 - 逐个字符拆分
 		if (tokenVisibleLength > width && !isWhitespace) {
 			if (currentLine) {
-				// Add specific reset for underline only (preserves background)
+				// 仅为下划线添加特定重置（保留背景）
 				const lineEndReset = tracker.getLineEndReset();
 				if (lineEndReset) {
 					currentLine += lineEndReset;
@@ -513,7 +512,7 @@ function wrapSingleLine(line: string, width: number): string[] {
 				currentVisibleLength = 0;
 			}
 
-			// Break long token - breakLongWord handles its own resets
+			// 拆分长标记 - breakLongWord 处理其自身的重置
 			const broken = breakLongWord(token, width, tracker);
 			wrapped.push(...broken.slice(0, -1));
 			currentLine = broken[broken.length - 1];
@@ -521,11 +520,11 @@ function wrapSingleLine(line: string, width: number): string[] {
 			continue;
 		}
 
-		// Check if adding this token would exceed width
+		// 检查添加此标记是否会超过宽度
 		const totalNeeded = currentVisibleLength + tokenVisibleLength;
 
 		if (totalNeeded > width && currentVisibleLength > 0) {
-			// Trim trailing whitespace, then add underline reset (not full reset, to preserve background)
+			// 修剪末尾空白，然后添加下划线重置（不是完整重置，以保留背景）
 			let lineToWrap = currentLine.trimEnd();
 			const lineEndReset = tracker.getLineEndReset();
 			if (lineEndReset) {
@@ -533,7 +532,7 @@ function wrapSingleLine(line: string, width: number): string[] {
 			}
 			wrapped.push(lineToWrap);
 			if (isWhitespace) {
-				// Don't start new line with whitespace
+				// 不要以空白开始新行
 				currentLine = tracker.getActiveCodes();
 				currentVisibleLength = 0;
 			} else {
@@ -541,7 +540,7 @@ function wrapSingleLine(line: string, width: number): string[] {
 				currentVisibleLength = tokenVisibleLength;
 			}
 		} else {
-			// Add to current line
+			// 添加到当前行
 			currentLine += token;
 			currentVisibleLength += tokenVisibleLength;
 		}
@@ -550,25 +549,25 @@ function wrapSingleLine(line: string, width: number): string[] {
 	}
 
 	if (currentLine) {
-		// No reset at end of final line - let caller handle it
+		// 最后一行末尾不重置 - 由调用者处理
 		wrapped.push(currentLine);
 	}
 
-	// Trailing whitespace can cause lines to exceed the requested width
+	// 末尾空白可能导致行超过请求的宽度
 	return wrapped.length > 0 ? wrapped.map((line) => line.trimEnd()) : [""];
 }
 
 const PUNCTUATION_REGEX = /[(){}[\]<>.,;:'"!?+\-=*/\\|&%^$#@~`]/;
 
 /**
- * Check if a character is whitespace.
+ * 检查字符是否为空白字符。
  */
 export function isWhitespaceChar(char: string): boolean {
 	return /\s/.test(char);
 }
 
 /**
- * Check if a character is punctuation.
+ * 检查字符是否为标点符号。
  */
 export function isPunctuationChar(char: string): boolean {
 	return PUNCTUATION_REGEX.test(char);
@@ -579,8 +578,8 @@ function breakLongWord(word: string, width: number, tracker: AnsiCodeTracker): s
 	let currentLine = tracker.getActiveCodes();
 	let currentWidth = 0;
 
-	// First, separate ANSI codes from visible content
-	// We need to handle ANSI codes specially since they're not graphemes
+	// 首先，将 ANSI 代码与可见内容分离
+	// 我们需要专门处理 ANSI 代码，因为它们不是字形
 	let i = 0;
 	const segments: Array<{ type: "ansi" | "grapheme"; value: string }> = [];
 
@@ -590,14 +589,14 @@ function breakLongWord(word: string, width: number, tracker: AnsiCodeTracker): s
 			segments.push({ type: "ansi", value: ansiResult.code });
 			i += ansiResult.length;
 		} else {
-			// Find the next ANSI code or end of string
+			// 查找下一个 ANSI 代码或字符串末尾
 			let end = i;
 			while (end < word.length) {
 				const nextAnsi = extractAnsiCode(word, end);
 				if (nextAnsi) break;
 				end++;
 			}
-			// Segment this non-ANSI portion into graphemes
+			// 将此非 ANSI 部分分割为字形
 			const textPortion = word.slice(i, end);
 			for (const seg of segmenter.segment(textPortion)) {
 				segments.push({ type: "grapheme", value: seg.segment });
@@ -606,7 +605,7 @@ function breakLongWord(word: string, width: number, tracker: AnsiCodeTracker): s
 		}
 	}
 
-	// Now process segments
+	// 现在处理段
 	for (const seg of segments) {
 		if (seg.type === "ansi") {
 			currentLine += seg.value;
@@ -615,13 +614,13 @@ function breakLongWord(word: string, width: number, tracker: AnsiCodeTracker): s
 		}
 
 		const grapheme = seg.value;
-		// Skip empty graphemes to avoid issues with string-width calculation
+		// 跳过空字形以避免字符串宽度计算出现问题
 		if (!grapheme) continue;
 
 		const graphemeWidth = visibleWidth(grapheme);
 
 		if (currentWidth + graphemeWidth > width) {
-			// Add specific reset for underline only (preserves background)
+			// 仅为下划线添加特定重置（保留背景）
 			const lineEndReset = tracker.getLineEndReset();
 			if (lineEndReset) {
 				currentLine += lineEndReset;
@@ -636,7 +635,7 @@ function breakLongWord(word: string, width: number, tracker: AnsiCodeTracker): s
 	}
 
 	if (currentLine) {
-		// No reset at end of final segment - caller handles continuation
+		// 最后一个段末尾不重置 - 调用者处理延续
 		lines.push(currentLine);
 	}
 
@@ -644,34 +643,34 @@ function breakLongWord(word: string, width: number, tracker: AnsiCodeTracker): s
 }
 
 /**
- * Apply background color to a line, padding to full width.
+ * 为一行应用背景颜色，并填充到完整宽度。
  *
- * @param line - Line of text (may contain ANSI codes)
- * @param width - Total width to pad to
- * @param bgFn - Background color function
- * @returns Line with background applied and padded to width
+ * @param line - 文本行（可能包含 ANSI 代码）
+ * @param width - 要填充到的总宽度
+ * @param bgFn - 背景颜色函数
+ * @returns 应用了背景并填充到宽度的行
  */
 export function applyBackgroundToLine(line: string, width: number, bgFn: (text: string) => string): string {
-	// Calculate padding needed
+	// 计算所需的填充
 	const visibleLen = visibleWidth(line);
 	const paddingNeeded = Math.max(0, width - visibleLen);
 	const padding = " ".repeat(paddingNeeded);
 
-	// Apply background to content + padding
+	// 为内容 + 填充应用背景
 	const withPadding = line + padding;
 	return bgFn(withPadding);
 }
 
 /**
- * Truncate text to fit within a maximum visible width, adding ellipsis if needed.
- * Optionally pad with spaces to reach exactly maxWidth.
- * Properly handles ANSI escape codes (they don't count toward width).
+ * 截断文本以适应最大可见宽度，必要时添加省略号。
+ * 可选地用空格填充以精确达到 maxWidth。
+ * 正确处理 ANSI 转义代码（它们不计入宽度）。
  *
- * @param text - Text to truncate (may contain ANSI codes)
- * @param maxWidth - Maximum visible width
- * @param ellipsis - Ellipsis string to append when truncating (default: "...")
- * @param pad - If true, pad result with spaces to exactly maxWidth (default: false)
- * @returns Truncated text, optionally padded to exactly maxWidth
+ * @param text - 要截断的文本（可能包含 ANSI 代码）
+ * @param maxWidth - 最大可见宽度
+ * @param ellipsis - 截断时附加的省略号字符串（默认："..."）
+ * @param pad - 如果为 true，则用空格填充结果以精确达到 maxWidth（默认：false）
+ * @returns 截断后的文本，可选地填充到精确的 maxWidth
  */
 export function truncateToWidth(
 	text: string,
@@ -692,7 +691,7 @@ export function truncateToWidth(
 		return ellipsis.substring(0, maxWidth);
 	}
 
-	// Separate ANSI codes from visible content using grapheme segmentation
+	// 使用字形分割将 ANSI 代码与可见内容分离
 	let i = 0;
 	const segments: Array<{ type: "ansi" | "grapheme"; value: string }> = [];
 
@@ -702,14 +701,14 @@ export function truncateToWidth(
 			segments.push({ type: "ansi", value: ansiResult.code });
 			i += ansiResult.length;
 		} else {
-			// Find the next ANSI code or end of string
+			// 查找下一个 ANSI 代码或字符串末尾
 			let end = i;
 			while (end < text.length) {
 				const nextAnsi = extractAnsiCode(text, end);
 				if (nextAnsi) break;
 				end++;
 			}
-			// Segment this non-ANSI portion into graphemes
+			// 将此非 ANSI 部分分割为字形
 			const textPortion = text.slice(i, end);
 			for (const seg of segmenter.segment(textPortion)) {
 				segments.push({ type: "grapheme", value: seg.segment });
@@ -718,7 +717,7 @@ export function truncateToWidth(
 		}
 	}
 
-	// Build truncated string from segments
+	// 从段构建截断的字符串
 	let result = "";
 	let currentWidth = 0;
 
@@ -729,7 +728,7 @@ export function truncateToWidth(
 		}
 
 		const grapheme = seg.value;
-		// Skip empty graphemes to avoid issues with string-width calculation
+		// 跳过空字形以避免字符串宽度计算出现问题
 		if (!grapheme) continue;
 
 		const graphemeWidth = visibleWidth(grapheme);
@@ -742,7 +741,7 @@ export function truncateToWidth(
 		currentWidth += graphemeWidth;
 	}
 
-	// Add reset code before ellipsis to prevent styling leaking into it
+	// 在省略号前添加重置代码，以防止样式泄露到省略号中
 	const truncated = `${result}\x1b[0m${ellipsis}`;
 	if (pad) {
 		const truncatedWidth = visibleWidth(truncated);
@@ -752,14 +751,14 @@ export function truncateToWidth(
 }
 
 /**
- * Extract a range of visible columns from a line. Handles ANSI codes and wide chars.
- * @param strict - If true, exclude wide chars at boundary that would extend past the range
+ * 从行中提取可见列范围。处理 ANSI 代码和宽字符。
+ * @param strict - 如果为 true，则排除边界处会延伸超出范围的宽字符
  */
 export function sliceByColumn(line: string, startCol: number, length: number, strict = false): string {
 	return sliceWithWidth(line, startCol, length, strict).text;
 }
 
-/** Like sliceByColumn but also returns the actual visible width of the result. */
+/** 类似于 sliceByColumn，但还返回结果的实际可见宽度。 */
 export function sliceWithWidth(
 	line: string,
 	startCol: number,
@@ -807,13 +806,13 @@ export function sliceWithWidth(
 	return { text: result, width: resultWidth };
 }
 
-// Pooled tracker instance for extractSegments (avoids allocation per call)
+// 用于 extractSegments 的池化跟踪器实例（避免每次调用都进行分配）
 const pooledStyleTracker = new AnsiCodeTracker();
 
 /**
- * Extract "before" and "after" segments from a line in a single pass.
- * Used for overlay compositing where we need content before and after the overlay region.
- * Preserves styling from before the overlay that should affect content after it.
+ * 在单次处理中从行中提取“前”和“后”段。
+ * 用于叠加层合成，其中我们需要叠加区域之前和之后的内容。
+ * 保留叠加层之前的样式，这些样式应该影响叠加层之后的内容。
  */
 export function extractSegments(
 	line: string,
@@ -832,19 +831,19 @@ export function extractSegments(
 	let afterStarted = false;
 	const afterEnd = afterStart + afterLen;
 
-	// Track styling state so "after" inherits styling from before the overlay
+	// 跟踪样式状态，以便“后”段继承叠加层之前的样式
 	pooledStyleTracker.clear();
 
 	while (i < line.length) {
 		const ansi = extractAnsiCode(line, i);
 		if (ansi) {
-			// Track all SGR codes to know styling state at afterStart
+			// 跟踪所有 SGR 代码以了解 afterStart 处的样式状态
 			pooledStyleTracker.process(ansi.code);
-			// Include ANSI codes in their respective segments
+			// 在各自的段中包含 ANSI 代码
 			if (currentCol < beforeEnd) {
 				pendingAnsiBefore += ansi.code;
 			} else if (currentCol >= afterStart && currentCol < afterEnd && afterStarted) {
-				// Only include after we've started "after" (styling already prepended)
+				// 仅在“后”段开始后包含（样式已预置）
 				after += ansi.code;
 			}
 			i += ansi.length;
@@ -867,7 +866,7 @@ export function extractSegments(
 			} else if (currentCol >= afterStart && currentCol < afterEnd) {
 				const fits = !strictAfter || currentCol + w <= afterEnd;
 				if (fits) {
-					// On first "after" grapheme, prepend inherited styling from before overlay
+					// 在第一个“后”段字形上，预置从叠加层之前继承的样式
 					if (!afterStarted) {
 						after += pooledStyleTracker.getActiveCodes();
 						afterStarted = true;
@@ -878,7 +877,7 @@ export function extractSegments(
 			}
 
 			currentCol += w;
-			// Early exit: done with "before" only, or done with both segments
+			// 提前退出：仅完成“前”段，或两个段都已完成
 			if (afterLen <= 0 ? currentCol >= beforeEnd : currentCol >= afterEnd) break;
 		}
 		i = textEnd;

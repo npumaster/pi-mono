@@ -20,13 +20,13 @@ export interface ImageRenderOptions {
 	maxWidthCells?: number;
 	maxHeightCells?: number;
 	preserveAspectRatio?: boolean;
-	/** Kitty image ID. If provided, reuses/replaces existing image with this ID. */
+	/** Kitty 图像 ID。如果提供，则重用/替换具有此 ID 的现有图像。 */
 	imageId?: number;
 }
 
 let cachedCapabilities: TerminalCapabilities | null = null;
 
-// Default cell dimensions - updated by TUI when terminal responds to query
+// 默认单元格尺寸 - 当终端响应查询时由 TUI 更新
 let cellDimensions: CellDimensions = { widthPx: 9, heightPx: 18 };
 
 export function getCellDimensions(): CellDimensions {
@@ -85,21 +85,20 @@ const KITTY_PREFIX = "\x1b_G";
 const ITERM2_PREFIX = "\x1b]1337;File=";
 
 export function isImageLine(line: string): boolean {
-	// Fast path: sequence at line start (single-row images)
+	// 快速路径：行首序列（单行图像）
 	if (line.startsWith(KITTY_PREFIX) || line.startsWith(ITERM2_PREFIX)) {
 		return true;
 	}
-	// Slow path: sequence elsewhere (multi-row images have cursor-up prefix)
+	// 慢速路径：其他位置的序列（多行图像具有向上移动光标的前缀）
 	return line.includes(KITTY_PREFIX) || line.includes(ITERM2_PREFIX);
 }
 
 /**
- * Generate a random image ID for Kitty graphics protocol.
- * Uses random IDs to avoid collisions between different module instances
- * (e.g., main app vs extensions).
+ * 为 Kitty 图形协议生成随机图像 ID。
+ * 使用随机 ID 以避免不同模块实例（例如主应用与扩展）之间的冲突。
  */
 export function allocateImageId(): number {
-	// Use random ID in range [1, 0xffffffff] to avoid collisions
+	// 使用 [1, 0xffffffff] 范围内的随机 ID 以避免冲突
 	return Math.floor(Math.random() * 0xfffffffe) + 1;
 }
 
@@ -147,16 +146,16 @@ export function encodeKitty(
 }
 
 /**
- * Delete a Kitty graphics image by ID.
- * Uses uppercase 'I' to also free the image data.
+ * 通过 ID 删除 Kitty 图形图像。
+ * 使用大写 'I' 同时也释放图像数据。
  */
 export function deleteKittyImage(imageId: number): string {
 	return `\x1b_Ga=d,d=I,i=${imageId}\x1b\\`;
 }
 
 /**
- * Delete all visible Kitty graphics images.
- * Uses uppercase 'A' to also free the image data.
+ * 删除所有可见的 Kitty 图形图像。
+ * 使用大写 'A' 同时也释放图像数据。
  */
 export function deleteAllKittyImages(): string {
 	return `\x1b_Ga=d,d=A\x1b\\`;
@@ -355,7 +354,7 @@ export function renderImage(
 	const rows = calculateImageRows(imageDimensions, maxWidth, getCellDimensions());
 
 	if (caps.images === "kitty") {
-		// Only use imageId if explicitly provided - static images don't need IDs
+		// 仅在明确提供时使用 imageId - 静态图像不需要 ID
 		const sequence = encodeKitty(base64Data, { columns: maxWidth, rows, imageId: options.imageId });
 		return { sequence, rows, imageId: options.imageId };
 	}

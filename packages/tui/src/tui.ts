@@ -1,5 +1,5 @@
 /**
- * Minimal TUI implementation with differential rendering
+ * 具有差异化渲染的最小 TUI 实现
  */
 
 import * as fs from "node:fs";
@@ -11,62 +11,61 @@ import { getCapabilities, isImageLine, setCellDimensions } from "./terminal-imag
 import { extractSegments, sliceByColumn, sliceWithWidth, visibleWidth } from "./utils.js";
 
 /**
- * Component interface - all components must implement this
+ * 组件接口 - 所有组件都必须实现此接口
  */
 export interface Component {
 	/**
-	 * Render the component to lines for the given viewport width
-	 * @param width - Current viewport width
-	 * @returns Array of strings, each representing a line
+	 * 为给定的视口宽度将组件渲染为行
+	 * @param width - 当前视口宽度
+	 * @returns 字符串数组，每个字符串代表一行
 	 */
 	render(width: number): string[];
 
 	/**
-	 * Optional handler for keyboard input when component has focus
+	 * 当组件获得焦点时，键盘输入的可选处理器
 	 */
 	handleInput?(data: string): void;
 
 	/**
-	 * If true, component receives key release events (Kitty protocol).
-	 * Default is false - release events are filtered out.
+	 * 如果为 true，组件将接收键释放事件（Kitty 协议）。
+	 * 默认为 false - 释放事件会被过滤掉。
 	 */
 	wantsKeyRelease?: boolean;
 
 	/**
-	 * Invalidate any cached rendering state.
-	 * Called when theme changes or when component needs to re-render from scratch.
+	 * 使任何缓存的渲染状态失效。
+	 * 当主题更改或组件需要从头开始重新渲染时调用。
 	 */
 	invalidate(): void;
 }
 
 /**
- * Interface for components that can receive focus and display a hardware cursor.
- * When focused, the component should emit CURSOR_MARKER at the cursor position
- * in its render output. TUI will find this marker and position the hardware
- * cursor there for proper IME candidate window positioning.
+ * 可以接收焦点并显示硬件光标的组件接口。
+ * 获得焦点时，组件应在其渲染输出中的光标位置发出 CURSOR_MARKER。
+ * TUI 将找到此标记并在该处放置硬件光标，以便正确定位 IME 候选窗口。
  */
 export interface Focusable {
-	/** Set by TUI when focus changes. Component should emit CURSOR_MARKER when true. */
+	/** 由 TUI 在焦点更改时设置。当为 true 时，组件应发出 CURSOR_MARKER。 */
 	focused: boolean;
 }
 
-/** Type guard to check if a component implements Focusable */
+/** 用于检查组件是否实现 Focusable 的类型守卫 */
 export function isFocusable(component: Component | null): component is Component & Focusable {
 	return component !== null && "focused" in component;
 }
 
 /**
- * Cursor position marker - APC (Application Program Command) sequence.
- * This is a zero-width escape sequence that terminals ignore.
- * Components emit this at the cursor position when focused.
- * TUI finds and strips this marker, then positions the hardware cursor there.
+ * 光标位置标记 - APC (Application Program Command) 序列。
+ * 这是一个终端忽略的零宽转义序列。
+ * 组件在获得焦点时在光标位置发出此标记。
+ * TUI 找到并剥离此标记，然后将硬件光标定位在该处。
  */
 export const CURSOR_MARKER = "\x1b_pi:c\x07";
 
 export { visibleWidth };
 
 /**
- * Anchor position for overlays
+ * 叠加层的锚点位置
  */
 export type OverlayAnchor =
 	| "center"
@@ -80,7 +79,7 @@ export type OverlayAnchor =
 	| "right-center";
 
 /**
- * Margin configuration for overlays
+ * 叠加层的边距配置
  */
 export interface OverlayMargin {
 	top?: number;
@@ -89,14 +88,14 @@ export interface OverlayMargin {
 	left?: number;
 }
 
-/** Value that can be absolute (number) or percentage (string like "50%") */
+/** 可以是绝对值（数字）或百分比（如 "50%" 的字符串）的值 */
 export type SizeValue = number | `${number}%`;
 
-/** Parse a SizeValue into absolute value given a reference size */
+/** 给定参考大小，将 SizeValue 解析为绝对值 */
 function parseSizeValue(value: SizeValue | undefined, referenceSize: number): number | undefined {
 	if (value === undefined) return undefined;
 	if (typeof value === "number") return value;
-	// Parse percentage string like "50%"
+	// 解析百分比字符串，如 "50%"
 	const match = value.match(/^(\d+(?:\.\d+)?)%$/);
 	if (match) {
 		return Math.floor((referenceSize * parseFloat(match[1])) / 100);
@@ -105,59 +104,59 @@ function parseSizeValue(value: SizeValue | undefined, referenceSize: number): nu
 }
 
 /**
- * Options for overlay positioning and sizing.
- * Values can be absolute numbers or percentage strings (e.g., "50%").
+ * 叠加层定位和大小的选项。
+ * 值可以是绝对数字或百分比字符串（例如 "50%"）。
  */
 export interface OverlayOptions {
-	// === Sizing ===
-	/** Width in columns, or percentage of terminal width (e.g., "50%") */
+	// === 尺寸 ===
+	/** 以列为单位的宽度，或终端宽度的百分比（例如 "50%"） */
 	width?: SizeValue;
-	/** Minimum width in columns */
+	/** 以列为单位的最小宽度 */
 	minWidth?: number;
-	/** Maximum height in rows, or percentage of terminal height (e.g., "50%") */
+	/** 以行为单位的最大高度，或终端高度的百分比（例如 "50%"） */
 	maxHeight?: SizeValue;
 
-	// === Positioning - anchor-based ===
-	/** Anchor point for positioning (default: 'center') */
+	// === 定位 - 基于锚点 ===
+	/** 定位的锚点（默认：'center'） */
 	anchor?: OverlayAnchor;
-	/** Horizontal offset from anchor position (positive = right) */
+	/** 相对于锚点位置的水平偏移（正值 = 向右） */
 	offsetX?: number;
-	/** Vertical offset from anchor position (positive = down) */
+	/** 相对于锚点位置的垂直偏移（正值 = 向下） */
 	offsetY?: number;
 
-	// === Positioning - percentage or absolute ===
-	/** Row position: absolute number, or percentage (e.g., "25%" = 25% from top) */
+	// === 定位 - 百分比或绝对值 ===
+	/** 行位置：绝对数字，或百分比（例如 "25%" = 距离顶部 25%） */
 	row?: SizeValue;
-	/** Column position: absolute number, or percentage (e.g., "50%" = centered horizontally) */
+	/** 列位置：绝对数字，或百分比（例如 "50%" = 水平居中） */
 	col?: SizeValue;
 
-	// === Margin from terminal edges ===
-	/** Margin from terminal edges. Number applies to all sides. */
+	// === 距离终端边缘的边距 ===
+	/** 距离终端边缘的边距。数字适用于所有侧面。 */
 	margin?: OverlayMargin | number;
 
-	// === Visibility ===
+	// === 可见性 ===
 	/**
-	 * Control overlay visibility based on terminal dimensions.
-	 * If provided, overlay is only rendered when this returns true.
-	 * Called each render cycle with current terminal dimensions.
+	 * 根据终端尺寸控制叠加层的可见性。
+	 * 如果提供，则仅在此函数返回 true 时渲染叠加层。
+	 * 在每个渲染周期使用当前终端尺寸调用。
 	 */
 	visible?: (termWidth: number, termHeight: number) => boolean;
 }
 
 /**
- * Handle returned by showOverlay for controlling the overlay
+ * showOverlay 返回的用于控制叠加层的句柄
  */
 export interface OverlayHandle {
-	/** Permanently remove the overlay (cannot be shown again) */
+	/** 永久移除叠加层（无法再次显示） */
 	hide(): void;
-	/** Temporarily hide or show the overlay */
+	/** 临时隐藏或显示叠加层 */
 	setHidden(hidden: boolean): void;
-	/** Check if overlay is temporarily hidden */
+	/** 检查叠加层是否被临时隐藏 */
 	isHidden(): boolean;
 }
 
 /**
- * Container - a component that contains other components
+ * 容器 - 包含其他组件的组件
  */
 export class Container implements Component {
 	children: Component[] = [];
