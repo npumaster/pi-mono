@@ -40,9 +40,9 @@ const defaultReadOperations: ReadOperations = {
 };
 
 export interface ReadToolOptions {
-	/** Whether to auto-resize images to 2000x2000 max. Default: true */
+	/** 是否自动将图像大小调整为最大 2000x2000。默认：true */
 	autoResizeImages?: boolean;
-	/** Custom operations for file reading. Default: local filesystem */
+	/** 文件读取的自定义操作。默认：本地文件系统 */
 	operations?: ReadOperations;
 }
 
@@ -53,7 +53,7 @@ export function createReadTool(cwd: string, options?: ReadToolOptions): AgentToo
 	return {
 		name: "read",
 		label: "read",
-		description: `Read the contents of a file. Supports text files and images (jpg, png, gif, webp). Images are sent as attachments. For text files, output is truncated to ${DEFAULT_MAX_LINES} lines or ${DEFAULT_MAX_BYTES / 1024}KB (whichever is hit first). Use offset/limit for large files. When you need the full file, continue with offset until complete.`,
+		description: `读取文件内容。支持文本文件和图像（jpg、png、gif、webp）。图像作为附件发送。对于文本文件，输出被截断为 ${DEFAULT_MAX_LINES} 行或 ${DEFAULT_MAX_BYTES / 1024}KB（以先达到者为准）。对于大文件，请使用 offset/limit。当你需要完整文件时，请使用 offset 继续，直到完成。`,
 		parameters: readSchema,
 		execute: async (
 			_toolCallId: string,
@@ -64,52 +64,52 @@ export function createReadTool(cwd: string, options?: ReadToolOptions): AgentToo
 
 			return new Promise<{ content: (TextContent | ImageContent)[]; details: ReadToolDetails | undefined }>(
 				(resolve, reject) => {
-					// Check if already aborted
+					// 检查是否已中止
 					if (signal?.aborted) {
-						reject(new Error("Operation aborted"));
+						reject(new Error("操作已中止"));
 						return;
 					}
 
 					let aborted = false;
 
-					// Set up abort handler
+					// 设置中止处理程序
 					const onAbort = () => {
 						aborted = true;
-						reject(new Error("Operation aborted"));
+						reject(new Error("操作已中止"));
 					};
 
 					if (signal) {
 						signal.addEventListener("abort", onAbort, { once: true });
 					}
 
-					// Perform the read operation
+					// 执行读取操作
 					(async () => {
 						try {
-							// Check if file exists
+							// 检查文件是否存在
 							await ops.access(absolutePath);
 
-							// Check if aborted before reading
+							// 读取前检查是否已中止
 							if (aborted) {
 								return;
 							}
 
 							const mimeType = ops.detectImageMimeType ? await ops.detectImageMimeType(absolutePath) : undefined;
 
-							// Read the file based on type
+							// 根据类型读取文件
 							let content: (TextContent | ImageContent)[];
 							let details: ReadToolDetails | undefined;
 
 							if (mimeType) {
-								// Read as image (binary)
+								// 作为图像读取（二进制）
 								const buffer = await ops.readFile(absolutePath);
 								const base64 = buffer.toString("base64");
 
 								if (autoResizeImages) {
-									// Resize image if needed
+									// 如果需要，调整图像大小
 									const resized = await resizeImage({ type: "image", data: base64, mimeType });
 									const dimensionNote = formatDimensionNote(resized);
 
-									let textNote = `Read image file [${resized.mimeType}]`;
+									let textNote = `已读取图像文件 [${resized.mimeType}]`;
 									if (dimensionNote) {
 										textNote += `\n${dimensionNote}`;
 									}
@@ -119,29 +119,29 @@ export function createReadTool(cwd: string, options?: ReadToolOptions): AgentToo
 										{ type: "image", data: resized.data, mimeType: resized.mimeType },
 									];
 								} else {
-									const textNote = `Read image file [${mimeType}]`;
+									const textNote = `已读取图像文件 [${mimeType}]`;
 									content = [
 										{ type: "text", text: textNote },
 										{ type: "image", data: base64, mimeType },
 									];
 								}
 							} else {
-								// Read as text
+								// 作为文本读取
 								const buffer = await ops.readFile(absolutePath);
 								const textContent = buffer.toString("utf-8");
 								const allLines = textContent.split("\n");
 								const totalFileLines = allLines.length;
 
-								// Apply offset if specified (1-indexed to 0-indexed)
+								// 如果指定了偏移量，则应用它（从 1 开始到从 0 开始）
 								const startLine = offset ? Math.max(0, offset - 1) : 0;
-								const startLineDisplay = startLine + 1; // For display (1-indexed)
+								const startLineDisplay = startLine + 1; // 用于显示（从 1 开始）
 
-								// Check if offset is out of bounds
+								// 检查偏移量是否超出范围
 								if (startLine >= allLines.length) {
-									throw new Error(`Offset ${offset} is beyond end of file (${allLines.length} lines total)`);
+									throw new Error(`偏移量 ${offset} 超出文件末尾（总共 ${allLines.length} 行）`);
 								}
 
-								// If limit is specified by user, use it; otherwise we'll let truncateHead decide
+								// 如果用户指定了限制，则使用它；否则我们将让 truncateHead 决定
 								let selectedContent: string;
 								let userLimitedLines: number | undefined;
 								if (limit !== undefined) {
@@ -152,57 +152,57 @@ export function createReadTool(cwd: string, options?: ReadToolOptions): AgentToo
 									selectedContent = allLines.slice(startLine).join("\n");
 								}
 
-								// Apply truncation (respects both line and byte limits)
+								// 应用截断（尊重行数和字节限制）
 								const truncation = truncateHead(selectedContent);
 
 								let outputText: string;
 
 								if (truncation.firstLineExceedsLimit) {
-									// First line at offset exceeds 30KB - tell model to use bash
+									// 偏移处的首行超过 30KB - 告诉模型使用 bash
 									const firstLineSize = formatSize(Buffer.byteLength(allLines[startLine], "utf-8"));
-									outputText = `[Line ${startLineDisplay} is ${firstLineSize}, exceeds ${formatSize(DEFAULT_MAX_BYTES)} limit. Use bash: sed -n '${startLineDisplay}p' ${path} | head -c ${DEFAULT_MAX_BYTES}]`;
+									outputText = `[第 ${startLineDisplay} 行大小为 ${firstLineSize}，超过了 ${formatSize(DEFAULT_MAX_BYTES)} 的限制。使用 bash：sed -n '${startLineDisplay}p' ${path} | head -c ${DEFAULT_MAX_BYTES}]`;
 									details = { truncation };
 								} else if (truncation.truncated) {
-									// Truncation occurred - build actionable notice
+									// 发生截断 - 构建可操作的通知
 									const endLineDisplay = startLineDisplay + truncation.outputLines - 1;
 									const nextOffset = endLineDisplay + 1;
 
 									outputText = truncation.content;
 
 									if (truncation.truncatedBy === "lines") {
-										outputText += `\n\n[Showing lines ${startLineDisplay}-${endLineDisplay} of ${totalFileLines}. Use offset=${nextOffset} to continue.]`;
+										outputText += `\n\n[显示 ${totalFileLines} 行中的第 ${startLineDisplay}-${endLineDisplay} 行。使用 offset=${nextOffset} 继续。]`;
 									} else {
-										outputText += `\n\n[Showing lines ${startLineDisplay}-${endLineDisplay} of ${totalFileLines} (${formatSize(DEFAULT_MAX_BYTES)} limit). Use offset=${nextOffset} to continue.]`;
+										outputText += `\n\n[显示 ${totalFileLines} 行中的第 ${startLineDisplay}-${endLineDisplay} 行（限制为 ${formatSize(DEFAULT_MAX_BYTES)}）。使用 offset=${nextOffset} 继续。]`;
 									}
 									details = { truncation };
 								} else if (userLimitedLines !== undefined && startLine + userLimitedLines < allLines.length) {
-									// User specified limit, there's more content, but no truncation
+									// 用户指定了限制，还有更多内容，但没有截断
 									const remaining = allLines.length - (startLine + userLimitedLines);
 									const nextOffset = startLine + userLimitedLines + 1;
 
 									outputText = truncation.content;
-									outputText += `\n\n[${remaining} more lines in file. Use offset=${nextOffset} to continue.]`;
+									outputText += `\n\n[文件中还有 ${remaining} 行。使用 offset=${nextOffset} 继续。]`;
 								} else {
-									// No truncation, no user limit exceeded
+									// 无截断，未超过用户限制
 									outputText = truncation.content;
 								}
 
 								content = [{ type: "text", text: outputText }];
 							}
 
-							// Check if aborted after reading
+							// 读取后检查是否已中止
 							if (aborted) {
 								return;
 							}
 
-							// Clean up abort handler
+							// 清理中止处理程序
 							if (signal) {
 								signal.removeEventListener("abort", onAbort);
 							}
 
 							resolve({ content, details });
 						} catch (error: any) {
-							// Clean up abort handler
+							// 清理中止处理程序
 							if (signal) {
 								signal.removeEventListener("abort", onAbort);
 							}

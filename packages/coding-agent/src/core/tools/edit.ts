@@ -22,22 +22,22 @@ const editSchema = Type.Object({
 export type EditToolInput = Static<typeof editSchema>;
 
 export interface EditToolDetails {
-	/** Unified diff of the changes made */
+	/** 对所做更改的统一 diff */
 	diff: string;
-	/** Line number of the first change in the new file (for editor navigation) */
+	/** 新文件中第一次更改的行号（用于编辑器导航） */
 	firstChangedLine?: number;
 }
 
 /**
- * Pluggable operations for the edit tool.
- * Override these to delegate file editing to remote systems (e.g., SSH).
+ * 编辑工具的可插拔操作。
+ * 覆盖这些操作以将文件编辑委托给远程系统（例如 SSH）。
  */
 export interface EditOperations {
-	/** Read file contents as a Buffer */
+	/** 将文件内容读取为 Buffer */
 	readFile: (absolutePath: string) => Promise<Buffer>;
-	/** Write content to a file */
+	/** 将内容写入文件 */
 	writeFile: (absolutePath: string, content: string) => Promise<void>;
-	/** Check if file is readable and writable (throw if not) */
+	/** 检查文件是否可读写（如果不可读写则抛出异常） */
 	access: (absolutePath: string) => Promise<void>;
 }
 
@@ -48,7 +48,7 @@ const defaultEditOperations: EditOperations = {
 };
 
 export interface EditToolOptions {
-	/** Custom operations for file editing. Default: local filesystem */
+	/** 文件编辑的自定义操作。默认值：本地文件系统 */
 	operations?: EditOperations;
 }
 
@@ -59,7 +59,7 @@ export function createEditTool(cwd: string, options?: EditToolOptions): AgentToo
 		name: "edit",
 		label: "edit",
 		description:
-			"Edit a file by replacing exact text. The oldText must match exactly (including whitespace). Use this for precise, surgical edits.",
+			"通过替换精确文本来编辑文件。oldText 必须完全匹配（包括空格）。用于精确、外科手术式的编辑。",
 		parameters: editSchema,
 		execute: async (
 			_toolCallId: string,
@@ -74,7 +74,7 @@ export function createEditTool(cwd: string, options?: EditToolOptions): AgentToo
 			}>((resolve, reject) => {
 				// 检查是否已中止
 				if (signal?.aborted) {
-					reject(new Error("Operation aborted"));
+					reject(new Error("操作已中止"));
 					return;
 				}
 
@@ -83,7 +83,7 @@ export function createEditTool(cwd: string, options?: EditToolOptions): AgentToo
 				// 设置中止处理程序
 				const onAbort = () => {
 					aborted = true;
-					reject(new Error("Operation aborted"));
+					reject(new Error("操作已中止"));
 				};
 
 				if (signal) {
@@ -100,7 +100,7 @@ export function createEditTool(cwd: string, options?: EditToolOptions): AgentToo
 							if (signal) {
 								signal.removeEventListener("abort", onAbort);
 							}
-							reject(new Error(`File not found: ${path}`));
+							reject(new Error(`找不到文件：${path}`));
 							return;
 						}
 
@@ -135,7 +135,7 @@ export function createEditTool(cwd: string, options?: EditToolOptions): AgentToo
 							}
 							reject(
 								new Error(
-									`Could not find the exact text in ${path}. The old text must match exactly including all whitespace and newlines.`,
+									`在 ${path} 中找不到确切的文本。旧文本必须完全匹配，包括所有空格和换行符。`,
 								),
 							);
 							return;
@@ -152,7 +152,7 @@ export function createEditTool(cwd: string, options?: EditToolOptions): AgentToo
 							}
 							reject(
 								new Error(
-									`Found ${occurrences} occurrences of the text in ${path}. The text must be unique. Please provide more context to make it unique.`,
+									`在 ${path} 中发现该文本出现了 ${occurrences} 次。文本必须是唯一的。请提供更多上下文以使其唯一。`,
 								),
 							);
 							return;
@@ -178,7 +178,7 @@ export function createEditTool(cwd: string, options?: EditToolOptions): AgentToo
 							}
 							reject(
 								new Error(
-									`No changes made to ${path}. The replacement produced identical content. This might indicate an issue with special characters or the text not existing as expected.`,
+									`${path} 未发生更改。替换产生了相同的内容。这可能表示特殊字符存在问题，或者文本未按预期存在。`,
 								),
 							);
 							return;
@@ -202,7 +202,7 @@ export function createEditTool(cwd: string, options?: EditToolOptions): AgentToo
 							content: [
 								{
 									type: "text",
-									text: `Successfully replaced text in ${path}.`,
+									text: `成功替换了 ${path} 中的文本。`,
 								},
 							],
 							details: { diff: diffResult.diff, firstChangedLine: diffResult.firstChangedLine },
@@ -223,5 +223,5 @@ export function createEditTool(cwd: string, options?: EditToolOptions): AgentToo
 	};
 }
 
-/** Default edit tool using process.cwd() - for backwards compatibility */
+/** 使用 process.cwd() 的默认编辑工具 - 用于向后兼容 */
 export const editTool = createEditTool(process.cwd());

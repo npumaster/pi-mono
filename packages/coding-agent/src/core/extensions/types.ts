@@ -139,13 +139,13 @@ export interface ExtensionUIContext {
 			| undefined,
 	): void;
 
-	/** Set a custom header component (shown at startup, above chat), or undefined to restore the built-in header. */
+	/** 设置自定义页眉组件（在启动时显示在聊天上方），或传递 undefined 以恢复内置页眉。 */
 	setHeader(factory: ((tui: TUI, theme: Theme) => Component & { dispose?(): void }) | undefined): void;
 
-	/** Set the terminal window/tab title. */
+	/** 设置终端窗口/标签标题。 */
 	setTitle(title: string): void;
 
-	/** Show a custom component with keyboard focus. */
+	/** 显示具有键盘焦点的自定义组件。 */
 	custom<T>(
 		factory: (
 			tui: TUI,
@@ -155,36 +155,36 @@ export interface ExtensionUIContext {
 		) => (Component & { dispose?(): void }) | Promise<Component & { dispose?(): void }>,
 		options?: {
 			overlay?: boolean;
-			/** Overlay positioning/sizing options. Can be static or a function for dynamic updates. */
+			/** 叠加层定位/尺寸选项。可以是静态的，也可以是用于动态更新的函数。 */
 			overlayOptions?: OverlayOptions | (() => OverlayOptions);
-			/** Called with the overlay handle after the overlay is shown. Use to control visibility. */
+			/** 在显示叠加层后，使用叠加层句柄调用。用于控制可见性。 */
 			onHandle?: (handle: OverlayHandle) => void;
 		},
 	): Promise<T>;
 
-	/** Paste text into the editor, triggering paste handling (collapse for large content). */
+	/** 将文本粘贴到编辑器中，触发粘贴处理（大内容折叠）。 */
 	pasteToEditor(text: string): void;
 
-	/** Set the text in the core input editor. */
+	/** 设置核心输入编辑器中的文本。 */
 	setEditorText(text: string): void;
 
-	/** Get the current text from the core input editor. */
+	/** 获取核心输入编辑器中的当前文本。 */
 	getEditorText(): string;
 
-	/** Show a multi-line editor for text editing. */
+	/** 显示用于文本编辑的多行编辑器。 */
 	editor(title: string, prefill?: string): Promise<string | undefined>;
 
 	/**
-	 * Set a custom editor component via factory function.
-	 * Pass undefined to restore the default editor.
+	 * 通过工厂函数设置自定义编辑器组件。
+	 * 传递 undefined 以恢复默认编辑器。
 	 *
-	 * The factory receives:
-	 * - `theme`: EditorTheme for styling borders and autocomplete
-	 * - `keybindings`: KeybindingsManager for app-level keybindings
+	 * 工厂接收：
+	 * - `theme`: 用于样式化边框和自动完成的 EditorTheme
+	 * - `keybindings`: 用于应用级按键绑定的 KeybindingsManager
 	 *
-	 * For full app keybinding support (escape, ctrl+d, model switching, etc.),
-	 * extend `CustomEditor` from `@mariozechner/pi-coding-agent` and call
-	 * `super.handleInput(data)` for keys you don't handle.
+	 * 为了获得完整的应用程序按键绑定支持（退出、ctrl+d、模型切换等），
+	 * 请从 `@mariozechner/pi-coding-agent` 扩展 `CustomEditor` 并为你不处理的按键调用
+	 * `super.handleInput(data)`。
 	 *
 	 * @example
 	 * ```ts
@@ -195,10 +195,10 @@ export interface ExtensionUIContext {
 	 *
 	 *   handleInput(data: string): void {
 	 *     if (this.mode === "normal") {
-	 *       // Handle vim normal mode keys...
+	 *       // 处理 vim 普通模式按键...
 	 *       if (data === "i") { this.mode = "insert"; return; }
 	 *     }
-	 *     super.handleInput(data);  // App keybindings + text editing
+	 *     super.handleInput(data);  // 应用按键绑定 + 文本编辑
 	 *   }
 	 * }
 	 *
@@ -211,22 +211,22 @@ export interface ExtensionUIContext {
 		factory: ((tui: TUI, theme: EditorTheme, keybindings: KeybindingsManager) => EditorComponent) | undefined,
 	): void;
 
-	/** Get the current theme for styling. */
+	/** 获取当前的样式主题。 */
 	readonly theme: Theme;
 
-	/** Get all available themes with their names and file paths. */
+	/** 获取所有可用主题及其名称和文件路径。 */
 	getAllThemes(): { name: string; path: string | undefined }[];
 
-	/** Load a theme by name without switching to it. Returns undefined if not found. */
+	/** 按名称加载主题而不切换到它。如果未找到则返回 undefined。 */
 	getTheme(name: string): Theme | undefined;
 
-	/** Set the current theme by name or Theme object. */
+	/** 通过名称或 Theme 对象设置当前主题。 */
 	setTheme(theme: string | Theme): { success: boolean; error?: string };
 
-	/** Get current tool output expansion state. */
+	/** 获取当前工具输出展开状态。 */
 	getToolsExpanded(): boolean;
 
-	/** Set tool output expansion state. */
+	/** 设置工具输出展开状态。 */
 	setToolsExpanded(expanded: boolean): void;
 }
 
@@ -356,14 +356,14 @@ export interface ToolDefinition<TParams extends TSchema = TSchema, TDetails = un
 // Resource Events
 // ============================================================================
 
-/** Fired after session_start to allow extensions to provide additional resource paths. */
+/** 在 session_start 之后触发，允许扩展提供额外的资源路径。 */
 export interface ResourcesDiscoverEvent {
 	type: "resources_discover";
 	cwd: string;
 	reason: "startup" | "reload";
 }
 
-/** Result from resources_discover event handler */
+/** 来自 resources_discover 事件处理程序的结果 */
 export interface ResourcesDiscoverResult {
 	skillPaths?: string[];
 	promptPaths?: string[];
@@ -374,38 +374,38 @@ export interface ResourcesDiscoverResult {
 // Session Events
 // ============================================================================
 
-/** Fired on initial session load */
+/** 在初始会话加载时触发 */
 export interface SessionStartEvent {
 	type: "session_start";
 }
 
-/** Fired before switching to another session (can be cancelled) */
+/** 在切换到另一个会话之前触发（可以取消） */
 export interface SessionBeforeSwitchEvent {
 	type: "session_before_switch";
 	reason: "new" | "resume";
 	targetSessionFile?: string;
 }
 
-/** Fired after switching to another session */
+/** 在切换到另一个会话之后触发 */
 export interface SessionSwitchEvent {
 	type: "session_switch";
 	reason: "new" | "resume";
 	previousSessionFile: string | undefined;
 }
 
-/** Fired before forking a session (can be cancelled) */
+/** 在分叉会话之前触发（可以取消） */
 export interface SessionBeforeForkEvent {
 	type: "session_before_fork";
 	entryId: string;
 }
 
-/** Fired after forking a session */
+/** 在分叉会话之后触发 */
 export interface SessionForkEvent {
 	type: "session_fork";
 	previousSessionFile: string | undefined;
 }
 
-/** Fired before context compaction (can be cancelled or customized) */
+/** 在上下文压缩之前触发（可以取消或自定义） */
 export interface SessionBeforeCompactEvent {
 	type: "session_before_compact";
 	preparation: CompactionPreparation;
@@ -414,41 +414,41 @@ export interface SessionBeforeCompactEvent {
 	signal: AbortSignal;
 }
 
-/** Fired after context compaction */
+/** 在上下文压缩之后触发 */
 export interface SessionCompactEvent {
 	type: "session_compact";
 	compactionEntry: CompactionEntry;
 	fromExtension: boolean;
 }
 
-/** Fired on process exit */
+/** 在进程退出时触发 */
 export interface SessionShutdownEvent {
 	type: "session_shutdown";
 }
 
-/** Preparation data for tree navigation */
+/** 树导航的准备数据 */
 export interface TreePreparation {
 	targetId: string;
 	oldLeafId: string | null;
 	commonAncestorId: string | null;
 	entriesToSummarize: SessionEntry[];
 	userWantsSummary: boolean;
-	/** Custom instructions for summarization */
+	/** 总结的自定义说明 */
 	customInstructions?: string;
-	/** If true, customInstructions replaces the default prompt instead of being appended */
+	/** 如果为 true，则 customInstructions 将替换默认提示而不是追加 */
 	replaceInstructions?: boolean;
-	/** Label to attach to the branch summary entry */
+	/** 要附加到分支摘要条目的标签 */
 	label?: string;
 }
 
-/** Fired before navigating in the session tree (can be cancelled) */
+/** 在会话树中导航之前触发（可以取消） */
 export interface SessionBeforeTreeEvent {
 	type: "session_before_tree";
 	preparation: TreePreparation;
 	signal: AbortSignal;
 }
 
-/** Fired after navigating in the session tree */
+/** 在会话树中导航之后触发 */
 export interface SessionTreeEvent {
 	type: "session_tree";
 	newLeafId: string | null;
@@ -531,14 +531,14 @@ export interface ModelSelectEvent {
 // User Bash Events
 // ============================================================================
 
-/** Fired when user executes a bash command via ! or !! prefix */
+/** 当用户通过 ! 或 !! 前缀执行 bash 命令时触发 */
 export interface UserBashEvent {
 	type: "user_bash";
-	/** The command to execute */
+	/** 要执行的命令 */
 	command: string;
-	/** True if !! prefix was used (excluded from LLM context) */
+	/** 如果使用了 !! 前缀则为 true（从 LLM 上下文中排除） */
 	excludeFromContext: boolean;
-	/** Current working directory */
+	/** 当前工作目录 */
 	cwd: string;
 }
 
@@ -674,7 +674,7 @@ export interface CustomToolResultEvent extends ToolResultEventBase {
 	details: unknown;
 }
 
-/** Fired after a tool executes. Can modify result. */
+/** 在工具执行后触发。可以修改结果。 */
 export type ToolResultEvent =
 	| BashToolResultEvent
 	| ReadToolResultEvent
@@ -685,7 +685,7 @@ export type ToolResultEvent =
 	| LsToolResultEvent
 	| CustomToolResultEvent;
 
-// Type guards for ToolResultEvent
+// ToolResultEvent 的类型保护
 export function isBashToolResult(e: ToolResultEvent): e is BashToolResultEvent {
 	return e.toolName === "bash";
 }
@@ -743,7 +743,7 @@ export function isToolCallEventType(toolName: string, event: ToolCallEvent): boo
 	return event.toolName === toolName;
 }
 
-/** Union of all event types */
+/** 所有事件类型的联合 */
 export type ExtensionEvent =
 	| ResourcesDiscoverEvent
 	| SessionEvent
@@ -849,12 +849,12 @@ export interface RegisteredCommand {
 // Extension API
 // ============================================================================
 
-/** Handler function type for events */
+/** 事件的处理程序函数类型 */
 // biome-ignore lint/suspicious/noConfusingVoidType: void allows bare return statements
 export type ExtensionHandler<E, R = undefined> = (event: E, ctx: ExtensionContext) => Promise<R | void> | R | void;
 
 /**
- * ExtensionAPI passed to extension factory functions.
+ * 传递给扩展工厂函数的 ExtensionAPI。
  */
 export interface ExtensionAPI {
 	// =========================================================================
@@ -1001,15 +1001,15 @@ export interface ExtensionAPI {
 	// =========================================================================
 
 	/**
-	 * Register or override a model provider.
+	 * 注册或覆盖模型提供商。
 	 *
-	 * If `models` is provided: replaces all existing models for this provider.
-	 * If only `baseUrl` is provided: overrides the URL for existing models.
-	 * If `oauth` is provided: registers OAuth provider for /login support.
-	 * If `streamSimple` is provided: registers a custom API stream handler.
+	 * 如果提供了 `models`：替换此提供商的所有现有模型。
+	 * 如果仅提供 `baseUrl`：覆盖现有模型的 URL。
+	 * 如果提供了 `oauth`：注册 OAuth 提供商以支持 /login。
+	 * 如果提供了 `streamSimple`：注册自定义 API 流处理程序。
 	 *
 	 * @example
-	 * // Register a new provider with custom models
+	 * // 使用自定义模型注册新提供商
 	 * pi.registerProvider("my-proxy", {
 	 *   baseUrl: "https://proxy.example.com",
 	 *   apiKey: "PROXY_API_KEY",
@@ -1028,13 +1028,13 @@ export interface ExtensionAPI {
 	 * });
 	 *
 	 * @example
-	 * // Override baseUrl for an existing provider
+	 * // 覆盖现有提供商的 baseUrl
 	 * pi.registerProvider("anthropic", {
 	 *   baseUrl: "https://proxy.example.com"
 	 * });
 	 *
 	 * @example
-	 * // Register provider with OAuth support
+	 * // 注册具有 OAuth 支持的提供商
 	 * pi.registerProvider("corporate-ai", {
 	 *   baseUrl: "https://ai.corp.com",
 	 *   api: "openai-responses",
@@ -1049,7 +1049,7 @@ export interface ExtensionAPI {
 	 */
 	registerProvider(name: string, config: ProviderConfig): void;
 
-	/** Shared event bus for extension communication. */
+	/** 用于扩展通信的共享事件总线。 */
 	events: EventBus;
 }
 
@@ -1057,62 +1057,62 @@ export interface ExtensionAPI {
 // Provider Registration Types
 // ============================================================================
 
-/** Configuration for registering a provider via pi.registerProvider(). */
+/** 通过 pi.registerProvider() 注册提供商的配置。 */
 export interface ProviderConfig {
-	/** Base URL for the API endpoint. Required when defining models. */
+	/** API 端点的基准 URL。定义模型时必填。 */
 	baseUrl?: string;
-	/** API key or environment variable name. Required when defining models (unless oauth provided). */
+	/** API 密钥或环境变量名称。定义模型时必填（除非提供了 oauth）。 */
 	apiKey?: string;
-	/** API type. Required at provider or model level when defining models. */
+	/** API 类型。定义模型时在提供商或模型级别必填。 */
 	api?: Api;
-	/** Optional streamSimple handler for custom APIs. */
+	/** 用于自定义 API 的可选 streamSimple 处理程序。 */
 	streamSimple?: (model: Model<Api>, context: Context, options?: SimpleStreamOptions) => AssistantMessageEventStream;
-	/** Custom headers to include in requests. */
+	/** 要包含在请求中的自定义标头。 */
 	headers?: Record<string, string>;
-	/** If true, adds Authorization: Bearer header with the resolved API key. */
+	/** 如果为 true，则添加带有解析后的 API 密钥的 Authorization: Bearer 标头。 */
 	authHeader?: boolean;
-	/** Models to register. If provided, replaces all existing models for this provider. */
+	/** 要注册的模型。如果提供，则替换此提供商的所有现有模型。 */
 	models?: ProviderModelConfig[];
-	/** OAuth provider for /login support. The `id` is set automatically from the provider name. */
+	/** 用于 /login 支持的 OAuth 提供商。`id` 会根据提供商名称自动设置。 */
 	oauth?: {
-		/** Display name for the provider in login UI. */
+		/** 登录 UI 中显示给提供商的名称。 */
 		name: string;
-		/** Run the login flow, return credentials to persist. */
+		/** 运行登录流程，返回要持久化的凭据。 */
 		login(callbacks: OAuthLoginCallbacks): Promise<OAuthCredentials>;
-		/** Refresh expired credentials, return updated credentials to persist. */
+		/** 刷新过期的凭据，返回更新后的要持久化的凭据。 */
 		refreshToken(credentials: OAuthCredentials): Promise<OAuthCredentials>;
-		/** Convert credentials to API key string for the provider. */
+		/** 将凭据转换为提供商的 API 密钥字符串。 */
 		getApiKey(credentials: OAuthCredentials): string;
-		/** Optional: modify models for this provider (e.g., update baseUrl based on credentials). */
+		/** 可选：修改此提供商的模型（例如，根据凭据更新 baseUrl）。 */
 		modifyModels?(models: Model<Api>[], credentials: OAuthCredentials): Model<Api>[];
 	};
 }
 
-/** Configuration for a model within a provider. */
+/** 提供商内模型的配置。 */
 export interface ProviderModelConfig {
-	/** Model ID (e.g., "claude-sonnet-4-20250514"). */
+	/** 模型 ID（例如 "claude-sonnet-4-20250514"）。 */
 	id: string;
-	/** Display name (e.g., "Claude 4 Sonnet"). */
+	/** 显示名称（例如 "Claude 4 Sonnet"）。 */
 	name: string;
-	/** API type override for this model. */
+	/** 此模型的 API 类型覆盖。 */
 	api?: Api;
-	/** Whether the model supports extended thinking. */
+	/** 模型是否支持扩展思考。 */
 	reasoning: boolean;
-	/** Supported input types. */
+	/** 支持的输入类型。 */
 	input: ("text" | "image")[];
-	/** Cost per token (for tracking, can be 0). */
+	/** 每个 token 的成本（用于跟踪，可以为 0）。 */
 	cost: { input: number; output: number; cacheRead: number; cacheWrite: number };
-	/** Maximum context window size in tokens. */
+	/** 以 token 为单位的最大上下文窗口大小。 */
 	contextWindow: number;
-	/** Maximum output tokens. */
+	/** 最大输出 token 数。 */
 	maxTokens: number;
-	/** Custom headers for this model. */
+	/** 此模型的自定义标头。 */
 	headers?: Record<string, string>;
-	/** OpenAI compatibility settings. */
+	/** OpenAI 兼容性设置。 */
 	compat?: Model<Api>["compat"];
 }
 
-/** Extension factory function type. Supports both sync and async initialization. */
+/** 扩展工厂函数类型。支持同步和异步初始化。 */
 export type ExtensionFactory = (pi: ExtensionAPI) => void | Promise<void>;
 
 // ============================================================================
@@ -1159,7 +1159,7 @@ export type GetSessionNameHandler = () => string | undefined;
 
 export type GetActiveToolsHandler = () => string[];
 
-/** Tool info with name, description, and parameter schema */
+/** 包含名称、描述和参数架构的工具信息 */
 export type ToolInfo = Pick<ToolDefinition, "name" | "description" | "parameters">;
 
 export type GetAllToolsHandler = () => ToolInfo[];
@@ -1177,18 +1177,18 @@ export type SetThinkingLevelHandler = (level: ThinkingLevel) => void;
 export type SetLabelHandler = (entryId: string, label: string | undefined) => void;
 
 /**
- * Shared state created by loader, used during registration and runtime.
- * Contains flag values (defaults set during registration, CLI values set after).
+ * 由加载器创建的共享状态，在注册和运行时使用。
+ * 包含标志值（在注册期间设置默认值，在之后设置 CLI 值）。
  */
 export interface ExtensionRuntimeState {
 	flagValues: Map<string, boolean | string>;
-	/** Provider registrations queued during extension loading, processed when runner binds */
+	/** 在扩展加载期间排队的提供商注册，在运行器绑定时处理 */
 	pendingProviderRegistrations: Array<{ name: string; config: ProviderConfig }>;
 }
 
 /**
- * Action implementations for pi.* API methods.
- * Provided to runner.initialize(), copied into the shared runtime.
+ * pi.* API 方法的操作实现。
+ * 提供给 runner.initialize()，复制到共享运行时。
  */
 export interface ExtensionActions {
 	sendMessage: SendMessageHandler;
@@ -1207,8 +1207,8 @@ export interface ExtensionActions {
 }
 
 /**
- * Actions for ExtensionContext (ctx.* in event handlers).
- * Required by all modes.
+ * ExtensionContext 的操作（事件处理程序中的 ctx.*）。
+ * 所有模式都需要。
  */
 export interface ExtensionContextActions {
 	getModel: () => Model<any> | undefined;
@@ -1222,8 +1222,8 @@ export interface ExtensionContextActions {
 }
 
 /**
- * Actions for ExtensionCommandContext (ctx.* in command handlers).
- * Only needed for interactive mode where extension commands are invokable.
+ * ExtensionCommandContext 的操作（命令处理程序中的 ctx.*）。
+ * 仅交互模式下需要，在此模式下扩展命令可调用。
  */
 export interface ExtensionCommandContextActions {
 	waitForIdle: () => Promise<void>;
@@ -1241,12 +1241,12 @@ export interface ExtensionCommandContextActions {
 }
 
 /**
- * Full runtime = state + actions.
- * Created by loader with throwing action stubs, completed by runner.initialize().
+ * 完整运行时 = 状态 + 操作。
+ * 由加载器使用抛出异常的操作存根创建，由 runner.initialize() 完成。
  */
 export interface ExtensionRuntime extends ExtensionRuntimeState, ExtensionActions {}
 
-/** Loaded extension with all registered items. */
+/** 具有所有注册项的已加载扩展。 */
 export interface Extension {
 	path: string;
 	resolvedPath: string;
@@ -1258,11 +1258,11 @@ export interface Extension {
 	shortcuts: Map<KeyId, ExtensionShortcut>;
 }
 
-/** Result of loading extensions. */
+/** 加载扩展的结果。 */
 export interface LoadExtensionsResult {
 	extensions: Extension[];
 	errors: Array<{ path: string; error: string }>;
-	/** Shared runtime - actions are throwing stubs until runner.initialize() */
+	/** 共享运行时 - 操作是抛出异常的存根，直到 runner.initialize() */
 	runtime: ExtensionRuntime;
 }
 

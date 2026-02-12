@@ -9,12 +9,10 @@ import { resolveToCwd } from "./path-utils.js";
 import { DEFAULT_MAX_BYTES, formatSize, type TruncationResult, truncateHead } from "./truncate.js";
 
 const findSchema = Type.Object({
-	pattern: Type.String({
-		description: "Glob pattern to match files, e.g. '*.ts', '**/*.json', or 'src/**/*.spec.ts'",
-	}),
-	path: Type.Optional(Type.String({ description: "Directory to search in (default: current directory)" })),
-	limit: Type.Optional(Type.Number({ description: "Maximum number of results (default: 1000)" })),
-});
+	path: Type.Optional(Type.String({ description: "要在其中搜索的目录。如果未指定，将使用当前工作目录。请勿输入 \"undefined\" 或 \"null\" - 默认行为只需省略它。如果提供，必须是有效的绝对目录路径。" })),
+	pattern: Type.String({ description: "匹配文件的 Glob 模式，例如 '*.ts'、'**/*.json' 或 'src/**/*.spec.ts'" }),
+	limit: Type.Optional(Type.Number({ description: "最大结果数（默认：1000）" })),
+}, { description: "一个快速的文件模式匹配工具，适用于任何代码库大小。支持像 '/*.js' 或 'src/**/*.ts' 这样的 glob 模式。返回相对于搜索目录的匹配文件路径。遵循 .gitignore。当你进行可能需要多轮 glob 和 grep 的开放式搜索时，请改用 SearchCodebase 工具。你可以在单个响应中调用多个工具。作为一批可能有用工具进行投机性执行多次搜索总是更好的。" });
 
 export type FindToolInput = Static<typeof findSchema>;
 
@@ -45,7 +43,7 @@ const defaultFindOperations: FindOperations = {
 };
 
 export interface FindToolOptions {
-	/** Custom operations for find. Default: local filesystem + fd */
+	/** find 的自定义操作。默认：本地文件系统 + fd */
 	operations?: FindOperations;
 }
 
@@ -64,11 +62,11 @@ export function createFindTool(cwd: string, options?: FindToolOptions): AgentToo
 		) => {
 			return new Promise((resolve, reject) => {
 				if (signal?.aborted) {
-					reject(new Error("Operation aborted"));
+					reject(new Error("操作已中止"));
 					return;
 				}
 
-				const onAbort = () => reject(new Error("Operation aborted"));
+				const onAbort = () => reject(new Error("操作已中止"));
 				signal?.addEventListener("abort", onAbort, { once: true });
 
 				(async () => {
@@ -80,7 +78,7 @@ export function createFindTool(cwd: string, options?: FindToolOptions): AgentToo
 						// 如果提供了自定义操作 glob，则使用它
 						if (customOps?.glob) {
 							if (!(await ops.exists(searchPath))) {
-								reject(new Error(`Path not found: ${searchPath}`));
+								reject(new Error(`路径未找到: ${searchPath}`));
 								return;
 							}
 
@@ -93,13 +91,13 @@ export function createFindTool(cwd: string, options?: FindToolOptions): AgentToo
 
 							if (results.length === 0) {
 								resolve({
-									content: [{ type: "text", text: "No files found matching pattern" }],
+									content: [{ type: "text", text: "未找到匹配模式的文件" }],
 									details: undefined,
 								});
 								return;
 							}
 
-							// Relativize paths
+							// 使路径变为相对路径
 							const relativized = results.map((p) => {
 								if (p.startsWith(searchPath)) {
 									return p.slice(searchPath.length + 1);
@@ -116,12 +114,12 @@ export function createFindTool(cwd: string, options?: FindToolOptions): AgentToo
 							const notices: string[] = [];
 
 							if (resultLimitReached) {
-								notices.push(`${effectiveLimit} results limit reached`);
+								notices.push(`已达到 ${effectiveLimit} 个结果的限制`);
 								details.resultLimitReached = effectiveLimit;
 							}
 
 							if (truncation.truncated) {
-								notices.push(`${formatSize(DEFAULT_MAX_BYTES)} limit reached`);
+								notices.push(`已达到 ${formatSize(DEFAULT_MAX_BYTES)} 的限制`);
 								details.truncation = truncation;
 							}
 
@@ -139,7 +137,7 @@ export function createFindTool(cwd: string, options?: FindToolOptions): AgentToo
 						// 默认：使用 fd
 						const fdPath = await ensureTool("fd", true);
 						if (!fdPath) {
-							reject(new Error("fd is not available and could not be downloaded"));
+							reject(new Error("fd 不可用且无法下载"));
 							return;
 						}
 
@@ -170,7 +168,7 @@ export function createFindTool(cwd: string, options?: FindToolOptions): AgentToo
 								gitignoreFiles.add(file);
 							}
 						} catch {
-							// Ignore glob errors
+							// 忽略 glob 错误
 						}
 
 						for (const gitignorePath of gitignoreFiles) {
@@ -187,14 +185,14 @@ export function createFindTool(cwd: string, options?: FindToolOptions): AgentToo
 						signal?.removeEventListener("abort", onAbort);
 
 						if (result.error) {
-							reject(new Error(`Failed to run fd: ${result.error.message}`));
+							reject(new Error(`运行 fd 失败: ${result.error.message}`));
 							return;
 						}
 
 						const output = result.stdout?.trim() || "";
 
 						if (result.status !== 0) {
-							const errorMsg = result.stderr?.trim() || `fd exited with code ${result.status}`;
+							const errorMsg = result.stderr?.trim() || `fd 退出，退出码为 ${result.status}`;
 							if (!output) {
 								reject(new Error(errorMsg));
 								return;
@@ -203,7 +201,7 @@ export function createFindTool(cwd: string, options?: FindToolOptions): AgentToo
 
 						if (!output) {
 							resolve({
-								content: [{ type: "text", text: "No files found matching pattern" }],
+								content: [{ type: "text", text: "未找到匹配模式的文件" }],
 								details: undefined,
 							});
 							return;
@@ -241,13 +239,13 @@ export function createFindTool(cwd: string, options?: FindToolOptions): AgentToo
 
 						if (resultLimitReached) {
 							notices.push(
-								`${effectiveLimit} results limit reached. Use limit=${effectiveLimit * 2} for more, or refine pattern`,
+								`已达到 ${effectiveLimit} 个结果的限制。使用 limit=${effectiveLimit * 2} 获取更多，或优化模式`,
 							);
 							details.resultLimitReached = effectiveLimit;
 						}
 
 						if (truncation.truncated) {
-							notices.push(`${formatSize(DEFAULT_MAX_BYTES)} limit reached`);
+							notices.push(`已达到 ${formatSize(DEFAULT_MAX_BYTES)} 的限制`);
 							details.truncation = truncation;
 						}
 

@@ -348,29 +348,29 @@ export function findTurnStartIndex(entries: SessionEntry[], entryIndex: number, 
 }
 
 export interface CutPointResult {
-	/** Index of first entry to keep */
+	/** 要保留的第一个条目的索引 */
 	firstKeptEntryIndex: number;
-	/** Index of user message that starts the turn being split, or -1 if not splitting */
+	/** 开始被分割轮次的用户消息索引，如果不分割则为 -1 */
 	turnStartIndex: number;
-	/** Whether this cut splits a turn (cut point is not a user message) */
+	/** 此切割点是否分割了轮次（切割点不是用户消息） */
 	isSplitTurn: boolean;
 }
 
 /**
- * Find the cut point in session entries that keeps approximately `keepRecentTokens`.
+ * 在会话条目中查找保留约 `keepRecentTokens` 的切割点。
  *
- * Algorithm: Walk backwards from newest, accumulating estimated message sizes.
- * Stop when we've accumulated >= keepRecentTokens. Cut at that point.
+ * 算法：从最新的条目开始向后遍历，累加估算的消息大小。
+ * 当累加的令牌数 >= keepRecentTokens 时停止。在该点进行切割。
  *
- * Can cut at user OR assistant messages (never tool results). When cutting at an
- * assistant message with tool calls, its tool results come after and will be kept.
+ * 可以在用户或助手消息处切割（绝不能在工具结果处）。在带有工具调用的助手消息处切割时，
+ * 其工具结果跟随其后并会被保留。
  *
- * Returns CutPointResult with:
- * - firstKeptEntryIndex: the entry index to start keeping from
- * - turnStartIndex: if cutting mid-turn, the user message that started that turn
- * - isSplitTurn: whether we're cutting in the middle of a turn
+ * 返回 CutPointResult，包含：
+ * - firstKeptEntryIndex: 开始保留的条目索引
+ * - turnStartIndex: 如果切割发生在轮次中，则是开始该轮次的用户消息
+ * - isSplitTurn: 我们是否正在轮次中间切割
  *
- * Only considers entries between `startIndex` and `endIndex` (exclusive).
+ * 仅考虑 `startIndex` 和 `endIndex`（不包括）之间的条目。
  */
 export function findCutPoint(
 	entries: SessionEntry[],
@@ -384,21 +384,21 @@ export function findCutPoint(
 		return { firstKeptEntryIndex: startIndex, turnStartIndex: -1, isSplitTurn: false };
 	}
 
-	// Walk backwards from newest, accumulating estimated message sizes
+	// 从最新的条目开始向后遍历，累加估算的消息大小
 	let accumulatedTokens = 0;
-	let cutIndex = cutPoints[0]; // Default: keep from first message (not header)
+	let cutIndex = cutPoints[0]; // 默认值：从第一条消息开始保留（不是 header）
 
 	for (let i = endIndex - 1; i >= startIndex; i--) {
 		const entry = entries[i];
 		if (entry.type !== "message") continue;
 
-		// Estimate this message's size
+		// 估算此消息的大小
 		const messageTokens = estimateTokens(entry.message);
 		accumulatedTokens += messageTokens;
 
-		// Check if we've exceeded the budget
+		// 检查是否超出了预算
 		if (accumulatedTokens >= keepRecentTokens) {
-			// Find the closest valid cut point at or after this entry
+			// 找到此条目处或之后的最近有效切割点
 			for (let c = 0; c < cutPoints.length; c++) {
 				if (cutPoints[c] >= i) {
 					cutIndex = cutPoints[c];
@@ -409,22 +409,22 @@ export function findCutPoint(
 		}
 	}
 
-	// Scan backwards from cutIndex to include any non-message entries (bash, settings, etc.)
+	// 从 cutIndex 向后扫描，以包含任何非消息条目（bash、设置等）
 	while (cutIndex > startIndex) {
 		const prevEntry = entries[cutIndex - 1];
-		// Stop at session header or compaction boundaries
+		// 在会话 header 或压缩边界处停止
 		if (prevEntry.type === "compaction") {
 			break;
 		}
 		if (prevEntry.type === "message") {
-			// Stop if we hit any message
+			// 如果遇到任何消息则停止
 			break;
 		}
-		// Include this non-message entry (bash, settings change, etc.)
+		// 包含此非消息条目（bash、设置更改等）
 		cutIndex--;
 	}
 
-	// Determine if this is a split turn
+	// 确定这是否是分割轮次
 	const cutEntry = entries[cutIndex];
 	const isUserMessage = cutEntry.type === "message" && cutEntry.message.role === "user";
 	const turnStartIndex = isUserMessage ? -1 : findTurnStartIndex(entries, cutIndex, startIndex);
@@ -437,80 +437,80 @@ export function findCutPoint(
 }
 
 // ============================================================================
-// Summarization
+// 摘要生成
 // ============================================================================
 
-const SUMMARIZATION_PROMPT = `The messages above are a conversation to summarize. Create a structured context checkpoint summary that another LLM will use to continue the work.
+const SUMMARIZATION_PROMPT = `上面的消息是要摘要的对话。创建一个结构化的上下文检查点摘要，供另一个 LLM 用于继续工作。
 
-Use this EXACT format:
+使用此精确格式：
 
 ## Goal
-[What is the user trying to accomplish? Can be multiple items if the session covers different tasks.]
+[用户试图完成什么？如果会话涵盖不同的任务，可以有多个项目。]
 
 ## Constraints & Preferences
-- [Any constraints, preferences, or requirements mentioned by user]
-- [Or "(none)" if none were mentioned]
+- [用户提到的任何约束、偏好或要求]
+- [如果没有提到，则为 "(none)"]
 
 ## Progress
 ### Done
-- [x] [Completed tasks/changes]
+- [x] [已完成的任务/更改]
 
 ### In Progress
-- [ ] [Current work]
+- [ ] [当前工作]
 
 ### Blocked
-- [Issues preventing progress, if any]
+- [阻碍进度的任何问题]
 
 ## Key Decisions
-- **[Decision]**: [Brief rationale]
+- **[决策]**: [简要理由]
 
 ## Next Steps
-1. [Ordered list of what should happen next]
+1. [接下来的有序步骤列表]
 
 ## Critical Context
-- [Any data, examples, or references needed to continue]
-- [Or "(none)" if not applicable]
+- [继续工作所需的任何数据、示例或引用]
+- [如果不适用，则为 "(none)"]
 
-Keep each section concise. Preserve exact file paths, function names, and error messages.`;
+保持各部分简洁。保留精确的文件路径、函数名称和错误消息。`;
 
-const UPDATE_SUMMARIZATION_PROMPT = `The messages above are NEW conversation messages to incorporate into the existing summary provided in <previous-summary> tags.
+const UPDATE_SUMMARIZATION_PROMPT = `上面的消息是要合并到 <previous-summary> 标签中提供的现有摘要中的新对话消息。
 
-Update the existing structured summary with new information. RULES:
-- PRESERVE all existing information from the previous summary
-- ADD new progress, decisions, and context from the new messages
-- UPDATE the Progress section: move items from "In Progress" to "Done" when completed
-- UPDATE "Next Steps" based on what was accomplished
-- PRESERVE exact file paths, function names, and error messages
-- If something is no longer relevant, you may remove it
+使用新信息更新现有的结构化摘要。规则：
+- 保留先前摘要中的所有现有信息
+- 添加新消息中的新进度、决策和上下文
+- 更新 Progress 部分：完成时将项目从 "In Progress" 移动到 "Done"
+- 根据已完成的内容更新 "Next Steps"
+- 保留精确的文件路径、函数名称和错误消息
+- 如果某些内容不再相关，你可以将其删除
 
-Use this EXACT format:
+使用此精确格式：
 
 ## Goal
-[Preserve existing goals, add new ones if the task expanded]
+[保留现有目标，如果任务扩展则添加新目标]
 
 ## Constraints & Preferences
-- [Preserve existing, add new ones discovered]
+- [保留现有的，添加新发现的]
 
 ## Progress
 ### Done
-- [x] [Include previously done items AND newly completed items]
+- [x] [包括之前完成的项目和新完成的项目]
 
 ### In Progress
-- [ ] [Current work - update based on progress]
+- [ ] [当前工作 - 根据进度更新]
 
 ### Blocked
-- [Current blockers - remove if resolved]
+- [当前的阻塞项 - 如果已解决则移除]
 
 ## Key Decisions
-- **[Decision]**: [Brief rationale] (preserve all previous, add new)
+- **[决策]**: [简要理由] (保留之前的所有内容，添加新内容)
 
 ## Next Steps
-1. [Update based on current state]
+1. [根据当前状态更新]
 
 ## Critical Context
-- [Preserve important context, add new if needed]
+- [保留重要上下文，如果需要则添加新上下文]
 
-Keep each section concise. Preserve exact file paths, function names, and error messages.`;
+保持各部分简洁。保留精确的文件路径、函数名称和错误消息。`;
 
 /**
  * 使用 LLM 生成对话摘要。

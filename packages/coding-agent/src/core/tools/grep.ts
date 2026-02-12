@@ -16,17 +16,17 @@ import {
 } from "./truncate.js";
 
 const grepSchema = Type.Object({
-	pattern: Type.String({ description: "Search pattern (regex or literal string)" }),
-	path: Type.Optional(Type.String({ description: "Directory or file to search (default: current directory)" })),
-	glob: Type.Optional(Type.String({ description: "Filter files by glob pattern, e.g. '*.ts' or '**/*.spec.ts'" })),
-	ignoreCase: Type.Optional(Type.Boolean({ description: "Case-insensitive search (default: false)" })),
+	pattern: Type.String({ description: "搜索模式（正则或字面字符串）" }),
+	path: Type.Optional(Type.String({ description: "要搜索的目录或文件（默认值：当前目录）" })),
+	glob: Type.Optional(Type.String({ description: "按 glob 模式过滤文件，例如 '*.ts' 或 '**/*.spec.ts'" })),
+	ignoreCase: Type.Optional(Type.Boolean({ description: "区分大小写的搜索（默认值：false）" })),
 	literal: Type.Optional(
-		Type.Boolean({ description: "Treat pattern as literal string instead of regex (default: false)" }),
+		Type.Boolean({ description: "将模式视为字面字符串而非正则表达式（默认值：false）" }),
 	),
 	context: Type.Optional(
-		Type.Number({ description: "Number of lines to show before and after each match (default: 0)" }),
+		Type.Number({ description: "在每个匹配项前后显示的行数（默认值：0）" }),
 	),
-	limit: Type.Optional(Type.Number({ description: "Maximum number of matches to return (default: 100)" })),
+	limit: Type.Optional(Type.Number({ description: "要返回的最大匹配数（默认值：100）" })),
 });
 
 export type GrepToolInput = Static<typeof grepSchema>;
@@ -40,13 +40,13 @@ export interface GrepToolDetails {
 }
 
 /**
- * Pluggable operations for the grep tool.
- * Override these to delegate search to remote systems (e.g., SSH).
+ * Grep 工具的可插拔操作。
+ * 覆盖这些操作以将搜索委托给远程系统（例如 SSH）。
  */
 export interface GrepOperations {
-	/** Check if path is a directory. Throws if path doesn't exist. */
+	/** 检查路径是否为目录。如果路径不存在则抛出异常。 */
 	isDirectory: (absolutePath: string) => Promise<boolean> | boolean;
-	/** Read file contents for context lines */
+	/** 为上下文行读取文件内容 */
 	readFile: (absolutePath: string) => Promise<string> | string;
 }
 
@@ -91,7 +91,7 @@ export function createGrepTool(cwd: string, options?: GrepToolOptions): AgentToo
 		) => {
 			return new Promise((resolve, reject) => {
 				if (signal?.aborted) {
-					reject(new Error("Operation aborted"));
+					reject(new Error("操作已中止"));
 					return;
 				}
 
@@ -107,7 +107,7 @@ export function createGrepTool(cwd: string, options?: GrepToolOptions): AgentToo
 					try {
 						const rgPath = await ensureTool("rg", true);
 						if (!rgPath) {
-							settle(() => reject(new Error("ripgrep (rg) is not available and could not be downloaded")));
+							settle(() => reject(new Error("ripgrep (rg) 不可用且无法下载")));
 							return;
 						}
 
@@ -118,7 +118,7 @@ export function createGrepTool(cwd: string, options?: GrepToolOptions): AgentToo
 						try {
 							isDirectory = await ops.isDirectory(searchPath);
 						} catch (_err) {
-							settle(() => reject(new Error(`Path not found: ${searchPath}`)));
+							settle(() => reject(new Error(`找不到路径：${searchPath}`)));
 							return;
 						}
 						const contextValue = context && context > 0 ? context : 0;
@@ -202,7 +202,7 @@ export function createGrepTool(cwd: string, options?: GrepToolOptions): AgentToo
 							const relativePath = formatPath(filePath);
 							const lines = await getFileLines(filePath);
 							if (!lines.length) {
-								return [`${relativePath}:${lineNumber}: (unable to read file)`];
+								return [`${relativePath}:${lineNumber}: (无法读取文件)`];
 							}
 
 							const block: string[] = [];
@@ -214,7 +214,7 @@ export function createGrepTool(cwd: string, options?: GrepToolOptions): AgentToo
 								const sanitized = lineText.replace(/\r/g, "");
 								const isMatchLine = current === lineNumber;
 
-								// Truncate long lines
+								// 截断长行
 								const { text: truncatedText, wasTruncated } = truncateLine(sanitized);
 								if (wasTruncated) {
 									linesTruncated = true;
@@ -230,7 +230,7 @@ export function createGrepTool(cwd: string, options?: GrepToolOptions): AgentToo
 							return block;
 						};
 
-						// Collect matches during streaming, format after
+						// 在流式传输期间收集匹配项，之后进行格式化
 						const matches: Array<{ filePath: string; lineNumber: number }> = [];
 
 						rl.on("line", (line) => {
@@ -263,61 +263,61 @@ export function createGrepTool(cwd: string, options?: GrepToolOptions): AgentToo
 
 						child.on("error", (error) => {
 							cleanup();
-							settle(() => reject(new Error(`Failed to run ripgrep: ${error.message}`)));
+							settle(() => reject(new Error(`运行 ripgrep 失败：${error.message}`)));
 						});
 
 						child.on("close", async (code) => {
 							cleanup();
 
 							if (aborted) {
-								settle(() => reject(new Error("Operation aborted")));
+								settle(() => reject(new Error("操作已中止")));
 								return;
 							}
 
 							if (!killedDueToLimit && code !== 0 && code !== 1) {
-								const errorMsg = stderr.trim() || `ripgrep exited with code ${code}`;
+								const errorMsg = stderr.trim() || `ripgrep 以代码 ${code} 退出`;
 								settle(() => reject(new Error(errorMsg)));
 								return;
 							}
 
 							if (matchCount === 0) {
 								settle(() =>
-									resolve({ content: [{ type: "text", text: "No matches found" }], details: undefined }),
+									resolve({ content: [{ type: "text", text: "未找到匹配项" }], details: undefined }),
 								);
 								return;
 							}
 
-							// Format matches (async to support remote file reading)
+							// 格式化匹配项（异步以支持远程文件读取）
 							for (const match of matches) {
 								const block = await formatBlock(match.filePath, match.lineNumber);
 								outputLines.push(...block);
 							}
 
-							// Apply byte truncation (no line limit since we already have match limit)
+							// 应用字节截断（由于我们已经有了匹配限制，因此没有行限制）
 							const rawOutput = outputLines.join("\n");
 							const truncation = truncateHead(rawOutput, { maxLines: Number.MAX_SAFE_INTEGER });
 
 							let output = truncation.content;
 							const details: GrepToolDetails = {};
 
-							// Build notices
+							// 构建通知
 							const notices: string[] = [];
 
 							if (matchLimitReached) {
 								notices.push(
-									`${effectiveLimit} matches limit reached. Use limit=${effectiveLimit * 2} for more, or refine pattern`,
+									`已达到 ${effectiveLimit} 个匹配项的限制。使用 limit=${effectiveLimit * 2} 获取更多，或优化模式`,
 								);
 								details.matchLimitReached = effectiveLimit;
 							}
 
 							if (truncation.truncated) {
-								notices.push(`${formatSize(DEFAULT_MAX_BYTES)} limit reached`);
+								notices.push(`已达到 ${formatSize(DEFAULT_MAX_BYTES)} 的限制`);
 								details.truncation = truncation;
 							}
 
 							if (linesTruncated) {
 								notices.push(
-									`Some lines truncated to ${GREP_MAX_LINE_LENGTH} chars. Use read tool to see full lines`,
+									`某些行已截断为 ${GREP_MAX_LINE_LENGTH} 个字符。使用 read 工具查看完整行`,
 								);
 								details.linesTruncated = true;
 							}

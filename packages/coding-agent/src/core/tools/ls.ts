@@ -20,15 +20,15 @@ export interface LsToolDetails {
 }
 
 /**
- * Pluggable operations for the ls tool.
- * Override these to delegate directory listing to remote systems (e.g., SSH).
+ * ls 工具的可插拔操作。
+ * 覆盖这些以将目录列表委托给远程系统（例如 SSH）。
  */
 export interface LsOperations {
-	/** Check if path exists */
+	/** 检查路径是否存在 */
 	exists: (absolutePath: string) => Promise<boolean> | boolean;
-	/** Get file/directory stats. Throws if not found. */
+	/** 获取文件/目录统计信息。如果未找到则抛出异常。 */
 	stat: (absolutePath: string) => Promise<{ isDirectory: () => boolean }> | { isDirectory: () => boolean };
-	/** Read directory entries */
+	/** 读取目录条目 */
 	readdir: (absolutePath: string) => Promise<string[]> | string[];
 }
 
@@ -39,7 +39,7 @@ const defaultLsOperations: LsOperations = {
 };
 
 export interface LsToolOptions {
-	/** Custom operations for directory listing. Default: local filesystem */
+	/** 目录列表的自定义操作。默认：本地文件系统 */
 	operations?: LsOperations;
 }
 
@@ -49,7 +49,7 @@ export function createLsTool(cwd: string, options?: LsToolOptions): AgentTool<ty
 	return {
 		name: "ls",
 		label: "ls",
-		description: `List directory contents. Returns entries sorted alphabetically, with '/' suffix for directories. Includes dotfiles. Output is truncated to ${DEFAULT_LIMIT} entries or ${DEFAULT_MAX_BYTES / 1024}KB (whichever is hit first).`,
+		description: `列出目录内容。按字母顺序排序返回条目，目录带有 '/' 后缀。包括点文件。输出被截断为 ${DEFAULT_LIMIT} 个条目或 ${DEFAULT_MAX_BYTES / 1024}KB（以先达到者为准）。`,
 		parameters: lsSchema,
 		execute: async (
 			_toolCallId: string,
@@ -58,11 +58,11 @@ export function createLsTool(cwd: string, options?: LsToolOptions): AgentTool<ty
 		) => {
 			return new Promise((resolve, reject) => {
 				if (signal?.aborted) {
-					reject(new Error("Operation aborted"));
+					reject(new Error("操作已中止"));
 					return;
 				}
 
-				const onAbort = () => reject(new Error("Operation aborted"));
+				const onAbort = () => reject(new Error("操作已中止"));
 				signal?.addEventListener("abort", onAbort, { once: true });
 
 				(async () => {
@@ -70,32 +70,32 @@ export function createLsTool(cwd: string, options?: LsToolOptions): AgentTool<ty
 						const dirPath = resolveToCwd(path || ".", cwd);
 						const effectiveLimit = limit ?? DEFAULT_LIMIT;
 
-						// Check if path exists
+						// 检查路径是否存在
 						if (!(await ops.exists(dirPath))) {
-							reject(new Error(`Path not found: ${dirPath}`));
+							reject(new Error(`找不到路径：${dirPath}`));
 							return;
 						}
 
-						// Check if path is a directory
+						// 检查路径是否为目录
 						const stat = await ops.stat(dirPath);
 						if (!stat.isDirectory()) {
-							reject(new Error(`Not a directory: ${dirPath}`));
+							reject(new Error(`不是目录：${dirPath}`));
 							return;
 						}
 
-						// Read directory entries
+						// 读取目录条目
 						let entries: string[];
 						try {
 							entries = await ops.readdir(dirPath);
 						} catch (e: any) {
-							reject(new Error(`Cannot read directory: ${e.message}`));
+							reject(new Error(`无法读取目录：${e.message}`));
 							return;
 						}
 
-						// Sort alphabetically (case-insensitive)
+						// 按字母顺序排序（不区分大小写）
 						entries.sort((a, b) => a.toLowerCase().localeCompare(b.toLowerCase()));
 
-						// Format entries with directory indicators
+						// 格式化带有目录指示符的条目
 						const results: string[] = [];
 						let entryLimitReached = false;
 
@@ -114,7 +114,7 @@ export function createLsTool(cwd: string, options?: LsToolOptions): AgentTool<ty
 									suffix = "/";
 								}
 							} catch {
-								// Skip entries we can't stat
+								// 跳过无法获取状态的条目
 								continue;
 							}
 
@@ -124,32 +124,32 @@ export function createLsTool(cwd: string, options?: LsToolOptions): AgentTool<ty
 						signal?.removeEventListener("abort", onAbort);
 
 						if (results.length === 0) {
-							resolve({ content: [{ type: "text", text: "(empty directory)" }], details: undefined });
+							resolve({ content: [{ type: "text", text: "(空目录)" }], details: undefined });
 							return;
 						}
 
-						// Apply byte truncation (no line limit since we already have entry limit)
+						// 应用字节截断（因为已经有条目限制，所以没有行数限制）
 						const rawOutput = results.join("\n");
 						const truncation = truncateHead(rawOutput, { maxLines: Number.MAX_SAFE_INTEGER });
 
 						let output = truncation.content;
 						const details: LsToolDetails = {};
 
-						// Build notices
+						// 构建通知
 						const notices: string[] = [];
 
 						if (entryLimitReached) {
-							notices.push(`${effectiveLimit} entries limit reached. Use limit=${effectiveLimit * 2} for more`);
+							notices.push(`已达到 ${effectiveLimit} 个条目的限制。使用 limit=${effectiveLimit * 2} 获取更多`);
 							details.entryLimitReached = effectiveLimit;
 						}
 
 						if (truncation.truncated) {
-							notices.push(`${formatSize(DEFAULT_MAX_BYTES)} limit reached`);
+							notices.push(`已达到 ${formatSize(DEFAULT_MAX_BYTES)} 的限制`);
 							details.truncation = truncation;
 						}
 
 						if (notices.length > 0) {
-							output += `\n\n[${notices.join(". ")}]`;
+							output += `\n\n[${notices.join("。")}]`;
 						}
 
 						resolve({

@@ -75,7 +75,7 @@ import type { BashOperations } from "./tools/bash.js";
 import { createAllTools } from "./tools/index.js";
 
 // ============================================================================
-// Skill Block Parsing
+// 技能块解析
 // ============================================================================
 
 /** 来自用户消息的已解析技能块 */
@@ -119,7 +119,7 @@ export type AgentSessionEvent =
 export type AgentSessionEventListener = (event: AgentSessionEvent) => void;
 
 // ============================================================================
-// Types
+// 类型
 // ============================================================================
 
 export interface AgentSessionConfig {
@@ -190,7 +190,7 @@ export interface SessionStats {
 }
 
 // ============================================================================
-// Constants
+// 常量
 // ============================================================================
 
 /** 标准思考级别 */
@@ -200,7 +200,7 @@ const THINKING_LEVELS: ThinkingLevel[] = ["off", "minimal", "low", "medium", "hi
 const THINKING_LEVELS_WITH_XHIGH: ThinkingLevel[] = ["off", "minimal", "low", "medium", "high", "xhigh"];
 
 // ============================================================================
-// AgentSession Class
+// AgentSession 类
 // ============================================================================
 
 export class AgentSession {
@@ -293,7 +293,7 @@ export class AgentSession {
 	}
 
 	// =========================================================================
-	// Event Subscription
+	// 事件订阅
 	// =========================================================================
 
 	/** 向所有监听器发出事件 */
@@ -494,7 +494,7 @@ export class AgentSession {
 	}
 
 	// =========================================================================
-	// Read-only State Access
+	// 只读状态访问
 	// =========================================================================
 
 	/** 完整代理状态 */
@@ -639,7 +639,7 @@ export class AgentSession {
 	}
 
 	// =========================================================================
-	// Prompting
+	// 提示词发送
 	// =========================================================================
 
 	/**
@@ -1133,7 +1133,7 @@ export class AgentSession {
 	}
 
 	// =========================================================================
-	// Model Management
+	// 模型管理
 	// =========================================================================
 
 	private async _emitModelSelect(
@@ -1159,7 +1159,7 @@ export class AgentSession {
 	async setModel(model: Model<any>): Promise<void> {
 		const apiKey = await this._modelRegistry.getApiKey(model);
 		if (!apiKey) {
-			throw new Error(`No API key for ${model.provider}/${model.id}`);
+			throw new Error(`找不到 ${model.provider}/${model.id} 的 API 密钥`);
 		}
 
 		const previousModel = this.model;
@@ -1247,7 +1247,7 @@ export class AgentSession {
 
 		const apiKey = await this._modelRegistry.getApiKey(nextModel);
 		if (!apiKey) {
-			throw new Error(`No API key for ${nextModel.provider}/${nextModel.id}`);
+			throw new Error(`找不到 ${nextModel.provider}/${nextModel.id} 的 API 密钥`);
 		}
 
 		this.agent.setModel(nextModel);
@@ -1263,7 +1263,7 @@ export class AgentSession {
 	}
 
 	// =========================================================================
-	// Thinking Level Management
+	// 思考级别管理
 	// =========================================================================
 
 	/**
@@ -1344,7 +1344,7 @@ export class AgentSession {
 	}
 
 	// =========================================================================
-	// Queue Mode Management
+	// 队列模式管理
 	// =========================================================================
 
 	/**
@@ -1366,7 +1366,7 @@ export class AgentSession {
 	}
 
 	// =========================================================================
-	// Compaction
+	// 压缩
 	// =========================================================================
 
 	/**
@@ -2021,7 +2021,7 @@ export class AgentSession {
 	}
 
 	// =========================================================================
-	// Auto-Retry
+	// 自动重试
 	// =========================================================================
 
 	/**
@@ -2154,7 +2154,7 @@ export class AgentSession {
 	}
 
 	// =========================================================================
-	// Bash Execution
+	// Bash 执行
 	// =========================================================================
 
 	/**
@@ -2260,7 +2260,7 @@ export class AgentSession {
 	}
 
 	// =========================================================================
-	// Session Management
+	// 会话管理
 	// =========================================================================
 
 	/**
@@ -2364,7 +2364,7 @@ export class AgentSession {
 		const selectedEntry = this.sessionManager.getEntry(entryId);
 
 		if (!selectedEntry || selectedEntry.type !== "message" || selectedEntry.message.role !== "user") {
-			throw new Error("Invalid entry ID for forking");
+			throw new Error("用于分叉的条目 ID 无效");
 		}
 
 		const selectedText = this._extractUserMessageText(selectedEntry.message.content);
@@ -2415,7 +2415,7 @@ export class AgentSession {
 	}
 
 	// =========================================================================
-	// Tree Navigation
+	// 树状导航
 	// =========================================================================
 
 	/**
@@ -2442,12 +2442,12 @@ export class AgentSession {
 
 		// 总结需要模型
 		if (options.summarize && !this.model) {
-			throw new Error("No model available for summarization");
+			throw new Error("没有可用于总结的模型");
 		}
 
 		const targetEntry = this.sessionManager.getEntry(targetId);
 		if (!targetEntry) {
-			throw new Error(`Entry ${targetId} not found`);
+			throw new Error(`找不到条目 ${targetId}`);
 		}
 
 		// 收集要总结的条目（从旧叶子到共同祖先）
@@ -2514,7 +2514,7 @@ export class AgentSession {
 			const model = this.model!;
 			const apiKey = await this._modelRegistry.getApiKey(model);
 			if (!apiKey) {
-				throw new Error(`No API key for ${model.provider}`);
+				throw new Error(`找不到 ${model.provider} 的 API 密钥`);
 			}
 			const branchSummarySettings = this.settingsManager.getBranchSummarySettings();
 			const result = await generateBranchSummary(entriesToSummarize, {
@@ -2735,7 +2735,7 @@ export class AgentSession {
 	}
 
 	// =========================================================================
-	// Utilities
+	// 实用程序
 	// =========================================================================
 
 	/**
@@ -2768,7 +2768,7 @@ export class AgentSession {
 	}
 
 	// =========================================================================
-	// Extension System
+	// 扩展系统
 	// =========================================================================
 
 	/**

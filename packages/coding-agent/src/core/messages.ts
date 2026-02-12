@@ -66,7 +66,7 @@ export interface CompactionSummaryMessage {
 	timestamp: number;
 }
 
-// Extend CustomAgentMessages via declaration merging
+// 通过声明合并扩展 CustomAgentMessages
 declare module "@mariozechner/pi-agent-core" {
 	interface CustomAgentMessages {
 		bashExecution: BashExecutionMessage;
@@ -80,19 +80,19 @@ declare module "@mariozechner/pi-agent-core" {
  * 将 BashExecutionMessage 转换为 LLM 上下文的用户消息文本。
  */
 export function bashExecutionToText(msg: BashExecutionMessage): string {
-	let text = `Ran \`${msg.command}\`\n`;
+	let text = `运行 \`${msg.command}\`\n`;
 	if (msg.output) {
 		text += `\`\`\`\n${msg.output}\n\`\`\``;
 	} else {
-		text += "(no output)";
+		text += "(无输出)";
 	}
 	if (msg.cancelled) {
-		text += "\n\n(command cancelled)";
+		text += "\n\n(命令已取消)";
 	} else if (msg.exitCode !== null && msg.exitCode !== undefined && msg.exitCode !== 0) {
-		text += `\n\nCommand exited with code ${msg.exitCode}`;
+		text += `\n\n命令退出，代码为 ${msg.exitCode}`;
 	}
 	if (msg.truncated && msg.fullOutputPath) {
-		text += `\n\n[Output truncated. Full output: ${msg.fullOutputPath}]`;
+		text += `\n\n[输出已截断。完整输出：${msg.fullOutputPath}]`;
 	}
 	return text;
 }

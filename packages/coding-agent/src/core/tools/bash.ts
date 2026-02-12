@@ -9,7 +9,7 @@ import { getShellConfig, getShellEnv, killProcessTree } from "../../utils/shell.
 import { DEFAULT_MAX_BYTES, DEFAULT_MAX_LINES, formatSize, type TruncationResult, truncateTail } from "./truncate.js";
 
 /**
- * Generate a unique temp file path for bash output
+ * 为 bash 输出生成唯一的临时文件路径
  */
 function getTempFilePath(): string {
 	const id = randomBytes(8).toString("hex");
@@ -17,8 +17,8 @@ function getTempFilePath(): string {
 }
 
 const bashSchema = Type.Object({
-	command: Type.String({ description: "Bash command to execute" }),
-	timeout: Type.Optional(Type.Number({ description: "Timeout in seconds (optional, no default timeout)" })),
+	command: Type.String({ description: "要执行的 bash 命令" }),
+	timeout: Type.Optional(Type.Number({ description: "以秒为单位的超时时间（可选，无默认超时）" })),
 });
 
 export type BashToolInput = Static<typeof bashSchema>;
@@ -53,7 +53,7 @@ export interface BashOperations {
 }
 
 /**
- * Default bash operations using local shell
+ * 使用本地 shell 的默认 bash 操作
  */
 const defaultBashOperations: BashOperations = {
 	exec: (command, cwd, { onData, signal, timeout, env }) => {
@@ -61,7 +61,7 @@ const defaultBashOperations: BashOperations = {
 			const { shell, args } = getShellConfig();
 
 			if (!existsSync(cwd)) {
-				reject(new Error(`Working directory does not exist: ${cwd}\nCannot execute bash commands.`));
+				reject(new Error(`工作目录不存在：${cwd}\n无法执行 bash 命令。`));
 				return;
 			}
 
@@ -155,11 +155,11 @@ function resolveSpawnContext(command: string, cwd: string, spawnHook?: BashSpawn
 }
 
 export interface BashToolOptions {
-	/** Custom operations for command execution. Default: local shell */
+	/** 命令执行的自定义操作。默认：本地 shell */
 	operations?: BashOperations;
-	/** Command prefix prepended to every command (e.g., "shopt -s expand_aliases" for alias support) */
+	/** 在每个命令之前附加的命令前缀（例如，别名支持的 "shopt -s expand_aliases"） */
 	commandPrefix?: string;
-	/** Hook to adjust command, cwd, or env before execution */
+	/** 执行前调整命令、cwd 或 env 的钩子 */
 	spawnHook?: BashSpawnHook;
 }
 
@@ -245,20 +245,20 @@ export function createBashTool(cwd: string, options?: BashToolOptions): AgentToo
 					env: spawnContext.env,
 				})
 					.then(({ exitCode }) => {
-						// Close temp file stream
+						// 关闭临时文件流
 						if (tempFileStream) {
 							tempFileStream.end();
 						}
 
-						// Combine all buffered chunks
+						// 合并所有缓冲的块
 						const fullBuffer = Buffer.concat(chunks);
 						const fullOutput = fullBuffer.toString("utf-8");
 
-						// Apply tail truncation
+						// 应用尾部截断
 						const truncation = truncateTail(fullOutput);
-						let outputText = truncation.content || "(no output)";
+						let outputText = truncation.content || "(无输出)";
 
-						// Build details with truncation info
+						// 构建包含截断信息的详情
 						let details: BashToolDetails | undefined;
 
 						if (truncation.truncated) {
@@ -267,46 +267,46 @@ export function createBashTool(cwd: string, options?: BashToolOptions): AgentToo
 								fullOutputPath: tempFilePath,
 							};
 
-							// Build actionable notice
+							// 构建可操作的通知
 							const startLine = truncation.totalLines - truncation.outputLines + 1;
 							const endLine = truncation.totalLines;
 
 							if (truncation.lastLinePartial) {
-								// Edge case: last line alone > 30KB
+								// 边缘情况：最后一行本身 > 30KB
 								const lastLineSize = formatSize(Buffer.byteLength(fullOutput.split("\n").pop() || "", "utf-8"));
-								outputText += `\n\n[Showing last ${formatSize(truncation.outputBytes)} of line ${endLine} (line is ${lastLineSize}). Full output: ${tempFilePath}]`;
+								outputText += `\n\n[显示第 ${endLine} 行的最后 ${formatSize(truncation.outputBytes)}（该行大小为 ${lastLineSize}）。完整输出：${tempFilePath}]`;
 							} else if (truncation.truncatedBy === "lines") {
-								outputText += `\n\n[Showing lines ${startLine}-${endLine} of ${truncation.totalLines}. Full output: ${tempFilePath}]`;
+								outputText += `\n\n[显示 ${truncation.totalLines} 行中的第 ${startLine}-${endLine} 行。完整输出：${tempFilePath}]`;
 							} else {
-								outputText += `\n\n[Showing lines ${startLine}-${endLine} of ${truncation.totalLines} (${formatSize(DEFAULT_MAX_BYTES)} limit). Full output: ${tempFilePath}]`;
+								outputText += `\n\n[显示 ${truncation.totalLines} 行中的第 ${startLine}-${endLine} 行（限制为 ${formatSize(DEFAULT_MAX_BYTES)}）。完整输出：${tempFilePath}]`;
 							}
 						}
 
 						if (exitCode !== 0 && exitCode !== null) {
-							outputText += `\n\nCommand exited with code ${exitCode}`;
+							outputText += `\n\n命令退出，代码为 ${exitCode}`;
 							reject(new Error(outputText));
 						} else {
 							resolve({ content: [{ type: "text", text: outputText }], details });
 						}
 					})
 					.catch((err: Error) => {
-						// Close temp file stream
+						// 关闭临时文件流
 						if (tempFileStream) {
 							tempFileStream.end();
 						}
 
-						// Combine all buffered chunks for error output
+						// 合并所有缓冲的块以输出错误
 						const fullBuffer = Buffer.concat(chunks);
 						let output = fullBuffer.toString("utf-8");
 
 						if (err.message === "aborted") {
 							if (output) output += "\n\n";
-							output += "Command aborted";
+							output += "命令已中止";
 							reject(new Error(output));
 						} else if (err.message.startsWith("timeout:")) {
 							const timeoutSecs = err.message.split(":")[1];
 							if (output) output += "\n\n";
-							output += `Command timed out after ${timeoutSecs} seconds`;
+							output += `命令在 ${timeoutSecs} 秒后超时`;
 							reject(new Error(output));
 						} else {
 							reject(err);

@@ -12,13 +12,13 @@ const writeSchema = Type.Object({
 export type WriteToolInput = Static<typeof writeSchema>;
 
 /**
- * Pluggable operations for the write tool.
- * Override these to delegate file writing to remote systems (e.g., SSH).
+ * write 工具的可插拔操作。
+ * 覆盖这些以将文件写入委托给远程系统（例如 SSH）。
  */
 export interface WriteOperations {
-	/** Write content to a file */
+	/** 将内容写入文件 */
 	writeFile: (absolutePath: string, content: string) => Promise<void>;
-	/** Create directory (recursively) */
+	/** 创建目录（递归） */
 	mkdir: (dir: string) => Promise<void>;
 }
 
@@ -28,7 +28,7 @@ const defaultWriteOperations: WriteOperations = {
 };
 
 export interface WriteToolOptions {
-	/** Custom operations for file writing. Default: local filesystem */
+	/** 文件写入的自定义操作。默认：本地文件系统 */
 	operations?: WriteOperations;
 }
 
@@ -39,7 +39,7 @@ export function createWriteTool(cwd: string, options?: WriteToolOptions): AgentT
 		name: "write",
 		label: "write",
 		description:
-			"Write content to a file. Creates the file if it doesn't exist, overwrites if it does. Automatically creates parent directories.",
+			"将内容写入文件。如果文件不存在则创建，如果存在则覆盖。自动创建父目录。",
 		parameters: writeSchema,
 		execute: async (
 			_toolCallId: string,
@@ -51,54 +51,54 @@ export function createWriteTool(cwd: string, options?: WriteToolOptions): AgentT
 
 			return new Promise<{ content: Array<{ type: "text"; text: string }>; details: undefined }>(
 				(resolve, reject) => {
-					// Check if already aborted
+					// 检查是否已中止
 					if (signal?.aborted) {
-						reject(new Error("Operation aborted"));
+						reject(new Error("操作已中止"));
 						return;
 					}
 
 					let aborted = false;
 
-					// Set up abort handler
+					// 设置中止处理程序
 					const onAbort = () => {
 						aborted = true;
-						reject(new Error("Operation aborted"));
+						reject(new Error("操作已中止"));
 					};
 
 					if (signal) {
 						signal.addEventListener("abort", onAbort, { once: true });
 					}
 
-					// Perform the write operation
+					// 执行写入操作
 					(async () => {
 						try {
-							// Create parent directories if needed
+							// 如果需要，创建父目录
 							await ops.mkdir(dir);
 
-							// Check if aborted before writing
+							// 写入前检查是否已中止
 							if (aborted) {
 								return;
 							}
 
-							// Write the file
+							// 写入文件
 							await ops.writeFile(absolutePath, content);
 
-							// Check if aborted after writing
+							// 写入后检查是否已中止
 							if (aborted) {
 								return;
 							}
 
-							// Clean up abort handler
+							// 清理中止处理程序
 							if (signal) {
 								signal.removeEventListener("abort", onAbort);
 							}
 
 							resolve({
-								content: [{ type: "text", text: `Successfully wrote ${content.length} bytes to ${path}` }],
+								content: [{ type: "text", text: `成功将 ${content.length} 字节写入 ${path}` }],
 								details: undefined,
 							});
 						} catch (error: any) {
-							// Clean up abort handler
+							// 清理中止处理程序
 							if (signal) {
 								signal.removeEventListener("abort", onAbort);
 							}
