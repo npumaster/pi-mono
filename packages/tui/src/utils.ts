@@ -27,32 +27,32 @@ function couldBeEmoji(segment: string): boolean {
 	);
 }
 
-// Regexes for character classification (same as string-width library)
+// 字符分类的正规表达式（与 string-width 库相同）
 const zeroWidthRegex = /^(?:\p{Default_Ignorable_Code_Point}|\p{Control}|\p{Mark}|\p{Surrogate})+$/v;
 const leadingNonPrintingRegex = /^[\p{Default_Ignorable_Code_Point}\p{Control}\p{Format}\p{Mark}\p{Surrogate}]+/v;
 const rgiEmojiRegex = /^\p{RGI_Emoji}$/v;
 
-// Cache for non-ASCII strings
+// 非 ASCII 字符串的缓存
 const WIDTH_CACHE_SIZE = 512;
 const widthCache = new Map<string, number>();
 
 /**
- * Calculate the terminal width of a single grapheme cluster.
- * Based on code from the string-width library, but includes a possible-emoji
- * check to avoid running the RGI_Emoji regex unnecessarily.
+ * 计算单个字形集群的终端宽度。
+ * 基于 string-width 库的代码，但包含一个可能的表情符号
+ * 检查，以避免不必要地运行 RGI_Emoji 正则表达式。
  */
 function graphemeWidth(segment: string): number {
-	// Zero-width clusters
+	// 零宽集群
 	if (zeroWidthRegex.test(segment)) {
 		return 0;
 	}
 
-	// Emoji check with pre-filter
+	// 带有预过滤的表情符号检查
 	if (couldBeEmoji(segment) && rgiEmojiRegex.test(segment)) {
 		return 2;
 	}
 
-	// Get base visible codepoint
+	// 获取基础可见代码点
 	const base = segment.replace(leadingNonPrintingRegex, "");
 	const cp = base.codePointAt(0);
 	if (cp === undefined) {
@@ -61,7 +61,7 @@ function graphemeWidth(segment: string): number {
 
 	let width = eastAsianWidth(cp);
 
-	// Trailing halfwidth/fullwidth forms
+	// 尾随的半角/全角形式
 	if (segment.length > 1) {
 		for (const char of segment.slice(1)) {
 			const c = char.codePointAt(0)!;
@@ -75,14 +75,14 @@ function graphemeWidth(segment: string): number {
 }
 
 /**
- * Calculate the visible width of a string in terminal columns.
+ * 计算字符串在终端列中的可见宽度。
  */
 export function visibleWidth(str: string): number {
 	if (str.length === 0) {
 		return 0;
 	}
 
-	// Fast path: pure ASCII printable
+	// 快速路径：纯 ASCII 可打印字符
 	let isPureAscii = true;
 	for (let i = 0; i < str.length; i++) {
 		const code = str.charCodeAt(i);
@@ -95,33 +95,33 @@ export function visibleWidth(str: string): number {
 		return str.length;
 	}
 
-	// Check cache
+	// 检查缓存
 	const cached = widthCache.get(str);
 	if (cached !== undefined) {
 		return cached;
 	}
 
-	// Normalize: tabs to 3 spaces, strip ANSI escape codes
+	// 规范化：制表符转换为 3 个空格，剥离 ANSI 转义代码
 	let clean = str;
 	if (str.includes("\t")) {
 		clean = clean.replace(/\t/g, "   ");
 	}
 	if (clean.includes("\x1b")) {
-		// Strip SGR codes (\x1b[...m) and cursor codes (\x1b[...G/K/H/J)
+		// 剥离 SGR 代码 (\x1b[...m) 和光标代码 (\x1b[...G/K/H/J)
 		clean = clean.replace(/\x1b\[[0-9;]*[mGKHJ]/g, "");
-		// Strip OSC 8 hyperlinks: \x1b]8;;URL\x07 and \x1b]8;;\x07
+		// 剥离 OSC 8 超链接：\x1b]8;;URL\x07 和 \x1b]8;;\x07
 		clean = clean.replace(/\x1b\]8;;[^\x07]*\x07/g, "");
-		// Strip APC sequences: \x1b_...\x07 or \x1b_...\x1b\\ (used for cursor marker)
+		// 剥离 APC 序列：\x1b_...\x07 或 \x1b_...\x1b\\（用于光标标记）
 		clean = clean.replace(/\x1b_[^\x07\x1b]*(?:\x07|\x1b\\)/g, "");
 	}
 
-	// Calculate width
+	// 计算宽度
 	let width = 0;
 	for (const { segment } of segmenter.segment(clean)) {
 		width += graphemeWidth(segment);
 	}
 
-	// Cache result
+	// 缓存结果
 	if (widthCache.size >= WIDTH_CACHE_SIZE) {
 		const firstKey = widthCache.keys().next().value;
 		if (firstKey !== undefined) {
@@ -134,14 +134,14 @@ export function visibleWidth(str: string): number {
 }
 
 /**
- * Extract ANSI escape sequences from a string at the given position.
+ * 从给定位置的字符串中提取 ANSI 转义序列。
  */
 export function extractAnsiCode(str: string, pos: number): { code: string; length: number } | null {
 	if (pos >= str.length || str[pos] !== "\x1b") return null;
 
 	const next = str[pos + 1];
 
-	// CSI sequence: ESC [ ... m/G/K/H/J
+	// CSI 序列：ESC [ ... m/G/K/H/J
 	if (next === "[") {
 		let j = pos + 2;
 		while (j < str.length && !/[mGKHJ]/.test(str[j]!)) j++;
@@ -149,8 +149,8 @@ export function extractAnsiCode(str: string, pos: number): { code: string; lengt
 		return null;
 	}
 
-	// OSC sequence: ESC ] ... BEL or ESC ] ... ST (ESC \)
-	// Used for hyperlinks (OSC 8), window titles, etc.
+	// OSC 序列：ESC ] ... BEL 或 ESC ] ... ST (ESC \)
+	// 用于超链接 (OSC 8)、窗口标题等。
 	if (next === "]") {
 		let j = pos + 2;
 		while (j < str.length) {
@@ -161,8 +161,8 @@ export function extractAnsiCode(str: string, pos: number): { code: string; lengt
 		return null;
 	}
 
-	// APC sequence: ESC _ ... BEL or ESC _ ... ST (ESC \)
-	// Used for cursor marker and application-specific commands
+	// APC 序列：ESC _ ... BEL 或 ESC _ ... ST (ESC \)
+	// 用于光标标记和特定于应用程序的命令
 	if (next === "_") {
 		let j = pos + 2;
 		while (j < str.length) {
@@ -177,10 +177,10 @@ export function extractAnsiCode(str: string, pos: number): { code: string; lengt
 }
 
 /**
- * Track active ANSI SGR codes to preserve styling across line breaks.
+ * 跟踪激活的 ANSI SGR 代码，以在换行时保留样式。
  */
 class AnsiCodeTracker {
-	// Track individual attributes separately so we can reset them specifically
+	// 分别跟踪单个属性，以便我们可以专门重置它们
 	private bold = false;
 	private dim = false;
 	private italic = false;
@@ -189,15 +189,15 @@ class AnsiCodeTracker {
 	private inverse = false;
 	private hidden = false;
 	private strikethrough = false;
-	private fgColor: string | null = null; // Stores the full code like "31" or "38;5;240"
-	private bgColor: string | null = null; // Stores the full code like "41" or "48;5;240"
+	private fgColor: string | null = null; // 存储完整代码，如 "31" 或 "38;5;240"
+	private bgColor: string | null = null; // 存储完整代码，如 "41" 或 "48;5;240"
 
 	process(ansiCode: string): void {
 		if (!ansiCode.endsWith("m")) {
 			return;
 		}
 
-		// Extract the parameters between \x1b[ and m
+		// 提取 \x1b[ 和 m 之间的参数
 		const match = ansiCode.match(/\x1b\[([\d;]*)m/);
 		if (!match) return;
 

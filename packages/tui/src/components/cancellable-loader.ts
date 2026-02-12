@@ -2,8 +2,8 @@ import { getEditorKeybindings } from "../keybindings.js";
 import { Loader } from "./loader.js";
 
 /**
- * Loader that can be cancelled with Escape.
- * Extends Loader with an AbortSignal for cancelling async operations.
+ * 可以通过 Escape 键取消的加载器。
+ * 扩展了 Loader，带有一个用于取消异步操作的 AbortSignal。
  *
  * @example
  * const loader = new CancellableLoader(tui, cyan, dim, "Working...");
@@ -13,15 +13,15 @@ import { Loader } from "./loader.js";
 export class CancellableLoader extends Loader {
 	private abortController = new AbortController();
 
-	/** Called when user presses Escape */
+	/** 当用户按下 Escape 键时调用 */
 	onAbort?: () => void;
 
-	/** AbortSignal that is aborted when user presses Escape */
+	/** 用户按下 Escape 键时中止的 AbortSignal */
 	get signal(): AbortSignal {
 		return this.abortController.signal;
 	}
 
-	/** Whether the loader was aborted */
+	/** 加载器是否已中止 */
 	get aborted(): boolean {
 		return this.abortController.signal.aborted;
 	}

@@ -9,7 +9,7 @@ type RenderCache = {
 };
 
 /**
- * Box component - a container that applies padding and background to all children
+ * Box 组件 - 一个为所有子组件应用内边距（padding）和背景的容器。
  */
 export class Box implements Component {
 	children: Component[] = [];
@@ -17,7 +17,7 @@ export class Box implements Component {
 	private paddingY: number;
 	private bgFn?: (text: string) => string;
 
-	// Cache for rendered output
+	// 渲染输出的缓存
 	private cache?: RenderCache;
 
 	constructor(paddingX = 1, paddingY = 1, bgFn?: (text: string) => string) {
@@ -46,7 +46,7 @@ export class Box implements Component {
 
 	setBgFn(bgFn?: (text: string) => string): void {
 		this.bgFn = bgFn;
-		// Don't invalidate here - we'll detect bgFn changes by sampling output
+		// 此处不失效 - 我们将通过采样输出来检测 bgFn 的变化
 	}
 
 	private invalidateCache(): void {
@@ -79,7 +79,7 @@ export class Box implements Component {
 		const contentWidth = Math.max(1, width - this.paddingX * 2);
 		const leftPad = " ".repeat(this.paddingX);
 
-		// Render all children
+		// 渲染所有子组件
 		const childLines: string[] = [];
 		for (const child of this.children) {
 			const lines = child.render(contentWidth);
@@ -92,33 +92,33 @@ export class Box implements Component {
 			return [];
 		}
 
-		// Check if bgFn output changed by sampling
+		// 通过采样检查 bgFn 输出是否发生变化
 		const bgSample = this.bgFn ? this.bgFn("test") : undefined;
 
-		// Check cache validity
+		// 检查缓存有效性
 		if (this.matchCache(width, childLines, bgSample)) {
 			return this.cache!.lines;
 		}
 
-		// Apply background and padding
+		// 应用背景和内边距
 		const result: string[] = [];
 
-		// Top padding
+		// 顶部内边距
 		for (let i = 0; i < this.paddingY; i++) {
 			result.push(this.applyBg("", width));
 		}
 
-		// Content
+		// 内容
 		for (const line of childLines) {
 			result.push(this.applyBg(line, width));
 		}
 
-		// Bottom padding
+		// 底部内边距
 		for (let i = 0; i < this.paddingY; i++) {
 			result.push(this.applyBg("", width));
 		}
 
-		// Update cache
+		// 更新缓存
 		this.cache = { childLines, width, bgSample, lines: result };
 
 		return result;

@@ -1,20 +1,20 @@
 /**
- * Ring buffer for Emacs-style kill/yank operations.
+ * 用于 Emacs 风格的剪切/粘贴（kill/yank）操作的环形缓冲区。
  *
- * Tracks killed (deleted) text entries. Consecutive kills can accumulate
- * into a single entry. Supports yank (paste most recent) and yank-pop
- * (cycle through older entries).
+ * 跟踪被剪切（删除）的文本条目。连续的剪切可以累积
+ * 到单个条目中。支持粘贴（yank，粘贴最近的内容）和粘贴循环
+ * （yank-pop，循环浏览较旧的条目）。
  */
 export class KillRing {
 	private ring: string[] = [];
 
 	/**
-	 * Add text to the kill ring.
+	 * 将文本添加到剪切环。
 	 *
-	 * @param text - The killed text to add
-	 * @param opts - Push options
-	 * @param opts.prepend - If accumulating, prepend (backward deletion) or append (forward deletion)
-	 * @param opts.accumulate - Merge with the most recent entry instead of creating a new one
+	 * @param text - 要添加的被剪切文本
+	 * @param opts - 推入选项
+	 * @param opts.prepend - 如果是累积模式，是前置（向后删除）还是追加（向前删除）
+	 * @param opts.accumulate - 与最近的条目合并，而不是创建新条目
 	 */
 	push(text: string, opts: { prepend: boolean; accumulate?: boolean }): void {
 		if (!text) return;
@@ -27,12 +27,12 @@ export class KillRing {
 		}
 	}
 
-	/** Get most recent entry without modifying the ring. */
+	/** 获取最近的条目而不修改剪切环。 */
 	peek(): string | undefined {
 		return this.ring.length > 0 ? this.ring[this.ring.length - 1] : undefined;
 	}
 
-	/** Move last entry to front (for yank-pop cycling). */
+	/** 将最后一个条目移到最前面（用于 yank-pop 循环）。 */
 	rotate(): void {
 		if (this.ring.length > 1) {
 			const last = this.ring.pop()!;

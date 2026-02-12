@@ -10,8 +10,8 @@ import { SelectList, type SelectListTheme } from "./select-list.js";
 const segmenter = getSegmenter();
 
 /**
- * Represents a chunk of text for word-wrap layout.
- * Tracks both the text content and its position in the original line.
+ * 表示用于自动换行布局的一段文本。
+ * 跟踪文本内容及其在原始行中的位置。
  */
 export interface TextChunk {
 	text: string;
@@ -20,13 +20,12 @@ export interface TextChunk {
 }
 
 /**
- * Split a line into word-wrapped chunks.
- * Wraps at word boundaries when possible, falling back to character-level
- * wrapping for words longer than the available width.
+ * 将一行文本拆分为自动换行的分块。
+ * 尽可能在单词边界处换行，对于长度超过可用宽度的单词，则回退到字符级换行。
  *
- * @param line - The text line to wrap
- * @param maxWidth - Maximum visible width per chunk
- * @returns Array of chunks with text and position information
+ * @param line - 要换行的文本行
+ * @param maxWidth - 每个分块的最大可见宽度
+ * @returns 包含文本和位置信息的分块数组
  */
 export function wordWrapLine(line: string, maxWidth: number): TextChunk[] {
 	if (!line || maxWidth <= 0) {
@@ -44,8 +43,8 @@ export function wordWrapLine(line: string, maxWidth: number): TextChunk[] {
 	let currentWidth = 0;
 	let chunkStart = 0;
 
-	// Wrap opportunity: the position after the last whitespace before a non-whitespace
-	// grapheme, i.e. where a line break is allowed.
+	// 换行机会：非空白字符之前的最后一个空白字符之后的位置，
+	// 即允许换行的位置。
 	let wrapOppIndex = -1;
 	let wrapOppWidth = 0;
 
@@ -56,15 +55,15 @@ export function wordWrapLine(line: string, maxWidth: number): TextChunk[] {
 		const charIndex = seg.index;
 		const isWs = isWhitespaceChar(grapheme);
 
-		// Overflow check before advancing.
+		// 推进前检查是否溢出。
 		if (currentWidth + gWidth > maxWidth) {
 			if (wrapOppIndex >= 0) {
-				// Backtrack to last wrap opportunity.
+				// 回退到上一个换行机会。
 				chunks.push({ text: line.slice(chunkStart, wrapOppIndex), startIndex: chunkStart, endIndex: wrapOppIndex });
 				chunkStart = wrapOppIndex;
 				currentWidth -= wrapOppWidth;
 			} else if (chunkStart < charIndex) {
-				// No wrap opportunity: force-break at current position.
+				// 没有换行机会：在当前位置强制换行。
 				chunks.push({ text: line.slice(chunkStart, charIndex), startIndex: chunkStart, endIndex: charIndex });
 				chunkStart = charIndex;
 				currentWidth = 0;
@@ -72,12 +71,12 @@ export function wordWrapLine(line: string, maxWidth: number): TextChunk[] {
 			wrapOppIndex = -1;
 		}
 
-		// Advance.
+		// 推进。
 		currentWidth += gWidth;
 
-		// Record wrap opportunity: whitespace followed by non-whitespace.
-		// Multiple spaces join (no break between them); the break point is
-		// after the last space before the next word.
+		// 记录换行机会：空白字符后跟非空白字符。
+		// 多个空格合并（它们之间不换行）；换行点
+		// 在下一个单词之前的最后一个空格之后。
 		const next = segments[i + 1];
 		if (isWs && next && !isWhitespaceChar(next.segment)) {
 			wrapOppIndex = next.index;
@@ -85,41 +84,41 @@ export function wordWrapLine(line: string, maxWidth: number): TextChunk[] {
 		}
 	}
 
-	// Push final chunk.
+	// 推入最后一个分块。
 	chunks.push({ text: line.slice(chunkStart), startIndex: chunkStart, endIndex: line.length });
 
 	return chunks;
 }
 
-// Kitty CSI-u sequences for printable keys, including optional shifted/base codepoints.
+// Kitty CSI-u 序列，用于可打印按键，包括可选的位移（shifted）/基础码位。
 const KITTY_CSI_U_REGEX = /^\x1b\[(\d+)(?::(\d*))?(?::(\d+))?(?:;(\d+))?(?::(\d+))?u$/;
 const KITTY_MOD_SHIFT = 1;
 const KITTY_MOD_ALT = 2;
 const KITTY_MOD_CTRL = 4;
 
-// Decode a printable CSI-u sequence, preferring the shifted key when present.
+// 解码可打印的 CSI-u 序列，如果存在位移键则优先使用。
 function decodeKittyPrintable(data: string): string | undefined {
 	const match = data.match(KITTY_CSI_U_REGEX);
 	if (!match) return undefined;
 
-	// CSI-u groups: <codepoint>[:<shifted>[:<base>]];<mod>u
+	// CSI-u 组：<codepoint>[:<shifted>[:<base>]];<mod>u
 	const codepoint = Number.parseInt(match[1] ?? "", 10);
 	if (!Number.isFinite(codepoint)) return undefined;
 
 	const shiftedKey = match[2] && match[2].length > 0 ? Number.parseInt(match[2], 10) : undefined;
 	const modValue = match[4] ? Number.parseInt(match[4], 10) : 1;
-	// Modifiers are 1-indexed in CSI-u; normalize to our bitmask.
+	// CSI-u 中的修饰键是以 1 为起始索引的；将其标准化为我们的位掩码。
 	const modifier = Number.isFinite(modValue) ? modValue - 1 : 0;
 
-	// Ignore CSI-u sequences used for Alt/Ctrl shortcuts.
+	// 忽略用于 Alt/Ctrl 快捷键的 CSI-u 序列。
 	if (modifier & (KITTY_MOD_ALT | KITTY_MOD_CTRL)) return undefined;
 
-	// Prefer the shifted keycode when Shift is held.
+	// 当按下 Shift 时，优先使用位移后的键码。
 	let effectiveCodepoint = codepoint;
 	if (modifier & KITTY_MOD_SHIFT && typeof shiftedKey === "number") {
 		effectiveCodepoint = shiftedKey;
 	}
-	// Drop control characters or invalid codepoints.
+	// 丢弃控制字符或无效码点。
 	if (!Number.isFinite(effectiveCodepoint) || effectiveCodepoint < 32) return undefined;
 
 	try {
@@ -158,52 +157,52 @@ export class Editor implements Component, Focusable {
 		cursorCol: 0,
 	};
 
-	/** Focusable interface - set by TUI when focus changes */
+	/** Focusable 接口 - 由 TUI 在焦点改变时设置 */
 	focused: boolean = false;
 
 	protected tui: TUI;
 	private theme: EditorTheme;
 	private paddingX: number = 0;
 
-	// Store last render width for cursor navigation
+	// 存储上次渲染宽度，用于光标导航
 	private lastWidth: number = 80;
 
-	// Vertical scrolling support
+	// 垂直滚动支持
 	private scrollOffset: number = 0;
 
-	// Border color (can be changed dynamically)
+	// 边框颜色（可以动态更改）
 	public borderColor: (str: string) => string;
 
-	// Autocomplete support
+	// 自动补全支持
 	private autocompleteProvider?: AutocompleteProvider;
 	private autocompleteList?: SelectList;
 	private autocompleteState: "regular" | "force" | null = null;
 	private autocompletePrefix: string = "";
 	private autocompleteMaxVisible: number = 5;
 
-	// Paste tracking for large pastes
+	// 用于大段粘贴的粘贴跟踪
 	private pastes: Map<number, string> = new Map();
 	private pasteCounter: number = 0;
 
-	// Bracketed paste mode buffering
+	// 括号粘贴模式缓冲
 	private pasteBuffer: string = "";
 	private isInPaste: boolean = false;
 
-	// Prompt history for up/down navigation
+	// 用于上下导航的提示词历史
 	private history: string[] = [];
-	private historyIndex: number = -1; // -1 = not browsing, 0 = most recent, 1 = older, etc.
+	private historyIndex: number = -1; // -1 = 不在浏览，0 = 最近的，1 = 更早的，等等。
 
-	// Kill ring for Emacs-style kill/yank operations
+	// 用于 Emacs 风格剪切/粘贴操作的删除环（Kill ring）
 	private killRing = new KillRing();
 	private lastAction: "kill" | "yank" | "type-word" | null = null;
 
-	// Character jump mode
+	// 字符跳转模式
 	private jumpMode: "forward" | "backward" | null = null;
 
-	// Preferred visual column for vertical cursor movement (sticky column)
+	// 用于垂直光标移动的首选视觉列（粘性列）
 	private preferredVisualCol: number | null = null;
 
-	// Undo support
+	// 撤销支持
 	private undoStack = new UndoStack<EditorState>();
 
 	public onSubmit?: (text: string) => void;
@@ -249,16 +248,16 @@ export class Editor implements Component, Focusable {
 	}
 
 	/**
-	 * Add a prompt to history for up/down arrow navigation.
-	 * Called after successful submission.
+	 * 将提示词添加到历史记录中，以便进行上下箭头导航。
+	 * 在成功提交后调用。
 	 */
 	addToHistory(text: string): void {
 		const trimmed = text.trim();
 		if (!trimmed) return;
-		// Don't add consecutive duplicates
+		// 不要添加连续的重复项
 		if (this.history.length > 0 && this.history[0] === trimmed) return;
 		this.history.unshift(trimmed);
-		// Limit history size
+		// 限制历史记录大小
 		if (this.history.length > 100) {
 			this.history.pop();
 		}
@@ -284,10 +283,10 @@ export class Editor implements Component, Focusable {
 		this.lastAction = null;
 		if (this.history.length === 0) return;
 
-		const newIndex = this.historyIndex - direction; // Up(-1) increases index, Down(1) decreases
+		const newIndex = this.historyIndex - direction; // Up(-1) 增加索引，Down(1) 减少索引
 		if (newIndex < -1 || newIndex >= this.history.length) return;
 
-		// Capture state when first entering history browsing mode
+		// 首次进入历史浏览模式时捕获状态
 		if (this.historyIndex === -1 && newIndex >= 0) {
 			this.pushUndoSnapshot();
 		}
@@ -295,20 +294,20 @@ export class Editor implements Component, Focusable {
 		this.historyIndex = newIndex;
 
 		if (this.historyIndex === -1) {
-			// Returned to "current" state - clear editor
+			// 返回到“当前”状态 - 清空编辑器
 			this.setTextInternal("");
 		} else {
 			this.setTextInternal(this.history[this.historyIndex] || "");
 		}
 	}
 
-	/** Internal setText that doesn't reset history state - used by navigateHistory */
+	/** 内部使用的 setText，不重置历史状态 - 由 navigateHistory 使用 */
 	private setTextInternal(text: string): void {
 		const lines = text.replace(/\r\n/g, "\n").replace(/\r/g, "\n").split("\n");
 		this.state.lines = lines.length === 0 ? [""] : lines;
 		this.state.cursorLine = this.state.lines.length - 1;
 		this.setCursorCol(this.state.lines[this.state.cursorLine]?.length || 0);
-		// Reset scroll - render() will adjust to show cursor
+		// 重置滚动 - render() 将调整以显示光标
 		this.scrollOffset = 0;
 
 		if (this.onChange) {
@@ -317,7 +316,7 @@ export class Editor implements Component, Focusable {
 	}
 
 	invalidate(): void {
-		// No cached state to invalidate currently
+		// 当前没有需要失效的缓存状态
 	}
 
 	render(width: number): string[] {
@@ -325,55 +324,55 @@ export class Editor implements Component, Focusable {
 		const paddingX = Math.min(this.paddingX, maxPadding);
 		const contentWidth = Math.max(1, width - paddingX * 2);
 
-		// Layout width: with padding the cursor can overflow into it,
-		// without padding we reserve 1 column for the cursor.
+		// 布局宽度：有填充时，光标可以溢出到填充中；
+		// 没有填充时，我们为光标预留 1 列。
 		const layoutWidth = Math.max(1, contentWidth - (paddingX ? 0 : 1));
 
-		// Store for cursor navigation (must match wrapping width)
+		// 存储用于光标导航（必须与换行宽度匹配）
 		this.lastWidth = layoutWidth;
 
 		const horizontal = this.borderColor("─");
 
-		// Layout the text
+		// 布局文本
 		const layoutLines = this.layoutText(layoutWidth);
 
-		// Calculate max visible lines: 30% of terminal height, minimum 5 lines
+		// 计算最大可见行数：终端高度的 30%，最少 5 行
 		const terminalRows = this.tui.terminal.rows;
 		const maxVisibleLines = Math.max(5, Math.floor(terminalRows * 0.3));
 
-		// Find the cursor line index in layoutLines
+		// 在 layoutLines 中查找光标行索引
 		let cursorLineIndex = layoutLines.findIndex((line) => line.hasCursor);
 		if (cursorLineIndex === -1) cursorLineIndex = 0;
 
-		// Adjust scroll offset to keep cursor visible
+		// 调整滚动偏移量以保持光标可见
 		if (cursorLineIndex < this.scrollOffset) {
 			this.scrollOffset = cursorLineIndex;
 		} else if (cursorLineIndex >= this.scrollOffset + maxVisibleLines) {
 			this.scrollOffset = cursorLineIndex - maxVisibleLines + 1;
 		}
 
-		// Clamp scroll offset to valid range
+		// 将滚动偏移量限制在有效范围内
 		const maxScrollOffset = Math.max(0, layoutLines.length - maxVisibleLines);
 		this.scrollOffset = Math.max(0, Math.min(this.scrollOffset, maxScrollOffset));
 
-		// Get visible lines slice
+		// 获取可见行切片
 		const visibleLines = layoutLines.slice(this.scrollOffset, this.scrollOffset + maxVisibleLines);
 
 		const result: string[] = [];
 		const leftPadding = " ".repeat(paddingX);
 		const rightPadding = leftPadding;
 
-		// Render top border (with scroll indicator if scrolled down)
+		// 渲染顶边框（如果向下滚动，则显示滚动指示器）
 		if (this.scrollOffset > 0) {
-			const indicator = `─── ↑ ${this.scrollOffset} more `;
+			const indicator = `─── ↑ 还有 ${this.scrollOffset} 行 `;
 			const remaining = width - visibleWidth(indicator);
 			result.push(this.borderColor(indicator + "─".repeat(Math.max(0, remaining))));
 		} else {
 			result.push(horizontal.repeat(width));
 		}
 
-		// Render each visible layout line
-		// Emit hardware cursor marker only when focused and not showing autocomplete
+		// 渲染每个可见的布局行
+		// 仅在获得焦点且未显示自动补全时发射硬件光标标记
 		const emitCursorMarker = this.focused && !this.autocompleteState;
 
 		for (const layoutLine of visibleLines) {
@@ -381,54 +380,54 @@ export class Editor implements Component, Focusable {
 			let lineVisibleWidth = visibleWidth(layoutLine.text);
 			let cursorInPadding = false;
 
-			// Add cursor if this line has it
+			// 如果该行有光标，则添加光标
 			if (layoutLine.hasCursor && layoutLine.cursorPos !== undefined) {
 				const before = displayText.slice(0, layoutLine.cursorPos);
 				const after = displayText.slice(layoutLine.cursorPos);
 
-				// Hardware cursor marker (zero-width, emitted before fake cursor for IME positioning)
+				// 硬件光标标记（零宽度，在伪光标之前发射，用于 IME 定位）
 				const marker = emitCursorMarker ? CURSOR_MARKER : "";
 
 				if (after.length > 0) {
-					// Cursor is on a character (grapheme) - replace it with highlighted version
-					// Get the first grapheme from 'after'
+					// 光标位于字符（字形）上 - 将其替换为高亮版本
+					// 从 'after' 中获取第一个字形
 					const afterGraphemes = [...segmenter.segment(after)];
 					const firstGrapheme = afterGraphemes[0]?.segment || "";
 					const restAfter = after.slice(firstGrapheme.length);
 					const cursor = `\x1b[7m${firstGrapheme}\x1b[0m`;
 					displayText = before + marker + cursor + restAfter;
-					// lineVisibleWidth stays the same - we're replacing, not adding
+					// lineVisibleWidth 保持不变 - 我们是在替换，而不是添加
 				} else {
-					// Cursor is at the end - add highlighted space
+					// 光标位于末尾 - 添加高亮空格
 					const cursor = "\x1b[7m \x1b[0m";
 					displayText = before + marker + cursor;
 					lineVisibleWidth = lineVisibleWidth + 1;
-					// If cursor overflows content width into the padding, flag it
+					// 如果光标溢出内容宽度进入填充区，则标记它
 					if (lineVisibleWidth > contentWidth && paddingX > 0) {
 						cursorInPadding = true;
 					}
 				}
 			}
 
-			// Calculate padding based on actual visible width
+			// 根据实际可见宽度计算填充
 			const padding = " ".repeat(Math.max(0, contentWidth - lineVisibleWidth));
 			const lineRightPadding = cursorInPadding ? rightPadding.slice(1) : rightPadding;
 
-			// Render the line (no side borders, just horizontal lines above and below)
+			// 渲染行（没有侧边框，只有上下水平线）
 			result.push(`${leftPadding}${displayText}${padding}${lineRightPadding}`);
 		}
 
-		// Render bottom border (with scroll indicator if more content below)
+		// 渲染底边框（如果下方有更多内容，则显示滚动指示器）
 		const linesBelow = layoutLines.length - (this.scrollOffset + visibleLines.length);
 		if (linesBelow > 0) {
-			const indicator = `─── ↓ ${linesBelow} more `;
+			const indicator = `─── ↓ 还有 ${linesBelow} 行 `;
 			const remaining = width - visibleWidth(indicator);
 			result.push(this.borderColor(indicator + "─".repeat(Math.max(0, remaining))));
 		} else {
 			result.push(horizontal.repeat(width));
 		}
 
-		// Add autocomplete list if active
+		// 如果自动补全处于活动状态，则添加自动补全列表
 		if (this.autocompleteState && this.autocompleteList) {
 			const autocompleteResult = this.autocompleteList.render(contentWidth);
 			for (const line of autocompleteResult) {
@@ -444,27 +443,27 @@ export class Editor implements Component, Focusable {
 	handleInput(data: string): void {
 		const kb = getEditorKeybindings();
 
-		// Handle character jump mode (awaiting next character to jump to)
+		// 处理字符跳转模式（等待下一个跳转到的字符）
 		if (this.jumpMode !== null) {
-			// Cancel if the hotkey is pressed again
+			// 如果再次按下热键，则取消
 			if (kb.matches(data, "jumpForward") || kb.matches(data, "jumpBackward")) {
 				this.jumpMode = null;
 				return;
 			}
 
 			if (data.charCodeAt(0) >= 32) {
-				// Printable character - perform the jump
+				// 可打印字符 - 执行跳转
 				const direction = this.jumpMode;
 				this.jumpMode = null;
 				this.jumpToChar(data, direction);
 				return;
 			}
 
-			// Control character - cancel and fall through to normal handling
+			// 控制字符 - 取消并转入正常处理
 			this.jumpMode = null;
 		}
 
-		// Handle bracketed paste mode
+		// 处理括号粘贴模式
 		if (data.includes("\x1b[200~")) {
 			this.isInPaste = true;
 			this.pasteBuffer = "";
@@ -490,18 +489,18 @@ export class Editor implements Component, Focusable {
 			return;
 		}
 
-		// Ctrl+C - let parent handle (exit/clear)
+		// Ctrl+C - 让父组件处理（退出/清空）
 		if (kb.matches(data, "copy")) {
 			return;
 		}
 
-		// Undo
+		// 撤销
 		if (kb.matches(data, "undo")) {
 			this.undo();
 			return;
 		}
 
-		// Handle autocomplete mode
+		// 处理自动补全模式
 		if (this.autocompleteState && this.autocompleteList) {
 			if (kb.matches(data, "selectCancel")) {
 				this.cancelAutocomplete();
@@ -552,7 +551,7 @@ export class Editor implements Component, Focusable {
 
 					if (this.autocompletePrefix.startsWith("/")) {
 						this.cancelAutocomplete();
-						// Fall through to submit
+						// 转入提交处理
 					} else {
 						this.cancelAutocomplete();
 						if (this.onChange) this.onChange(this.getText());
@@ -562,13 +561,13 @@ export class Editor implements Component, Focusable {
 			}
 		}
 
-		// Tab - trigger completion
+		// Tab - 触发补全
 		if (kb.matches(data, "tab") && !this.autocompleteState) {
 			this.handleTabCompletion();
 			return;
 		}
 
-		// Deletion actions
+		// 删除操作
 		if (kb.matches(data, "deleteToLineEnd")) {
 			this.deleteToEndOfLine();
 			return;
@@ -594,7 +593,7 @@ export class Editor implements Component, Focusable {
 			return;
 		}
 
-		// Kill ring actions
+		// 删除环操作
 		if (kb.matches(data, "yank")) {
 			this.yank();
 			return;
@@ -604,7 +603,7 @@ export class Editor implements Component, Focusable {
 			return;
 		}
 
-		// Cursor movement actions
+		// 光标移动操作
 		if (kb.matches(data, "cursorLineStart")) {
 			this.moveToLineStart();
 			return;
@@ -622,7 +621,7 @@ export class Editor implements Component, Focusable {
 			return;
 		}
 
-		// New line
+		// 换行
 		if (
 			kb.matches(data, "newLine") ||
 			(data.charCodeAt(0) === 10 && data.length > 1) ||
@@ -640,12 +639,12 @@ export class Editor implements Component, Focusable {
 			return;
 		}
 
-		// Submit (Enter)
+		// 提交 (Enter)
 		if (kb.matches(data, "submit")) {
 			if (this.disableSubmit) return;
 
-			// Workaround for terminals without Shift+Enter support:
-			// If char before cursor is \, delete it and insert newline instead of submitting.
+			// 对于不支持 Shift+Enter 的终端的临时解决方法：
+			// 如果光标前的字符是 \，则删除它并插入换行符而不是提交。
 			const currentLine = this.state.lines[this.state.cursorLine] || "";
 			if (this.state.cursorCol > 0 && currentLine[this.state.cursorCol - 1] === "\\") {
 				this.handleBackspace();
@@ -1003,40 +1002,40 @@ export class Editor implements Component, Focusable {
 			}
 		}
 
-		// Split into lines to check for large paste
+		// 拆分为行以检查是否为大段粘贴
 		const pastedLines = filteredText.split("\n");
 
-		// Check if this is a large paste (> 10 lines or > 1000 characters)
+		// 检查这是否为大段粘贴（> 10 行或 > 1000 个字符）
 		const totalChars = filteredText.length;
 		if (pastedLines.length > 10 || totalChars > 1000) {
-			// Store the paste and insert a marker
+			// 存储粘贴内容并插入标记
 			this.pasteCounter++;
 			const pasteId = this.pasteCounter;
 			this.pastes.set(pasteId, filteredText);
 
-			// Insert marker like "[paste #1 +123 lines]" or "[paste #1 1234 chars]"
+			// 插入类似 "[paste #1 +123 lines]" 或 "[paste #1 1234 chars]" 的标记
 			const marker =
 				pastedLines.length > 10
-					? `[paste #${pasteId} +${pastedLines.length} lines]`
-					: `[paste #${pasteId} ${totalChars} chars]`;
+					? `[paste #${pasteId} +${pastedLines.length} 行]`
+					: `[paste #${pasteId} ${totalChars} 字符]`;
 			this.insertTextAtCursorInternal(marker);
 			return;
 		}
 
 		if (pastedLines.length === 1) {
-			// Single line - insert character by character to trigger autocomplete
+			// 单行 - 逐个字符插入以触发自动补全
 			for (const char of filteredText) {
 				this.insertCharacter(char, true);
 			}
 			return;
 		}
 
-		// Multi-line paste - use direct state manipulation
+		// 多行粘贴 - 直接操作状态
 		this.insertTextAtCursorInternal(filteredText);
 	}
 
 	private addNewLine(): void {
-		this.historyIndex = -1; // Exit history browsing mode
+		this.historyIndex = -1; // 退出历史浏览模式
 		this.lastAction = null;
 
 		this.pushUndoSnapshot();
@@ -1046,11 +1045,11 @@ export class Editor implements Component, Focusable {
 		const before = currentLine.slice(0, this.state.cursorCol);
 		const after = currentLine.slice(this.state.cursorCol);
 
-		// Split current line
+		// 拆分当前行
 		this.state.lines[this.state.cursorLine] = before;
 		this.state.lines.splice(this.state.cursorLine + 1, 0, after);
 
-		// Move cursor to start of new line
+		// 将光标移至新行行首
 		this.state.cursorLine++;
 		this.setCursorCol(0);
 
@@ -1073,7 +1072,7 @@ export class Editor implements Component, Focusable {
 	private submitValue(): void {
 		let result = this.state.lines.join("\n").trim();
 		for (const [pasteId, pasteContent] of this.pastes) {
-			const markerRegex = new RegExp(`\\[paste #${pasteId}( (\\+\\d+ lines|\\d+ chars))?\\]`, "g");
+			const markerRegex = new RegExp(`\\[paste #${pasteId}( (\\+\\d+ lines|\\d+ chars|\\+\\d+ 行|\\d+ 字符))?\\]`, "g");
 			result = result.replace(markerRegex, pasteContent);
 		}
 
@@ -1090,17 +1089,17 @@ export class Editor implements Component, Focusable {
 	}
 
 	private handleBackspace(): void {
-		this.historyIndex = -1; // Exit history browsing mode
+		this.historyIndex = -1; // 退出历史浏览模式
 		this.lastAction = null;
 
 		if (this.state.cursorCol > 0) {
 			this.pushUndoSnapshot();
 
-			// Delete grapheme before cursor (handles emojis, combining characters, etc.)
+			// 删除光标前的字形（处理表情符号、组合字符等）
 			const line = this.state.lines[this.state.cursorLine] || "";
 			const beforeCursor = line.slice(0, this.state.cursorCol);
 
-			// Find the last grapheme in the text before cursor
+			// 在光标前的文本中查找最后一个字形
 			const graphemes = [...segmenter.segment(beforeCursor)];
 			const lastGrapheme = graphemes[graphemes.length - 1];
 			const graphemeLength = lastGrapheme ? lastGrapheme.segment.length : 1;
@@ -1113,7 +1112,7 @@ export class Editor implements Component, Focusable {
 		} else if (this.state.cursorLine > 0) {
 			this.pushUndoSnapshot();
 
-			// Merge with previous line
+			// 与上一行合并
 			const currentLine = this.state.lines[this.state.cursorLine] || "";
 			const previousLine = this.state.lines[this.state.cursorLine - 1] || "";
 
@@ -1128,18 +1127,18 @@ export class Editor implements Component, Focusable {
 			this.onChange(this.getText());
 		}
 
-		// Update or re-trigger autocomplete after backspace
+		// 退格后更新或重新触发自动补全
 		if (this.autocompleteState) {
 			this.updateAutocomplete();
 		} else {
-			// If autocomplete was cancelled (no matches), re-trigger if we're in a completable context
+			// 如果自动补全已取消（没有匹配项），如果我们处于可补全的上下文中，则重新触发
 			const currentLine = this.state.lines[this.state.cursorLine] || "";
 			const textBeforeCursor = currentLine.slice(0, this.state.cursorCol);
-			// Slash command context
+			// 斜杠命令上下文
 			if (this.isInSlashCommandContext(textBeforeCursor)) {
 				this.tryTriggerAutocomplete();
 			}
-			// @ file reference context
+			// @ 文件引用上下文
 			else if (textBeforeCursor.match(/(?:^|[\s])@[^\s]*$/)) {
 				this.tryTriggerAutocomplete();
 			}
@@ -1147,8 +1146,8 @@ export class Editor implements Component, Focusable {
 	}
 
 	/**
-	 * Set cursor column and clear preferredVisualCol.
-	 * Use this for all non-vertical cursor movements to reset sticky column behavior.
+	 * 设置光标列并清除 preferredVisualCol。
+	 * 将此用于所有非垂直光标移动，以重置粘性列行为。
 	 */
 	private setCursorCol(col: number): void {
 		this.state.cursorCol = col;
@@ -1156,8 +1155,8 @@ export class Editor implements Component, Focusable {
 	}
 
 	/**
-	 * Move cursor to a target visual line, applying sticky column logic.
-	 * Shared by moveCursor() and pageScroll().
+	 * 将光标移至目标视觉行，应用粘性列逻辑。
+	 * 由 moveCursor() 和 pageScroll() 共享。
 	 */
 	private moveToVisualLine(
 		visualLines: Array<{ logicalLine: number; startCol: number; length: number }>,
@@ -1170,7 +1169,7 @@ export class Editor implements Component, Focusable {
 		if (currentVL && targetVL) {
 			const currentVisualCol = this.state.cursorCol - currentVL.startCol;
 
-			// For non-last segments, clamp to length-1 to stay within the segment
+			// 对于非最后一段，限制为 length-1 以保留在段内
 			const isLastSourceSegment =
 				currentVisualLine === visualLines.length - 1 ||
 				visualLines[currentVisualLine + 1]?.logicalLine !== currentVL.logicalLine;
@@ -1187,7 +1186,7 @@ export class Editor implements Component, Focusable {
 				targetMaxVisualCol,
 			);
 
-			// Set cursor position
+			// 设置光标位置
 			this.state.cursorLine = targetVL.logicalLine;
 			const targetCol = targetVL.startCol + moveToVisualCol;
 			const logicalLine = this.state.lines[targetVL.logicalLine] || "";
@@ -1196,24 +1195,24 @@ export class Editor implements Component, Focusable {
 	}
 
 	/**
-	 * Compute the target visual column for vertical cursor movement.
-	 * Implements the sticky column decision table:
+	 * 计算垂直光标移动的目标视觉列。
+	 * 实现粘性列决策表：
 	 *
-	 * | P | S | T | U | Scenario                                             | Set Preferred | Move To     |
+	 * | P | S | T | U | 场景                                               | 设置首选列    | 移动到       |
 	 * |---|---|---|---| ---------------------------------------------------- |---------------|-------------|
-	 * | 0 | * | 0 | - | Start nav, target fits                               | null          | current     |
-	 * | 0 | * | 1 | - | Start nav, target shorter                            | current       | target end  |
-	 * | 1 | 0 | 0 | 0 | Clamped, target fits preferred                       | null          | preferred   |
-	 * | 1 | 0 | 0 | 1 | Clamped, target longer but still can't fit preferred | keep          | target end  |
-	 * | 1 | 0 | 1 | - | Clamped, target even shorter                         | keep          | target end  |
-	 * | 1 | 1 | 0 | - | Rewrapped, target fits current                       | null          | current     |
-	 * | 1 | 1 | 1 | - | Rewrapped, target shorter than current               | current       | target end  |
+	 * | 0 | * | 0 | - | 开始导航，目标符合                                 | null          | current     |
+	 * | 0 | * | 1 | - | 开始导航，目标更短                                 | current       | target end  |
+	 * | 1 | 0 | 0 | 0 | 已限制，目标符合首选列                             | null          | preferred   |
+	 * | 1 | 0 | 0 | 1 | 已限制，目标更长但仍无法符合首选列                 | keep          | target end  |
+	 * | 1 | 0 | 1 | - | 已限制，目标甚至更短                               | keep          | target end  |
+	 * | 1 | 1 | 0 | - | 重新换行，目标符合当前列                           | null          | current     |
+	 * | 1 | 1 | 1 | - | 重新换行，目标短于当前列                           | current       | target end  |
 	 *
-	 * Where:
-	 * - P = preferred col is set
-	 * - S = cursor in middle of source line (not clamped to end)
-	 * - T = target line shorter than current visual col
-	 * - U = target line shorter than preferred col
+	 * 其中：
+	 * - P = 已设置首选列 (preferred col)
+	 * - S = 光标位于源行中间（未限制到末尾）
+	 * - T = 目标行短于当前视觉列
+	 * - U = 目标行短于首选列
 	 */
 	private computeVerticalMoveColumn(
 		currentVisualCol: number,
@@ -1226,23 +1225,23 @@ export class Editor implements Component, Focusable {
 
 		if (!hasPreferred || cursorInMiddle) {
 			if (targetTooShort) {
-				// Cases 2 and 7
+				// 场景 2 和 7
 				this.preferredVisualCol = currentVisualCol;
 				return targetMaxVisualCol;
 			}
 
-			// Cases 1 and 6
+			// 场景 1 和 6
 			this.preferredVisualCol = null;
 			return currentVisualCol;
 		}
 
 		const targetCantFitPreferred = targetMaxVisualCol < this.preferredVisualCol!; // U
 		if (targetTooShort || targetCantFitPreferred) {
-			// Cases 4 and 5
+			// 场景 4 和 5
 			return targetMaxVisualCol;
 		}
 
-		// Case 3
+		// 场景 3
 		const result = this.preferredVisualCol!;
 		this.preferredVisualCol = null;
 		return result;
@@ -1260,25 +1259,25 @@ export class Editor implements Component, Focusable {
 	}
 
 	private deleteToStartOfLine(): void {
-		this.historyIndex = -1; // Exit history browsing mode
+		this.historyIndex = -1; // 退出历史浏览模式
 
 		const currentLine = this.state.lines[this.state.cursorLine] || "";
 
 		if (this.state.cursorCol > 0) {
 			this.pushUndoSnapshot();
 
-			// Calculate text to be deleted and save to kill ring (backward deletion = prepend)
+			// 计算要删除的文本并保存到删除环（向后删除 = 前置）
 			const deletedText = currentLine.slice(0, this.state.cursorCol);
 			this.killRing.push(deletedText, { prepend: true, accumulate: this.lastAction === "kill" });
 			this.lastAction = "kill";
 
-			// Delete from start of line up to cursor
+			// 删除从行首到光标处的文本
 			this.state.lines[this.state.cursorLine] = currentLine.slice(this.state.cursorCol);
 			this.setCursorCol(0);
 		} else if (this.state.cursorLine > 0) {
 			this.pushUndoSnapshot();
 
-			// At start of line - merge with previous line, treating newline as deleted text
+			// 在行首 - 与上一行合并，将换行符视为已删除文本
 			this.killRing.push("\n", { prepend: true, accumulate: this.lastAction === "kill" });
 			this.lastAction = "kill";
 
@@ -1295,24 +1294,24 @@ export class Editor implements Component, Focusable {
 	}
 
 	private deleteToEndOfLine(): void {
-		this.historyIndex = -1; // Exit history browsing mode
+		this.historyIndex = -1; // 退出历史浏览模式
 
 		const currentLine = this.state.lines[this.state.cursorLine] || "";
 
 		if (this.state.cursorCol < currentLine.length) {
 			this.pushUndoSnapshot();
 
-			// Calculate text to be deleted and save to kill ring (forward deletion = append)
+			// 计算要删除的文本并保存到删除环（向前删除 = 追加）
 			const deletedText = currentLine.slice(this.state.cursorCol);
 			this.killRing.push(deletedText, { prepend: false, accumulate: this.lastAction === "kill" });
 			this.lastAction = "kill";
 
-			// Delete from cursor to end of line
+			// 删除从光标到行尾的文本
 			this.state.lines[this.state.cursorLine] = currentLine.slice(0, this.state.cursorCol);
 		} else if (this.state.cursorLine < this.state.lines.length - 1) {
 			this.pushUndoSnapshot();
 
-			// At end of line - merge with next line, treating newline as deleted text
+			// 在行尾 - 与下一行合并，将换行符视为已删除文本
 			this.killRing.push("\n", { prepend: false, accumulate: this.lastAction === "kill" });
 			this.lastAction = "kill";
 
@@ -1327,16 +1326,16 @@ export class Editor implements Component, Focusable {
 	}
 
 	private deleteWordBackwards(): void {
-		this.historyIndex = -1; // Exit history browsing mode
+		this.historyIndex = -1; // 退出历史浏览模式
 
 		const currentLine = this.state.lines[this.state.cursorLine] || "";
 
-		// If at start of line, behave like backspace at column 0 (merge with previous line)
+		// 如果在行首，行为类似于列 0 处的退格键（与上一行合并）
 		if (this.state.cursorCol === 0) {
 			if (this.state.cursorLine > 0) {
 				this.pushUndoSnapshot();
 
-				// Treat newline as deleted text (backward deletion = prepend)
+				// 将换行符视为已删除文本（向后删除 = 前置）
 				this.killRing.push("\n", { prepend: true, accumulate: this.lastAction === "kill" });
 				this.lastAction = "kill";
 
@@ -1349,7 +1348,7 @@ export class Editor implements Component, Focusable {
 		} else {
 			this.pushUndoSnapshot();
 
-			// Save lastAction before cursor movement (moveWordBackwards resets it)
+			// 在光标移动前保存 lastAction（moveWordBackwards 会重置它）
 			const wasKill = this.lastAction === "kill";
 
 			const oldCursorCol = this.state.cursorCol;
@@ -1372,16 +1371,16 @@ export class Editor implements Component, Focusable {
 	}
 
 	private deleteWordForward(): void {
-		this.historyIndex = -1; // Exit history browsing mode
+		this.historyIndex = -1; // 退出历史浏览模式
 
 		const currentLine = this.state.lines[this.state.cursorLine] || "";
 
-		// If at end of line, merge with next line (delete the newline)
+		// 如果在行尾，与下一行合并（删除换行符）
 		if (this.state.cursorCol >= currentLine.length) {
 			if (this.state.cursorLine < this.state.lines.length - 1) {
 				this.pushUndoSnapshot();
 
-				// Treat newline as deleted text (forward deletion = append)
+				// 将换行符视为已删除文本（向前删除 = 追加）
 				this.killRing.push("\n", { prepend: false, accumulate: this.lastAction === "kill" });
 				this.lastAction = "kill";
 
@@ -1392,7 +1391,7 @@ export class Editor implements Component, Focusable {
 		} else {
 			this.pushUndoSnapshot();
 
-			// Save lastAction before cursor movement (moveWordForwards resets it)
+			// 在光标移动前保存 lastAction（moveWordForwards 会重置它）
 			const wasKill = this.lastAction === "kill";
 
 			const oldCursorCol = this.state.cursorCol;
@@ -1414,7 +1413,7 @@ export class Editor implements Component, Focusable {
 	}
 
 	private handleForwardDelete(): void {
-		this.historyIndex = -1; // Exit history browsing mode
+		this.historyIndex = -1; // 退出历史浏览模式
 		this.lastAction = null;
 
 		const currentLine = this.state.lines[this.state.cursorLine] || "";
@@ -1422,10 +1421,10 @@ export class Editor implements Component, Focusable {
 		if (this.state.cursorCol < currentLine.length) {
 			this.pushUndoSnapshot();
 
-			// Delete grapheme at cursor position (handles emojis, combining characters, etc.)
+			// 删除光标位置的字形（处理表情符号、组合字符等）
 			const afterCursor = currentLine.slice(this.state.cursorCol);
 
-			// Find the first grapheme at cursor
+			// 查找光标处的第一个字形
 			const graphemes = [...segmenter.segment(afterCursor)];
 			const firstGrapheme = graphemes[0];
 			const graphemeLength = firstGrapheme ? firstGrapheme.segment.length : 1;
@@ -1436,7 +1435,7 @@ export class Editor implements Component, Focusable {
 		} else if (this.state.cursorLine < this.state.lines.length - 1) {
 			this.pushUndoSnapshot();
 
-			// At end of line - merge with next line
+			// 在行尾 - 与下一行合并
 			const nextLine = this.state.lines[this.state.cursorLine + 1] || "";
 			this.state.lines[this.state.cursorLine] = currentLine + nextLine;
 			this.state.lines.splice(this.state.cursorLine + 1, 1);
@@ -1446,17 +1445,17 @@ export class Editor implements Component, Focusable {
 			this.onChange(this.getText());
 		}
 
-		// Update or re-trigger autocomplete after forward delete
+		// 向前删除后更新或重新触发自动补全
 		if (this.autocompleteState) {
 			this.updateAutocomplete();
 		} else {
 			const currentLine = this.state.lines[this.state.cursorLine] || "";
 			const textBeforeCursor = currentLine.slice(0, this.state.cursorCol);
-			// Slash command context
+			// 斜杠命令上下文
 			if (this.isInSlashCommandContext(textBeforeCursor)) {
 				this.tryTriggerAutocomplete();
 			}
-			// @ file reference context
+			// @ 文件引用上下文
 			else if (textBeforeCursor.match(/(?:^|[\s])@[^\s]*$/)) {
 				this.tryTriggerAutocomplete();
 			}
@@ -1464,11 +1463,11 @@ export class Editor implements Component, Focusable {
 	}
 
 	/**
-	 * Build a mapping from visual lines to logical positions.
-	 * Returns an array where each element represents a visual line with:
-	 * - logicalLine: index into this.state.lines
-	 * - startCol: starting column in the logical line
-	 * - length: length of this visual line segment
+	 * 构建从视觉行到逻辑位置的映射。
+	 * 返回一个数组，其中每个元素代表一个具有以下属性的视觉行：
+	 * - logicalLine: 在 this.state.lines 中的索引
+	 * - startCol: 逻辑行中的起始列
+	 * - length: 此视觉行段的长度
 	 */
 	private buildVisualLineMap(width: number): Array<{ logicalLine: number; startCol: number; length: number }> {
 		const visualLines: Array<{ logicalLine: number; startCol: number; length: number }> = [];
@@ -1477,12 +1476,12 @@ export class Editor implements Component, Focusable {
 			const line = this.state.lines[i] || "";
 			const lineVisWidth = visibleWidth(line);
 			if (line.length === 0) {
-				// Empty line still takes one visual line
+				// 空行仍然占用一个视觉行
 				visualLines.push({ logicalLine: i, startCol: 0, length: 0 });
 			} else if (lineVisWidth <= width) {
 				visualLines.push({ logicalLine: i, startCol: 0, length: line.length });
 			} else {
-				// Line needs wrapping - use word-aware wrapping
+				// 行需要换行 - 使用单词感知换行
 				const chunks = wordWrapLine(line, width);
 				for (const chunk of chunks) {
 					visualLines.push({
@@ -1498,7 +1497,7 @@ export class Editor implements Component, Focusable {
 	}
 
 	/**
-	 * Find the visual line index for the current cursor position.
+	 * 查找当前光标位置的视觉行索引。
 	 */
 	private findCurrentVisualLine(
 		visualLines: Array<{ logicalLine: number; startCol: number; length: number }>,
@@ -1508,8 +1507,8 @@ export class Editor implements Component, Focusable {
 			if (!vl) continue;
 			if (vl.logicalLine === this.state.cursorLine) {
 				const colInSegment = this.state.cursorCol - vl.startCol;
-				// Cursor is in this segment if it's within range
-				// For the last segment of a logical line, cursor can be at length (end position)
+				// 如果光标在该段范围内，则光标在该段内
+				// 对于逻辑行的最后一段，光标可以位于末尾位置 (length)
 				const isLastSegmentOfLine =
 					i === visualLines.length - 1 || visualLines[i + 1]?.logicalLine !== vl.logicalLine;
 				if (colInSegment >= 0 && (colInSegment < vl.length || (isLastSegmentOfLine && colInSegment <= vl.length))) {
@@ -1517,7 +1516,7 @@ export class Editor implements Component, Focusable {
 				}
 			}
 		}
-		// Fallback: return last visual line
+		// 回退：返回最后一个视觉行
 		return visualLines.length - 1;
 	}
 
@@ -1538,32 +1537,32 @@ export class Editor implements Component, Focusable {
 			const currentLine = this.state.lines[this.state.cursorLine] || "";
 
 			if (deltaCol > 0) {
-				// Moving right - move by one grapheme (handles emojis, combining characters, etc.)
+				// 向右移动 - 移动一个字形（处理表情符号、组合字符等）
 				if (this.state.cursorCol < currentLine.length) {
 					const afterCursor = currentLine.slice(this.state.cursorCol);
 					const graphemes = [...segmenter.segment(afterCursor)];
 					const firstGrapheme = graphemes[0];
 					this.setCursorCol(this.state.cursorCol + (firstGrapheme ? firstGrapheme.segment.length : 1));
 				} else if (this.state.cursorLine < this.state.lines.length - 1) {
-					// Wrap to start of next logical line
+					// 换行到下一个逻辑行的行首
 					this.state.cursorLine++;
 					this.setCursorCol(0);
 				} else {
-					// At end of last line - can't move, but set preferredVisualCol for up/down navigation
+					// 在最后一行的末尾 - 无法移动，但为上下导航设置 preferredVisualCol
 					const currentVL = visualLines[currentVisualLine];
 					if (currentVL) {
 						this.preferredVisualCol = this.state.cursorCol - currentVL.startCol;
 					}
 				}
 			} else {
-				// Moving left - move by one grapheme (handles emojis, combining characters, etc.)
+				// 向左移动 - 移动一个字形（处理表情符号、组合字符等）
 				if (this.state.cursorCol > 0) {
 					const beforeCursor = currentLine.slice(0, this.state.cursorCol);
 					const graphemes = [...segmenter.segment(beforeCursor)];
 					const lastGrapheme = graphemes[graphemes.length - 1];
 					this.setCursorCol(this.state.cursorCol - (lastGrapheme ? lastGrapheme.segment.length : 1));
 				} else if (this.state.cursorLine > 0) {
-					// Wrap to end of previous logical line
+					// 换行到上一个逻辑行的行尾
 					this.state.cursorLine--;
 					const prevLine = this.state.lines[this.state.cursorLine] || "";
 					this.setCursorCol(prevLine.length);
@@ -1902,7 +1901,7 @@ export class Editor implements Component, Focusable {
 		const currentLine = this.state.lines[this.state.cursorLine] || "";
 		const beforeCursor = currentLine.slice(0, this.state.cursorCol);
 
-		// Check if we're in a slash command context
+		// 检查是否处于斜杠命令上下文中
 		if (this.isInSlashCommandContext(beforeCursor) && !beforeCursor.trimStart().includes(" ")) {
 			this.handleSlashCommandCompletion();
 		} else {
@@ -1916,13 +1915,13 @@ export class Editor implements Component, Focusable {
 
 	/*
 https://github.com/EsotericSoftware/spine-runtimes/actions/runs/19536643416/job/559322883
-17 this job fails with https://github.com/EsotericSoftware/spine-runtimes/actions/runs/19
-536643416/job/55932288317 havea  look at .gi
+17 此作业失败，请查看 https://github.com/EsotericSoftware/spine-runtimes/actions/runs/19
+536643416/job/55932288317 看看 .gi
 	 */
 	private forceFileAutocomplete(explicitTab: boolean = false): void {
 		if (!this.autocompleteProvider) return;
 
-		// Check if provider supports force file suggestions via runtime check
+		// 通过运行时检查提供商是否支持强制文件建议
 		const provider = this.autocompleteProvider as {
 			getForceFileSuggestions?: CombinedAutocompleteProvider["getForceFileSuggestions"];
 		};
@@ -1938,7 +1937,7 @@ https://github.com/EsotericSoftware/spine-runtimes/actions/runs/19536643416/job/
 		);
 
 		if (suggestions && suggestions.items.length > 0) {
-			// If there's exactly one suggestion, apply it immediately
+			// 如果只有一个建议，立即应用它
 			if (explicitTab && suggestions.items.length === 1) {
 				const item = suggestions.items[0]!;
 				this.pushUndoSnapshot();
@@ -1990,7 +1989,7 @@ https://github.com/EsotericSoftware/spine-runtimes/actions/runs/19536643416/job/
 		);
 		if (suggestions && suggestions.items.length > 0) {
 			this.autocompletePrefix = suggestions.prefix;
-			// Always create new SelectList to ensure update
+			// 始终创建新的 SelectList 以确保更新
 			this.autocompleteList = new SelectList(suggestions.items, this.autocompleteMaxVisible, this.theme.selectList);
 		} else {
 			this.cancelAutocomplete();

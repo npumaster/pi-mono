@@ -12,26 +12,26 @@ interface InputState {
 }
 
 /**
- * Input component - single-line text input with horizontal scrolling
+ * Input 组件 - 带有水平滚动的单行文本输入
  */
 export class Input implements Component, Focusable {
 	private value: string = "";
-	private cursor: number = 0; // Cursor position in the value
+	private cursor: number = 0; // 值中的光标位置
 	public onSubmit?: (value: string) => void;
 	public onEscape?: () => void;
 
-	/** Focusable interface - set by TUI when focus changes */
+	/** Focusable 接口 - 当焦点改变时由 TUI 设置 */
 	focused: boolean = false;
 
-	// Bracketed paste mode buffering
+	// 括号粘贴模式（Bracketed paste mode）缓冲
 	private pasteBuffer: string = "";
 	private isInPaste: boolean = false;
 
-	// Kill ring for Emacs-style kill/yank operations
+	// 用于 Emacs 风格删除/粘贴操作的 Kill ring
 	private killRing = new KillRing();
 	private lastAction: "kill" | "yank" | "type-word" | null = null;
 
-	// Undo support
+	// 撤销支持
 	private undoStack = new UndoStack<InputState>();
 
 	getValue(): string {
@@ -44,35 +44,35 @@ export class Input implements Component, Focusable {
 	}
 
 	handleInput(data: string): void {
-		// Handle bracketed paste mode
-		// Start of paste: \x1b[200~
-		// End of paste: \x1b[201~
+		// 处理括号粘贴模式
+		// 粘贴开始：\x1b[200~
+		// 粘贴结束：\x1b[201~
 
-		// Check if we're starting a bracketed paste
+		// 检查是否正在开始括号粘贴
 		if (data.includes("\x1b[200~")) {
 			this.isInPaste = true;
 			this.pasteBuffer = "";
 			data = data.replace("\x1b[200~", "");
 		}
 
-		// If we're in a paste, buffer the data
+		// 如果处于粘贴中，缓冲数据
 		if (this.isInPaste) {
-			// Check if this chunk contains the end marker
+			// 检查此块是否包含结束标记
 			this.pasteBuffer += data;
 
 			const endIndex = this.pasteBuffer.indexOf("\x1b[201~");
 			if (endIndex !== -1) {
-				// Extract the pasted content
+				// 提取粘贴的内容
 				const pasteContent = this.pasteBuffer.substring(0, endIndex);
 
-				// Process the complete paste
+				// 处理完整的粘贴
 				this.handlePaste(pasteContent);
 
-				// Reset paste state
+				// 重置粘贴状态
 				this.isInPaste = false;
 
-				// Handle any remaining input after the paste marker
-				const remaining = this.pasteBuffer.substring(endIndex + 6); // 6 = length of \x1b[201~
+				// 处理粘贴标记后的任何剩余输入
+				const remaining = this.pasteBuffer.substring(endIndex + 6); // 6 = \x1b[201~ 的长度
 				this.pasteBuffer = "";
 				if (remaining) {
 					this.handleInput(remaining);
@@ -83,25 +83,25 @@ export class Input implements Component, Focusable {
 
 		const kb = getEditorKeybindings();
 
-		// Escape/Cancel
+		// 退出/取消
 		if (kb.matches(data, "selectCancel")) {
 			if (this.onEscape) this.onEscape();
 			return;
 		}
 
-		// Undo
+		// 撤销
 		if (kb.matches(data, "undo")) {
 			this.undo();
 			return;
 		}
 
-		// Submit
+		// 提交
 		if (kb.matches(data, "submit") || data === "\n") {
 			if (this.onSubmit) this.onSubmit(this.value);
 			return;
 		}
 
-		// Deletion
+		// 删除
 		if (kb.matches(data, "deleteCharBackward")) {
 			this.handleBackspace();
 			return;
@@ -132,7 +132,7 @@ export class Input implements Component, Focusable {
 			return;
 		}
 
-		// Kill ring actions
+		// Kill ring 操作
 		if (kb.matches(data, "yank")) {
 			this.yank();
 			return;
@@ -142,7 +142,7 @@ export class Input implements Component, Focusable {
 			return;
 		}
 
-		// Cursor movement
+		// 光标移动
 		if (kb.matches(data, "cursorLeft")) {
 			this.lastAction = null;
 			if (this.cursor > 0) {
@@ -187,8 +187,8 @@ export class Input implements Component, Focusable {
 			return;
 		}
 
-		// Regular character input - accept printable characters including Unicode,
-		// but reject control characters (C0: 0x00-0x1F, DEL: 0x7F, C1: 0x80-0x9F)
+		// 普通字符输入 - 接受包括 Unicode 在内的可打印字符，
+		// 但拒绝控制字符（C0: 0x00-0x1F, DEL: 0x7F, C1: 0x80-0x9F）
 		const hasControlChars = [...data].some((ch) => {
 			const code = ch.charCodeAt(0);
 			return code < 32 || code === 0x7f || (code >= 0x80 && code <= 0x9f);
@@ -199,7 +199,7 @@ export class Input implements Component, Focusable {
 	}
 
 	private insertCharacter(char: string): void {
-		// Undo coalescing: consecutive word chars coalesce into one undo unit
+		// 撤销合并：连续的单词字符合并为一个撤销单元
 		if (isWhitespaceChar(char) || this.lastAction !== "type-word") {
 			this.pushUndo();
 		}
@@ -256,7 +256,7 @@ export class Input implements Component, Focusable {
 	private deleteWordBackwards(): void {
 		if (this.cursor === 0) return;
 
-		// Save lastAction before cursor movement (moveWordBackwards resets it)
+		// 在光标移动前保存 lastAction（moveWordBackwards 会重置它）
 		const wasKill = this.lastAction === "kill";
 
 		this.pushUndo();
@@ -277,7 +277,7 @@ export class Input implements Component, Focusable {
 	private deleteWordForward(): void {
 		if (this.cursor >= this.value.length) return;
 
-		// Save lastAction before cursor movement (moveWordForwards resets it)
+		// 在光标移动前保存 lastAction（moveWordForwards 会重置它）
 		const wasKill = this.lastAction === "kill";
 
 		this.pushUndo();
@@ -310,12 +310,12 @@ export class Input implements Component, Focusable {
 
 		this.pushUndo();
 
-		// Delete the previously yanked text (still at end of ring before rotation)
+		// 删除之前粘贴的文本（在旋转前仍在 ring 的末尾）
 		const prevText = this.killRing.peek() || "";
 		this.value = this.value.slice(0, this.cursor - prevText.length) + this.value.slice(this.cursor);
 		this.cursor -= prevText.length;
 
-		// Rotate and insert new entry
+		// 旋转并插入新条目
 		this.killRing.rotate();
 		const text = this.killRing.peek() || "";
 		this.value = this.value.slice(0, this.cursor) + text + this.value.slice(this.cursor);
@@ -344,7 +344,7 @@ export class Input implements Component, Focusable {
 		const textBeforeCursor = this.value.slice(0, this.cursor);
 		const graphemes = [...segmenter.segment(textBeforeCursor)];
 
-		// Skip trailing whitespace
+		// 跳过末尾空白字符
 		while (graphemes.length > 0 && isWhitespaceChar(graphemes[graphemes.length - 1]?.segment || "")) {
 			this.cursor -= graphemes.pop()?.segment.length || 0;
 		}
@@ -352,12 +352,12 @@ export class Input implements Component, Focusable {
 		if (graphemes.length > 0) {
 			const lastGrapheme = graphemes[graphemes.length - 1]?.segment || "";
 			if (isPunctuationChar(lastGrapheme)) {
-				// Skip punctuation run
+				// 跳过连续标点符号
 				while (graphemes.length > 0 && isPunctuationChar(graphemes[graphemes.length - 1]?.segment || "")) {
 					this.cursor -= graphemes.pop()?.segment.length || 0;
 				}
 			} else {
-				// Skip word run
+				// 跳过连续单词字符
 				while (
 					graphemes.length > 0 &&
 					!isWhitespaceChar(graphemes[graphemes.length - 1]?.segment || "") &&
@@ -380,7 +380,7 @@ export class Input implements Component, Focusable {
 		const iterator = segments[Symbol.iterator]();
 		let next = iterator.next();
 
-		// Skip leading whitespace
+		// 跳过开头的空白字符
 		while (!next.done && isWhitespaceChar(next.value.segment)) {
 			this.cursor += next.value.segment.length;
 			next = iterator.next();
@@ -389,13 +389,13 @@ export class Input implements Component, Focusable {
 		if (!next.done) {
 			const firstGrapheme = next.value.segment;
 			if (isPunctuationChar(firstGrapheme)) {
-				// Skip punctuation run
+				// 跳过连续标点符号
 				while (!next.done && isPunctuationChar(next.value.segment)) {
 					this.cursor += next.value.segment.length;
 					next = iterator.next();
 				}
 			} else {
-				// Skip word run
+				// 跳过连续单词字符
 				while (!next.done && !isWhitespaceChar(next.value.segment) && !isPunctuationChar(next.value.segment)) {
 					this.cursor += next.value.segment.length;
 					next = iterator.next();
@@ -408,20 +408,20 @@ export class Input implements Component, Focusable {
 		this.lastAction = null;
 		this.pushUndo();
 
-		// Clean the pasted text - remove newlines and carriage returns
+		// 清理粘贴的文本 - 移除换行符和回车符
 		const cleanText = pastedText.replace(/\r\n/g, "").replace(/\r/g, "").replace(/\n/g, "");
 
-		// Insert at cursor position
+		// 在光标位置插入
 		this.value = this.value.slice(0, this.cursor) + cleanText + this.value.slice(this.cursor);
 		this.cursor += cleanText.length;
 	}
 
 	invalidate(): void {
-		// No cached state to invalidate currently
+		// 当前没有需要失效的缓存状态
 	}
 
 	render(width: number): string[] {
-		// Calculate visible window
+		// 计算可见窗口
 		const prompt = "> ";
 		const availableWidth = width - prompt.length;
 
@@ -433,18 +433,18 @@ export class Input implements Component, Focusable {
 		let cursorDisplay = this.cursor;
 
 		if (this.value.length < availableWidth) {
-			// Everything fits (leave room for cursor at end)
+			// 全部内容都能容纳（在末尾为光标预留空间）
 			visibleText = this.value;
 		} else {
-			// Need horizontal scrolling
-			// Reserve one character for cursor if it's at the end
+			// 需要水平滚动
+			// 如果光标在末尾，则预留一个字符空间
 			const scrollWidth = this.cursor === this.value.length ? availableWidth - 1 : availableWidth;
 			const halfWidth = Math.floor(scrollWidth / 2);
 
 			const findValidStart = (start: number) => {
 				while (start < this.value.length) {
 					const charCode = this.value.charCodeAt(start);
-					// this is low surrogate, not a valid start
+					// 这是低位代理项，不是有效的起始位置
 					if (charCode >= 0xdc00 && charCode < 0xe000) {
 						start++;
 						continue;
@@ -457,7 +457,7 @@ export class Input implements Component, Focusable {
 			const findValidEnd = (end: number) => {
 				while (end > 0) {
 					const charCode = this.value.charCodeAt(end - 1);
-					// this is high surrogate, might be split.
+					// 这是高位代理项，可能会被分割
 					if (charCode >= 0xd800 && charCode < 0xdc00) {
 						end--;
 						continue;
@@ -468,39 +468,39 @@ export class Input implements Component, Focusable {
 			};
 
 			if (this.cursor < halfWidth) {
-				// Cursor near start
+				// 光标靠近开头
 				visibleText = this.value.slice(0, findValidEnd(scrollWidth));
 				cursorDisplay = this.cursor;
 			} else if (this.cursor > this.value.length - halfWidth) {
-				// Cursor near end
+				// 光标靠近末尾
 				const start = findValidStart(this.value.length - scrollWidth);
 				visibleText = this.value.slice(start);
 				cursorDisplay = this.cursor - start;
 			} else {
-				// Cursor in middle
+				// 光标在中间
 				const start = findValidStart(this.cursor - halfWidth);
 				visibleText = this.value.slice(start, findValidEnd(start + scrollWidth));
 				cursorDisplay = halfWidth;
 			}
 		}
 
-		// Build line with fake cursor
-		// Insert cursor character at cursor position
+		// 构建带有虚拟光标的行
+		// 在光标位置插入光标字符
 		const graphemes = [...segmenter.segment(visibleText.slice(cursorDisplay))];
 		const cursorGrapheme = graphemes[0];
 
 		const beforeCursor = visibleText.slice(0, cursorDisplay);
-		const atCursor = cursorGrapheme?.segment ?? " "; // Character at cursor, or space if at end
+		const atCursor = cursorGrapheme?.segment ?? " "; // 光标处的字符，如果在末尾则为空格
 		const afterCursor = visibleText.slice(cursorDisplay + atCursor.length);
 
-		// Hardware cursor marker (zero-width, emitted before fake cursor for IME positioning)
+		// 硬件光标标记（零宽，在虚拟光标前发出，用于 IME 定位）
 		const marker = this.focused ? CURSOR_MARKER : "";
 
-		// Use inverse video to show cursor
-		const cursorChar = `\x1b[7m${atCursor}\x1b[27m`; // ESC[7m = reverse video, ESC[27m = normal
+		// 使用反色显示光标
+		const cursorChar = `\x1b[7m${atCursor}\x1b[27m`; // ESC[7m = 反色, ESC[27m = 正常
 		const textWithCursor = beforeCursor + marker + cursorChar + afterCursor;
 
-		// Calculate visual width
+		// 计算视觉宽度
 		const visualLength = visibleWidth(textWithCursor);
 		const padding = " ".repeat(Math.max(0, availableWidth - visualLength));
 		const line = prompt + textWithCursor + padding;

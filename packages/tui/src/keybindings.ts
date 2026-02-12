@@ -1,10 +1,10 @@
 import { type KeyId, matchesKey } from "./keys.js";
 
 /**
- * Editor actions that can be bound to keys.
+ * 可绑定到按键的编辑器操作。
  */
 export type EditorAction =
-	// Cursor movement
+	// 光标移动
 	| "cursorUp"
 	| "cursorDown"
 	| "cursorLeft"
@@ -17,55 +17,55 @@ export type EditorAction =
 	| "jumpBackward"
 	| "pageUp"
 	| "pageDown"
-	// Deletion
+	// 删除
 	| "deleteCharBackward"
 	| "deleteCharForward"
 	| "deleteWordBackward"
 	| "deleteWordForward"
 	| "deleteToLineStart"
 	| "deleteToLineEnd"
-	// Text input
+	// 文本输入
 	| "newLine"
 	| "submit"
 	| "tab"
-	// Selection/autocomplete
+	// 选择/自动补全
 	| "selectUp"
 	| "selectDown"
 	| "selectPageUp"
 	| "selectPageDown"
 	| "selectConfirm"
 	| "selectCancel"
-	// Clipboard
+	// 剪贴板
 	| "copy"
-	// Kill ring
+	// 剪切环（Kill ring）
 	| "yank"
 	| "yankPop"
-	// Undo
+	// 撤销
 	| "undo"
-	// Tool output
+	// 工具输出
 	| "expandTools"
-	// Session
+	// 会话
 	| "toggleSessionPath"
 	| "toggleSessionSort"
 	| "renameSession"
 	| "deleteSession"
 	| "deleteSessionNoninvasive";
 
-// Re-export KeyId from keys.ts
+// 从 keys.ts 重新导出 KeyId
 export type { KeyId };
 
 /**
- * Editor keybindings configuration.
+ * 编辑器按键绑定配置。
  */
 export type EditorKeybindingsConfig = {
 	[K in EditorAction]?: KeyId | KeyId[];
 };
 
 /**
- * Default editor keybindings.
+ * 默认编辑器按键绑定。
  */
 export const DEFAULT_EDITOR_KEYBINDINGS: Required<EditorKeybindingsConfig> = {
-	// Cursor movement
+	// 光标移动
 	cursorUp: "up",
 	cursorDown: "down",
 	cursorLeft: ["left", "ctrl+b"],
@@ -78,34 +78,34 @@ export const DEFAULT_EDITOR_KEYBINDINGS: Required<EditorKeybindingsConfig> = {
 	jumpBackward: "ctrl+alt+]",
 	pageUp: "pageUp",
 	pageDown: "pageDown",
-	// Deletion
+	// 删除
 	deleteCharBackward: "backspace",
 	deleteCharForward: ["delete", "ctrl+d"],
 	deleteWordBackward: ["ctrl+w", "alt+backspace"],
 	deleteWordForward: ["alt+d", "alt+delete"],
 	deleteToLineStart: "ctrl+u",
 	deleteToLineEnd: "ctrl+k",
-	// Text input
+	// 文本输入
 	newLine: "shift+enter",
 	submit: "enter",
 	tab: "tab",
-	// Selection/autocomplete
+	// 选择/自动补全
 	selectUp: "up",
 	selectDown: "down",
 	selectPageUp: "pageUp",
 	selectPageDown: "pageDown",
 	selectConfirm: "enter",
 	selectCancel: ["escape", "ctrl+c"],
-	// Clipboard
+	// 剪贴板
 	copy: "ctrl+c",
-	// Kill ring
+	// 剪切环（Kill ring）
 	yank: "ctrl+y",
 	yankPop: "alt+y",
-	// Undo
+	// 撤销
 	undo: "ctrl+-",
-	// Tool output
+	// 工具输出
 	expandTools: "ctrl+o",
-	// Session
+	// 会话
 	toggleSessionPath: "ctrl+p",
 	toggleSessionSort: "ctrl+s",
 	renameSession: "ctrl+r",
@@ -114,7 +114,7 @@ export const DEFAULT_EDITOR_KEYBINDINGS: Required<EditorKeybindingsConfig> = {
 };
 
 /**
- * Manages keybindings for the editor.
+ * 管理编辑器的按键绑定。
  */
 export class EditorKeybindingsManager {
 	private actionToKeys: Map<EditorAction, KeyId[]>;
@@ -127,13 +127,13 @@ export class EditorKeybindingsManager {
 	private buildMaps(config: EditorKeybindingsConfig): void {
 		this.actionToKeys.clear();
 
-		// Start with defaults
+		// 从默认值开始
 		for (const [action, keys] of Object.entries(DEFAULT_EDITOR_KEYBINDINGS)) {
 			const keyArray = Array.isArray(keys) ? keys : [keys];
 			this.actionToKeys.set(action as EditorAction, [...keyArray]);
 		}
 
-		// Override with user config
+		// 使用用户配置覆盖
 		for (const [action, keys] of Object.entries(config)) {
 			if (keys === undefined) continue;
 			const keyArray = Array.isArray(keys) ? keys : [keys];
@@ -142,7 +142,7 @@ export class EditorKeybindingsManager {
 	}
 
 	/**
-	 * Check if input matches a specific action.
+	 * 检查输入是否匹配特定操作。
 	 */
 	matches(data: string, action: EditorAction): boolean {
 		const keys = this.actionToKeys.get(action);
@@ -154,21 +154,21 @@ export class EditorKeybindingsManager {
 	}
 
 	/**
-	 * Get keys bound to an action.
+	 * 获取绑定到操作的按键。
 	 */
 	getKeys(action: EditorAction): KeyId[] {
 		return this.actionToKeys.get(action) ?? [];
 	}
 
 	/**
-	 * Update configuration.
+	 * 更新配置。
 	 */
 	setConfig(config: EditorKeybindingsConfig): void {
 		this.buildMaps(config);
 	}
 }
 
-// Global instance
+// 全局实例
 let globalEditorKeybindings: EditorKeybindingsManager | null = null;
 
 export function getEditorKeybindings(): EditorKeybindingsManager {

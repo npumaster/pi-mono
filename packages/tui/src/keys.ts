@@ -1,21 +1,21 @@
 /**
- * Keyboard input handling for terminal applications.
+ * 终端应用程序的键盘输入处理。
  *
- * Supports both legacy terminal sequences and Kitty keyboard protocol.
- * See: https://sw.kovidgoyal.net/kitty/keyboard-protocol/
- * Reference: https://github.com/sst/opentui/blob/7da92b4088aebfe27b9f691c04163a48821e49fd/packages/core/src/lib/parse.keypress.ts
+ * 支持旧版终端序列和 Kitty 键盘协议。
+ * 参见：https://sw.kovidgoyal.net/kitty/keyboard-protocol/
+ * 参考：https://github.com/sst/opentui/blob/7da92b4088aebfe27b9f691c04163a48821e49fd/packages/core/src/lib/parse.keypress.ts
  *
- * Symbol keys are also supported, however some ctrl+symbol combos
- * overlap with ASCII codes, e.g. ctrl+[ = ESC.
- * See: https://sw.kovidgoyal.net/kitty/keyboard-protocol/#legacy-ctrl-mapping-of-ascii-keys
- * Those can still be * used for ctrl+shift combos
+ * 符号键也受支持，但某些 ctrl+symbol 组合
+ * 与 ASCII 码重叠，例如 ctrl+[ = ESC。
+ * 参见：https://sw.kovidgoyal.net/kitty/keyboard-protocol/#legacy-ctrl-mapping-of-ascii-keys
+ * 这些仍然可以用于 ctrl+shift 组合。
  *
  * API:
- * - matchesKey(data, keyId) - Check if input matches a key identifier
- * - parseKey(data) - Parse input and return the key identifier
- * - Key - Helper object for creating typed key identifiers
- * - setKittyProtocolActive(active) - Set global Kitty protocol state
- * - isKittyProtocolActive() - Query global Kitty protocol state
+ * - matchesKey(data, keyId) - 检查输入是否匹配键标识符
+ * - parseKey(data) - 解析输入并返回键标识符
+ * - Key - 用于创建类型化键标识符的助手对象
+ * - setKittyProtocolActive(active) - 设置全局 Kitty 协议状态
+ * - isKittyProtocolActive() - 查询全局 Kitty 协议状态
  */
 
 // =============================================================================
@@ -691,20 +691,20 @@ function parseKeyId(keyId: string): { key: string; ctrl: boolean; shift: boolean
 }
 
 /**
- * Match input data against a key identifier string.
+ * 将输入数据与键标识符字符串进行匹配。
  *
- * Supported key identifiers:
- * - Single keys: "escape", "tab", "enter", "backspace", "delete", "home", "end", "space"
- * - Arrow keys: "up", "down", "left", "right"
- * - Ctrl combinations: "ctrl+c", "ctrl+z", etc.
- * - Shift combinations: "shift+tab", "shift+enter"
- * - Alt combinations: "alt+enter", "alt+backspace"
- * - Combined modifiers: "shift+ctrl+p", "ctrl+alt+x"
+ * 支持的键标识符：
+ * - 单键："escape", "tab", "enter", "backspace", "delete", "home", "end", "space"
+ * - 方向键："up", "down", "left", "right"
+ * - Ctrl 组合："ctrl+c", "ctrl+z" 等
+ * - Shift 组合："shift+tab", "shift+enter"
+ * - Alt 组合："alt+enter", "alt+backspace"
+ * - 组合修饰符："shift+ctrl+p", "ctrl+alt+x"
  *
- * Use the Key helper for autocomplete: Key.ctrl("c"), Key.escape, Key.ctrlShift("p")
+ * 使用 Key 助手进行自动补全：Key.ctrl("c"), Key.escape, Key.ctrlShift("p")
  *
- * @param data - Raw input data from terminal
- * @param keyId - Key identifier (e.g., "ctrl+c", "escape", Key.ctrl("c"))
+ * @param data - 来自终端的原始输入数据
+ * @param keyId - 键标识符（例如 "ctrl+c", "escape", Key.ctrl("c")）
  */
 export function matchesKey(data: string, keyId: KeyId): boolean {
 	const parsed = parseKeyId(keyId);
@@ -1037,10 +1037,10 @@ export function matchesKey(data: string, keyId: KeyId): boolean {
 }
 
 /**
- * Parse input data and return the key identifier if recognized.
+ * 解析输入数据并在识别时返回键标识符。
  *
- * @param data - Raw input data from terminal
- * @returns Key identifier string (e.g., "ctrl+c") or undefined
+ * @param data - 来自终端的原始输入数据
+ * @returns 键标识符字符串（例如 "ctrl+c"）或 undefined
  */
 export function parseKey(data: string): string | undefined {
 	const kitty = parseKittySequence(data);
@@ -1052,11 +1052,9 @@ export function parseKey(data: string): string | undefined {
 		if (effectiveMod & MODIFIERS.ctrl) mods.push("ctrl");
 		if (effectiveMod & MODIFIERS.alt) mods.push("alt");
 
-		// Use base layout key only when codepoint is not a recognized Latin
-		// letter (a-z) or symbol (/, -, [, ;, etc.). For those, the codepoint
-		// is authoritative regardless of physical key position. This prevents
-		// remapped layouts (Dvorak, Colemak, xremap, etc.) from reporting the
-		// wrong key name based on the QWERTY physical position.
+		// 仅当码位不是识别出的拉丁字母 (a-z) 或符号（/、-、[、; 等）时才使用基础布局键。
+		// 对于这些键，无论物理按键位置如何，码位都是权威的。这可以防止重新映射的布局
+		// （Dvorak、Colemak、xremap 等）根据 QWERTY 物理位置报告错误的键名。
 		const isLatinLetter = codepoint >= 97 && codepoint <= 122; // a-z
 		const isKnownSymbol = SYMBOL_KEYS.has(String.fromCharCode(codepoint));
 		const effectiveCodepoint = isLatinLetter || isKnownSymbol ? codepoint : (baseLayoutKey ?? codepoint);
@@ -1086,10 +1084,10 @@ export function parseKey(data: string): string | undefined {
 		}
 	}
 
-	// Mode-aware legacy sequences
-	// When Kitty protocol is active, ambiguous sequences are interpreted as custom terminal mappings:
-	// - \x1b\r = shift+enter (Kitty mapping), not alt+enter
-	// - \n = shift+enter (Ghostty mapping)
+	// 感知模式的旧版序列
+	// 当 Kitty 协议激活时，歧义序列被解释为自定义终端映射：
+	// - \x1b\r = shift+enter (Kitty 映射)，而不是 alt+enter
+	// - \n = shift+enter (Ghostty 映射)
 	if (_kittyProtocolActive) {
 		if (data === "\x1b\r" || data === "\n") return "shift+enter";
 	}
@@ -1097,7 +1095,7 @@ export function parseKey(data: string): string | undefined {
 	const legacySequenceKeyId = LEGACY_SEQUENCE_KEY_IDS[data];
 	if (legacySequenceKeyId) return legacySequenceKeyId;
 
-	// Legacy sequences (used when Kitty protocol is not active, or for unambiguous sequences)
+	// 旧版序列（在 Kitty 协议未激活时或对于无歧义序列使用）
 	if (data === "\x1b") return "escape";
 	if (data === "\x1c") return "ctrl+\\";
 	if (data === "\x1d") return "ctrl+]";
@@ -1122,7 +1120,7 @@ export function parseKey(data: string): string | undefined {
 		if (code >= 1 && code <= 26) {
 			return `ctrl+alt+${String.fromCharCode(code + 96)}`;
 		}
-		// Legacy alt+letter (ESC followed by letter a-z)
+		// 旧版 alt+字母（ESC 后跟字母 a-z）
 		if (code >= 97 && code <= 122) {
 			return `alt+${String.fromCharCode(code)}`;
 		}
@@ -1137,7 +1135,7 @@ export function parseKey(data: string): string | undefined {
 	if (data === "\x1b[5~") return "pageUp";
 	if (data === "\x1b[6~") return "pageDown";
 
-	// Raw Ctrl+letter
+	// 原始 Ctrl+字母
 	if (data.length === 1) {
 		const code = data.charCodeAt(0);
 		if (code >= 1 && code <= 26) {

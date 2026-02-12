@@ -15,7 +15,7 @@ export interface ImageOptions {
 	maxWidthCells?: number;
 	maxHeightCells?: number;
 	filename?: string;
-	/** Kitty image ID. If provided, reuses this ID (for animations/updates). */
+	/** Kitty 图像 ID。如果提供，将重用此 ID（用于动画/更新）。 */
 	imageId?: number;
 }
 
@@ -45,7 +45,7 @@ export class Image implements Component {
 		this.imageId = options.imageId;
 	}
 
-	/** Get the Kitty image ID used by this image (if any). */
+	/** 获取此图像使用的 Kitty 图像 ID（如果有）。 */
 	getImageId(): number | undefined {
 		return this.imageId;
 	}
@@ -72,19 +72,19 @@ export class Image implements Component {
 			});
 
 			if (result) {
-				// Store the image ID for later cleanup
+				// 存储图像 ID 以备后续清理
 				if (result.imageId) {
 					this.imageId = result.imageId;
 				}
 
-				// Return `rows` lines so TUI accounts for image height
-				// First (rows-1) lines are empty (TUI clears them)
-				// Last line: move cursor back up, then output image sequence
+				// 返回 `rows` 行，以便 TUI 考虑图像高度
+				// 前 (rows-1) 行是空的（TUI 会清除它们）
+				// 最后一行：将光标移回上方，然后输出图像序列
 				lines = [];
 				for (let i = 0; i < result.rows - 1; i++) {
 					lines.push("");
 				}
-				// Move cursor up to first row, then output image
+				// 将光标移回第一行，然后输出图像
 				const moveUp = result.rows > 1 ? `\x1b[${result.rows - 1}A` : "";
 				lines.push(moveUp + result.sequence);
 			} else {

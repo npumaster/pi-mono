@@ -1,13 +1,13 @@
-// Core TUI interfaces and classes
+// 核心 TUI 接口和类
 
-// Autocomplete support
+// 自动补全支持
 export {
 	type AutocompleteItem,
 	type AutocompleteProvider,
 	CombinedAutocompleteProvider,
 	type SlashCommand,
 } from "./autocomplete.js";
-// Components
+// 组件
 export { Box } from "./components/box.js";
 export { CancellableLoader } from "./components/cancellable-loader.js";
 export { Editor, type EditorOptions, type EditorTheme } from "./components/editor.js";
@@ -20,11 +20,11 @@ export { type SettingItem, SettingsList, type SettingsListTheme } from "./compon
 export { Spacer } from "./components/spacer.js";
 export { Text } from "./components/text.js";
 export { TruncatedText } from "./components/truncated-text.js";
-// Editor component interface (for custom editors)
+// 编辑器组件接口（用于自定义编辑器）
 export type { EditorComponent } from "./editor-component.js";
-// Fuzzy matching
+// 模糊匹配
 export { type FuzzyMatch, fuzzyFilter, fuzzyMatch } from "./fuzzy.js";
-// Keybindings
+// 按键绑定
 export {
 	DEFAULT_EDITOR_KEYBINDINGS,
 	type EditorAction,
@@ -33,7 +33,7 @@ export {
 	getEditorKeybindings,
 	setEditorKeybindings,
 } from "./keybindings.js";
-// Keyboard input handling
+// 键盘输入处理
 export {
 	isKeyRelease,
 	isKeyRepeat,
@@ -45,11 +45,11 @@ export {
 	parseKey,
 	setKittyProtocolActive,
 } from "./keys.js";
-// Input buffering for batch splitting
+// 用于批处理拆分的输入缓冲
 export { StdinBuffer, type StdinBufferEventMap, type StdinBufferOptions } from "./stdin-buffer.js";
-// Terminal interface and implementations
+// 终端接口和实现
 export { ProcessTerminal, type Terminal } from "./terminal.js";
-// Terminal image support
+// 终端图像支持
 export {
 	allocateImageId,
 	type CellDimensions,
@@ -88,5 +88,5 @@ export {
 	type SizeValue,
 	TUI,
 } from "./tui.js";
-// Utilities
+// 工具函数
 export { truncateToWidth, visibleWidth, wrapTextWithAnsi } from "./utils.js";

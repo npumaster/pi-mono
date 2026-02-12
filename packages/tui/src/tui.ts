@@ -192,7 +192,7 @@ export class Container implements Component {
 }
 
 /**
- * TUI - Main class for managing terminal UI with differential rendering
+ * TUI - 管理具有差异化渲染的终端 UI 的主类
  */
 export class TUI extends Container {
 	public terminal: Terminal;
@@ -200,21 +200,21 @@ export class TUI extends Container {
 	private previousWidth = 0;
 	private focusedComponent: Component | null = null;
 
-	/** Global callback for debug key (Shift+Ctrl+D). Called before input is forwarded to focused component. */
+	/** 调试键 (Shift+Ctrl+D) 的全局回调。在输入转发到聚焦组件之前调用。 */
 	public onDebug?: () => void;
 	private renderRequested = false;
-	private cursorRow = 0; // Logical cursor row (end of rendered content)
-	private hardwareCursorRow = 0; // Actual terminal cursor row (may differ due to IME positioning)
-	private inputBuffer = ""; // Buffer for parsing terminal responses
+	private cursorRow = 0; // 逻辑光标行（渲染内容的末尾）
+	private hardwareCursorRow = 0; // 实际终端光标行（由于 IME 定位可能有所不同）
+	private inputBuffer = ""; // 用于解析终端响应的缓冲区
 	private cellSizeQueryPending = false;
 	private showHardwareCursor = process.env.PI_HARDWARE_CURSOR === "1";
-	private clearOnShrink = process.env.PI_CLEAR_ON_SHRINK === "1"; // Clear empty rows when content shrinks (default: off)
-	private maxLinesRendered = 0; // Track terminal's working area (max lines ever rendered)
-	private previousViewportTop = 0; // Track previous viewport top for resize-aware cursor moves
+	private clearOnShrink = process.env.PI_CLEAR_ON_SHRINK === "1"; // 当内容收缩时清除空行（默认：关闭）
+	private maxLinesRendered = 0; // 跟踪终端的工作区域（曾渲染过的最大行数）
+	private previousViewportTop = 0; // 跟踪之前的视口顶部，用于感知调整大小的光标移动
 	private fullRedrawCount = 0;
 	private stopped = false;
 
-	// Overlay stack for modal components rendered on top of base content
+	// 叠加层栈，用于在基础内容之上渲染模态组件
 	private overlayStack: {
 		component: Component;
 		options?: OverlayOptions;
@@ -252,49 +252,49 @@ export class TUI extends Container {
 	}
 
 	/**
-	 * Set whether to trigger full re-render when content shrinks.
-	 * When true (default), empty rows are cleared when content shrinks.
-	 * When false, empty rows remain (reduces redraws on slower terminals).
+	 * 设置当内容收缩时是否触发完整重新渲染。
+	 * 当为 true（默认）时，内容收缩时会清除空行。
+	 * 当为 false 时，空行保留（减少慢速终端上的重绘）。
 	 */
 	setClearOnShrink(enabled: boolean): void {
 		this.clearOnShrink = enabled;
 	}
 
 	setFocus(component: Component | null): void {
-		// Clear focused flag on old component
+		// 清除旧组件上的聚焦标志
 		if (isFocusable(this.focusedComponent)) {
 			this.focusedComponent.focused = false;
 		}
 
 		this.focusedComponent = component;
 
-		// Set focused flag on new component
+		// 设置新组件上的聚焦标志
 		if (isFocusable(component)) {
 			component.focused = true;
 		}
 	}
 
 	/**
-	 * Show an overlay component with configurable positioning and sizing.
-	 * Returns a handle to control the overlay's visibility.
+	 * 显示具有可配置定位和尺寸的叠加层组件。
+	 * 返回用于控制叠加层可见性的句柄。
 	 */
 	showOverlay(component: Component, options?: OverlayOptions): OverlayHandle {
 		const entry = { component, options, preFocus: this.focusedComponent, hidden: false };
 		this.overlayStack.push(entry);
-		// Only focus if overlay is actually visible
+		// 仅当叠加层实际可见时才聚焦
 		if (this.isOverlayVisible(entry)) {
 			this.setFocus(component);
 		}
 		this.terminal.hideCursor();
 		this.requestRender();
 
-		// Return handle for controlling this overlay
+		// 返回用于控制此叠加层的句柄
 		return {
 			hide: () => {
 				const index = this.overlayStack.indexOf(entry);
 				if (index !== -1) {
 					this.overlayStack.splice(index, 1);
-					// Restore focus if this overlay had focus
+					// 如果此叠加层拥有焦点，则恢复焦点
 					if (this.focusedComponent === component) {
 						const topVisible = this.getTopmostVisibleOverlay();
 						this.setFocus(topVisible?.component ?? entry.preFocus);
@@ -306,15 +306,15 @@ export class TUI extends Container {
 			setHidden: (hidden: boolean) => {
 				if (entry.hidden === hidden) return;
 				entry.hidden = hidden;
-				// Update focus when hiding/showing
+				// 隐藏/显示时更新焦点
 				if (hidden) {
-					// If this overlay had focus, move focus to next visible or preFocus
+					// 如果此叠加层拥有焦点，则将焦点移至下一个可见叠加层或 preFocus
 					if (this.focusedComponent === component) {
 						const topVisible = this.getTopmostVisibleOverlay();
 						this.setFocus(topVisible?.component ?? entry.preFocus);
 					}
 				} else {
-					// Restore focus to this overlay when showing (if it's actually visible)
+					// 显示时恢复此叠加层的焦点（如果它实际可见）
 					if (this.isOverlayVisible(entry)) {
 						this.setFocus(component);
 					}
@@ -325,23 +325,23 @@ export class TUI extends Container {
 		};
 	}
 
-	/** Hide the topmost overlay and restore previous focus. */
+	/** 隐藏最顶层的叠加层并恢复之前的焦点。 */
 	hideOverlay(): void {
 		const overlay = this.overlayStack.pop();
 		if (!overlay) return;
-		// Find topmost visible overlay, or fall back to preFocus
+		// 查找最顶层的可见叠加层，或回退到 preFocus
 		const topVisible = this.getTopmostVisibleOverlay();
 		this.setFocus(topVisible?.component ?? overlay.preFocus);
 		if (this.overlayStack.length === 0) this.terminal.hideCursor();
 		this.requestRender();
 	}
 
-	/** Check if there are any visible overlays */
+	/** 检查是否有任何可见的叠加层 */
 	hasOverlay(): boolean {
 		return this.overlayStack.some((o) => this.isOverlayVisible(o));
 	}
 
-	/** Check if an overlay entry is currently visible */
+	/** 检查叠加层条目当前是否可见 */
 	private isOverlayVisible(entry: (typeof this.overlayStack)[number]): boolean {
 		if (entry.hidden) return false;
 		if (entry.options?.visible) {
@@ -350,7 +350,7 @@ export class TUI extends Container {
 		return true;
 	}
 
-	/** Find the topmost visible overlay, if any */
+	/** 查找最顶层的可见叠加层（如果有） */
 	private getTopmostVisibleOverlay(): (typeof this.overlayStack)[number] | undefined {
 		for (let i = this.overlayStack.length - 1; i >= 0; i--) {
 			if (this.isOverlayVisible(this.overlayStack[i])) {
@@ -377,21 +377,21 @@ export class TUI extends Container {
 	}
 
 	private queryCellSize(): void {
-		// Only query if terminal supports images (cell size is only used for image rendering)
+		// 仅当终端支持图像时才查询（单元格大小仅用于图像渲染）
 		if (!getCapabilities().images) {
 			return;
 		}
-		// Query terminal for cell size in pixels: CSI 16 t
-		// Response format: CSI 6 ; height ; width t
+		// 向终端查询以像素为单位的单元格大小：CSI 16 t
+		// 响应格式：CSI 6 ; height ; width t
 		this.cellSizeQueryPending = true;
 		this.terminal.write("\x1b[16t");
 	}
 
 	stop(): void {
 		this.stopped = true;
-		// Move cursor to the end of the content to prevent overwriting/artifacts on exit
+		// 将光标移至内容的末尾，以防止退出时出现覆盖/残留
 		if (this.previousLines.length > 0) {
-			const targetRow = this.previousLines.length; // Line after the last content
+			const targetRow = this.previousLines.length; // 最后一行内容之后的一行
 			const lineDiff = targetRow - this.hardwareCursorRow;
 			if (lineDiff > 0) {
 				this.terminal.write(`\x1b[${lineDiff}B`);
@@ -408,7 +408,7 @@ export class TUI extends Container {
 	requestRender(force = false): void {
 		if (force) {
 			this.previousLines = [];
-			this.previousWidth = -1; // -1 triggers widthChanged, forcing a full clear
+			this.previousWidth = -1; // -1 触发 widthChanged，强制全量清除
 			this.cursorRow = 0;
 			this.hardwareCursorRow = 0;
 			this.maxLinesRendered = 0;
@@ -423,7 +423,7 @@ export class TUI extends Container {
 	}
 
 	private handleInput(data: string): void {
-		// If we're waiting for cell size response, buffer input and parse
+		// 如果我们正在等待单元格大小响应，则缓冲输入并解析
 		if (this.cellSizeQueryPending) {
 			this.inputBuffer += data;
 			const filtered = this.parseCellSizeResponse();
@@ -431,30 +431,30 @@ export class TUI extends Container {
 			data = filtered;
 		}
 
-		// Global debug key handler (Shift+Ctrl+D)
+		// 全局调试键处理器 (Shift+Ctrl+D)
 		if (matchesKey(data, "shift+ctrl+d") && this.onDebug) {
 			this.onDebug();
 			return;
 		}
 
-		// If focused component is an overlay, verify it's still visible
-		// (visibility can change due to terminal resize or visible() callback)
+		// 如果聚焦的组件是叠加层，请验证它是否仍然可见
+		// （可见性可能会由于终端调整大小或 visible() 回调而改变）
 		const focusedOverlay = this.overlayStack.find((o) => o.component === this.focusedComponent);
 		if (focusedOverlay && !this.isOverlayVisible(focusedOverlay)) {
-			// Focused overlay is no longer visible, redirect to topmost visible overlay
+			// 聚焦的叠加层不再可见，重定向到最顶层的可见叠加层
 			const topVisible = this.getTopmostVisibleOverlay();
 			if (topVisible) {
 				this.setFocus(topVisible.component);
 			} else {
-				// No visible overlays, restore to preFocus
+				// 没有可见的叠加层，恢复到 preFocus
 				this.setFocus(focusedOverlay.preFocus);
 			}
 		}
 
-		// Pass input to focused component (including Ctrl+C)
-		// The focused component can decide how to handle Ctrl+C
+		// 将输入传递给聚焦组件（包括 Ctrl+C）
+		// 聚焦组件可以决定如何处理 Ctrl+C
 		if (this.focusedComponent?.handleInput) {
-			// Filter out key release events unless component opts in
+			// 过滤掉键释放事件，除非组件选择接收
 			if (isKeyRelease(data) && !this.focusedComponent.wantsKeyRelease) {
 				return;
 			}
@@ -464,8 +464,8 @@ export class TUI extends Container {
 	}
 
 	private parseCellSizeResponse(): string {
-		// Response format: ESC [ 6 ; height ; width t
-		// Match the response pattern
+		// 响应格式：ESC [ 6 ; height ; width t
+		// 匹配响应模式
 		const responsePattern = /\x1b\[6;(\d+);(\d+)t/;
 		const match = this.inputBuffer.match(responsePattern);
 
@@ -475,39 +475,39 @@ export class TUI extends Container {
 
 			if (heightPx > 0 && widthPx > 0) {
 				setCellDimensions({ widthPx, heightPx });
-				// Invalidate all components so images re-render with correct dimensions
+				// 使所有组件失效，以便图像以正确的尺寸重新渲染
 				this.invalidate();
 				this.requestRender();
 			}
 
-			// Remove the response from buffer
+			// 从缓冲区中移除响应
 			this.inputBuffer = this.inputBuffer.replace(responsePattern, "");
 			this.cellSizeQueryPending = false;
 		}
 
-		// Check if we have a partial cell size response starting (wait for more data)
-		// Patterns that could be incomplete cell size response: \x1b, \x1b[, \x1b[6, \x1b[6;...(no t yet)
+		// 检查是否有部分单元格大小响应开始（等待更多数据）
+		// 可能是不完整的单元格大小响应的模式：\x1b, \x1b[, \x1b[6, \x1b[6;...(尚未出现 t)
 		const partialCellSizePattern = /\x1b(\[6?;?[\d;]*)?$/;
 		if (partialCellSizePattern.test(this.inputBuffer)) {
-			// Check if it's actually a complete different escape sequence (ends with a letter)
-			// Cell size response ends with 't', Kitty keyboard ends with 'u', arrows end with A-D, etc.
+			// 检查它是否实际上是一个完整的不同转义序列（以字母结尾）
+			// 单元格大小响应以 't' 结尾，Kitty 键盘以 'u' 结尾，箭头以 A-D 结尾等。
 			const lastChar = this.inputBuffer[this.inputBuffer.length - 1];
 			if (!/[a-zA-Z~]/.test(lastChar)) {
-				// Doesn't end with a terminator, might be incomplete - wait for more
+				// 不以终止符结尾，可能不完整 - 等待更多
 				return "";
 			}
 		}
 
-		// No cell size response found, return buffered data as user input
+		// 未找到单元格大小响应，将缓冲的数据作为用户输入返回
 		const result = this.inputBuffer;
 		this.inputBuffer = "";
-		this.cellSizeQueryPending = false; // Give up waiting
+		this.cellSizeQueryPending = false; // 放弃等待
 		return result;
 	}
 
 	/**
-	 * Resolve overlay layout from options.
-	 * Returns { width, row, col, maxHeight } for rendering.
+	 * 从选项中解析叠加层布局。
+	 * 返回用于渲染的 { width, row, col, maxHeight }。
 	 */
 	private resolveOverlayLayout(
 		options: OverlayOptions | undefined,
@@ -517,7 +517,7 @@ export class TUI extends Container {
 	): { width: number; row: number; col: number; maxHeight: number | undefined } {
 		const opt = options ?? {};
 
-		// Parse margin (clamp to non-negative)
+		// 解析边距（限制为非负数）
 		const margin =
 			typeof opt.margin === "number"
 				? { top: opt.margin, right: opt.margin, bottom: opt.margin, left: opt.margin }
@@ -527,82 +527,82 @@ export class TUI extends Container {
 		const marginBottom = Math.max(0, margin.bottom ?? 0);
 		const marginLeft = Math.max(0, margin.left ?? 0);
 
-		// Available space after margins
+		// 边距后的可用空间
 		const availWidth = Math.max(1, termWidth - marginLeft - marginRight);
 		const availHeight = Math.max(1, termHeight - marginTop - marginBottom);
 
-		// === Resolve width ===
+		// === 解析宽度 ===
 		let width = parseSizeValue(opt.width, termWidth) ?? Math.min(80, availWidth);
-		// Apply minWidth
+		// 应用最小宽度
 		if (opt.minWidth !== undefined) {
 			width = Math.max(width, opt.minWidth);
 		}
-		// Clamp to available space
+		// 限制在可用空间内
 		width = Math.max(1, Math.min(width, availWidth));
 
-		// === Resolve maxHeight ===
+		// === 解析最大高度 ===
 		let maxHeight = parseSizeValue(opt.maxHeight, termHeight);
-		// Clamp to available space
+		// 限制在可用空间内
 		if (maxHeight !== undefined) {
 			maxHeight = Math.max(1, Math.min(maxHeight, availHeight));
 		}
 
-		// Effective overlay height (may be clamped by maxHeight)
+		// 有效的叠加层高度（可能受 maxHeight 限制）
 		const effectiveHeight = maxHeight !== undefined ? Math.min(overlayHeight, maxHeight) : overlayHeight;
 
-		// === Resolve position ===
+		// === 解析位置 ===
 		let row: number;
 		let col: number;
 
 		if (opt.row !== undefined) {
 			if (typeof opt.row === "string") {
-				// Percentage: 0% = top, 100% = bottom (overlay stays within bounds)
+				// 百分比：0% = 顶部，100% = 底部（叠加层保持在边界内）
 				const match = opt.row.match(/^(\d+(?:\.\d+)?)%$/);
 				if (match) {
 					const maxRow = Math.max(0, availHeight - effectiveHeight);
 					const percent = parseFloat(match[1]) / 100;
 					row = marginTop + Math.floor(maxRow * percent);
 				} else {
-					// Invalid format, fall back to center
+					// 格式无效，回退到居中
 					row = this.resolveAnchorRow("center", effectiveHeight, availHeight, marginTop);
 				}
 			} else {
-				// Absolute row position
+				// 绝对行位置
 				row = opt.row;
 			}
 		} else {
-			// Anchor-based (default: center)
+			// 基于锚点（默认：居中）
 			const anchor = opt.anchor ?? "center";
 			row = this.resolveAnchorRow(anchor, effectiveHeight, availHeight, marginTop);
 		}
 
 		if (opt.col !== undefined) {
 			if (typeof opt.col === "string") {
-				// Percentage: 0% = left, 100% = right (overlay stays within bounds)
+				// 百分比：0% = 左侧，100% = 右侧（叠加层保持在边界内）
 				const match = opt.col.match(/^(\d+(?:\.\d+)?)%$/);
 				if (match) {
 					const maxCol = Math.max(0, availWidth - width);
 					const percent = parseFloat(match[1]) / 100;
 					col = marginLeft + Math.floor(maxCol * percent);
 				} else {
-					// Invalid format, fall back to center
+					// 格式无效，回退到居中
 					col = this.resolveAnchorCol("center", width, availWidth, marginLeft);
 				}
 			} else {
-				// Absolute column position
+				// 绝对列位置
 				col = opt.col;
 			}
 		} else {
-			// Anchor-based (default: center)
+			// 基于锚点（默认：居中）
 			const anchor = opt.anchor ?? "center";
 			col = this.resolveAnchorCol(anchor, width, availWidth, marginLeft);
 		}
 
-		// Apply offsets
+		// 应用偏移量
 		if (opt.offsetY !== undefined) row += opt.offsetY;
 		if (opt.offsetX !== undefined) col += opt.offsetX;
 
-		// Clamp to terminal bounds (respecting margins)
+		// 限制在终端边界内（尊重边距）
 		row = Math.max(marginTop, Math.min(row, termHeight - marginBottom - effectiveHeight));
 		col = Math.max(marginLeft, Math.min(col, termWidth - marginRight - width));
 
@@ -643,61 +643,61 @@ export class TUI extends Container {
 		}
 	}
 
-	/** Composite all overlays into content lines (in stack order, later = on top). */
+	/** 将所有叠加层合成到内容行中（按栈顺序，后者在上）。 */
 	private compositeOverlays(lines: string[], termWidth: number, termHeight: number): string[] {
 		if (this.overlayStack.length === 0) return lines;
 		const result = [...lines];
 
-		// Pre-render all visible overlays and calculate positions
+		// 预渲染所有可见叠加层并计算位置
 		const rendered: { overlayLines: string[]; row: number; col: number; w: number }[] = [];
 		let minLinesNeeded = result.length;
 
 		for (const entry of this.overlayStack) {
-			// Skip invisible overlays (hidden or visible() returns false)
+			// 跳过不可见叠加层（隐藏或 visible() 返回 false）
 			if (!this.isOverlayVisible(entry)) continue;
 
 			const { component, options } = entry;
 
-			// Get layout with height=0 first to determine width and maxHeight
-			// (width and maxHeight don't depend on overlay height)
+			// 首先获取 height=0 的布局以确定 width 和 maxHeight
+			// （width 和 maxHeight 不依赖于叠加层高度）
 			const { width, maxHeight } = this.resolveOverlayLayout(options, 0, termWidth, termHeight);
 
-			// Render component at calculated width
+			// 以计算出的宽度渲染组件
 			let overlayLines = component.render(width);
 
-			// Apply maxHeight if specified
+			// 如果指定了 maxHeight，则应用它
 			if (maxHeight !== undefined && overlayLines.length > maxHeight) {
 				overlayLines = overlayLines.slice(0, maxHeight);
 			}
 
-			// Get final row/col with actual overlay height
+			// 获取具有实际叠加层高度的最终 row/col
 			const { row, col } = this.resolveOverlayLayout(options, overlayLines.length, termWidth, termHeight);
 
 			rendered.push({ overlayLines, row, col, w: width });
 			minLinesNeeded = Math.max(minLinesNeeded, row + overlayLines.length);
 		}
 
-		// Ensure result covers the terminal working area to keep overlay positioning stable across resizes.
-		// maxLinesRendered can exceed current content length after a shrink; pad to keep viewportStart consistent.
+		// 确保结果覆盖终端工作区域，以在调整大小时保持叠加层定位稳定。
+		// maxLinesRendered 在收缩后可能超过当前内容长度；填充以保持 viewportStart 一致。
 		const workingHeight = Math.max(this.maxLinesRendered, minLinesNeeded);
 
-		// Extend result with empty lines if content is too short for overlay placement or working area
+		// 如果内容太短，无法放置叠加层或工作区域，则用空行扩展结果
 		while (result.length < workingHeight) {
 			result.push("");
 		}
 
 		const viewportStart = Math.max(0, workingHeight - termHeight);
 
-		// Track which lines were modified for final verification
+		// 跟踪哪些行被修改，用于最终验证
 		const modifiedLines = new Set<number>();
 
-		// Composite each overlay
+		// 合成每个叠加层
 		for (const { overlayLines, row, col, w } of rendered) {
 			for (let i = 0; i < overlayLines.length; i++) {
 				const idx = viewportStart + row + i;
 				if (idx >= 0 && idx < result.length) {
-					// Defensive: truncate overlay line to declared width before compositing
-					// (components should already respect width, but this ensures it)
+					// 防御性：在合成之前将叠加层行截断为声明的宽度
+					// （组件应该已经遵守宽度，但这可以确保它）
 					const truncatedOverlayLine =
 						visibleWidth(overlayLines[i]) > w ? sliceByColumn(overlayLines[i], 0, w, true) : overlayLines[i];
 					result[idx] = this.compositeLineAt(result[idx], truncatedOverlayLine, col, w, termWidth);
@@ -706,10 +706,10 @@ export class TUI extends Container {
 			}
 		}
 
-		// Final verification: ensure no composited line exceeds terminal width
-		// This is a belt-and-suspenders safeguard - compositeLineAt should already
-		// guarantee this, but we verify here to prevent crashes from any edge cases
-		// Only check lines that were actually modified (optimization)
+		// 最终验证：确保没有合成行超过终端宽度
+		// 这是一个额外的安全保障 - compositeLineAt 应该已经保证了这一点，
+		// 但我们在这里进行验证以防止任何边缘情况导致崩溃。
+		// 仅检查实际修改过的行（优化）
 		for (const idx of modifiedLines) {
 			const lineWidth = visibleWidth(result[idx]);
 			if (lineWidth > termWidth) {
@@ -733,7 +733,7 @@ export class TUI extends Container {
 		return lines;
 	}
 
-	/** Splice overlay content into a base line at a specific column. Single-pass optimized. */
+	/** 将叠加层内容拼接到特定列的基础行中。单次处理优化。 */
 	private compositeLineAt(
 		baseLine: string,
 		overlayLine: string,
@@ -743,14 +743,14 @@ export class TUI extends Container {
 	): string {
 		if (isImageLine(baseLine)) return baseLine;
 
-		// Single pass through baseLine extracts both before and after segments
+		// 单次处理基础行，同时提取“前”和“后”段
 		const afterStart = startCol + overlayWidth;
 		const base = extractSegments(baseLine, startCol, afterStart, totalWidth - afterStart, true);
 
-		// Extract overlay with width tracking (strict=true to exclude wide chars at boundary)
+		// 提取具有宽度跟踪的叠加层（strict=true 以排除边界处的宽字符）
 		const overlay = sliceWithWidth(overlayLine, 0, overlayWidth, true);
 
-		// Pad segments to target widths
+		// 将段填充到目标宽度
 		const beforePad = Math.max(0, startCol - base.beforeWidth);
 		const overlayPad = Math.max(0, overlayWidth - overlay.width);
 		const actualBeforeWidth = Math.max(startCol, base.beforeWidth);
@@ -758,7 +758,7 @@ export class TUI extends Container {
 		const afterTarget = Math.max(0, totalWidth - actualBeforeWidth - actualOverlayWidth);
 		const afterPad = Math.max(0, afterTarget - base.afterWidth);
 
-		// Compose result
+		// 组合结果
 		const r = TUI.SEGMENT_RESET;
 		const result =
 			base.before +
@@ -770,40 +770,40 @@ export class TUI extends Container {
 			base.after +
 			" ".repeat(afterPad);
 
-		// CRITICAL: Always verify and truncate to terminal width.
-		// This is the final safeguard against width overflow which would crash the TUI.
-		// Width tracking can drift from actual visible width due to:
-		// - Complex ANSI/OSC sequences (hyperlinks, colors)
-		// - Wide characters at segment boundaries
-		// - Edge cases in segment extraction
+		// 重要：始终验证并截断为终端宽度。
+		// 这是防止宽度溢出导致 TUI 崩溃的最后一道防线。
+		// 宽度跟踪可能由于以下原因与实际可见宽度产生偏差：
+		// - 复杂的 ANSI/OSC 序列（超链接、颜色）
+		// - 段边界处的宽字符
+		// - 段提取中的边缘情况
 		const resultWidth = visibleWidth(result);
 		if (resultWidth <= totalWidth) {
 			return result;
 		}
-		// Truncate with strict=true to ensure we don't exceed totalWidth
+		// 使用 strict=true 截断，以确保不超过 totalWidth
 		return sliceByColumn(result, 0, totalWidth, true);
 	}
 
 	/**
-	 * Find and extract cursor position from rendered lines.
-	 * Searches for CURSOR_MARKER, calculates its position, and strips it from the output.
-	 * Only scans the bottom terminal height lines (visible viewport).
-	 * @param lines - Rendered lines to search
-	 * @param height - Terminal height (visible viewport size)
-	 * @returns Cursor position { row, col } or null if no marker found
+	 * 从渲染的行中查找并提取光标位置。
+	 * 搜索 CURSOR_MARKER，计算其位置，并从输出中剥离它。
+	 * 仅扫描底部终端高度行（可见视口）。
+	 * @param lines - 要搜索的渲染行
+	 * @param height - 终端高度（可见视口大小）
+	 * @returns 光标位置 { row, col }，如果未找到标记则返回 null
 	 */
 	private extractCursorPosition(lines: string[], height: number): { row: number; col: number } | null {
-		// Only scan the bottom `height` lines (visible viewport)
+		// 仅扫描底部 `height` 行（可见视口）
 		const viewportTop = Math.max(0, lines.length - height);
 		for (let row = lines.length - 1; row >= viewportTop; row--) {
 			const line = lines[row];
 			const markerIndex = line.indexOf(CURSOR_MARKER);
 			if (markerIndex !== -1) {
-				// Calculate visual column (width of text before marker)
+				// 计算视觉列（标记前的文本宽度）
 				const beforeMarker = line.slice(0, markerIndex);
 				const col = visibleWidth(beforeMarker);
 
-				// Strip marker from the line
+				// 从行中剥离标记
 				lines[row] = line.slice(0, markerIndex) + line.slice(markerIndex + CURSOR_MARKER.length);
 
 				return { row, col };
@@ -825,36 +825,36 @@ export class TUI extends Container {
 			return targetScreenRow - currentScreenRow;
 		};
 
-		// Render all components to get new lines
+		// 渲染所有组件以获取新行
 		let newLines = this.render(width);
 
-		// Composite overlays into the rendered lines (before differential compare)
+		// 将叠加层合成到渲染的行中（在差异比较之前）
 		if (this.overlayStack.length > 0) {
 			newLines = this.compositeOverlays(newLines, width, height);
 		}
 
-		// Extract cursor position before applying line resets (marker must be found first)
+		// 在应用行重置之前提取光标位置（必须先找到标记）
 		const cursorPos = this.extractCursorPosition(newLines, height);
 
 		newLines = this.applyLineResets(newLines);
 
-		// Width changed - need full re-render (line wrapping changes)
+		// 宽度已更改 - 需要完整重新渲染（行换行发生变化）
 		const widthChanged = this.previousWidth !== 0 && this.previousWidth !== width;
 
-		// Helper to clear scrollback and viewport and render all new lines
+		// 清除回滚和视口并渲染所有新行的辅助函数
 		const fullRender = (clear: boolean): void => {
 			this.fullRedrawCount += 1;
-			let buffer = "\x1b[?2026h"; // Begin synchronized output
-			if (clear) buffer += "\x1b[3J\x1b[2J\x1b[H"; // Clear scrollback, screen, and home
+			let buffer = "\x1b[?2026h"; // 开始同步输出
+			if (clear) buffer += "\x1b[3J\x1b[2J\x1b[H"; // 清除回滚、屏幕并复位光标
 			for (let i = 0; i < newLines.length; i++) {
 				if (i > 0) buffer += "\r\n";
 				buffer += newLines[i];
 			}
-			buffer += "\x1b[?2026l"; // End synchronized output
+			buffer += "\x1b[?2026l"; // 结束同步输出
 			this.terminal.write(buffer);
 			this.cursorRow = Math.max(0, newLines.length - 1);
 			this.hardwareCursorRow = this.cursorRow;
-			// Reset max lines when clearing, otherwise track growth
+			// 清除时重置最大行数，否则跟踪增长
 			if (clear) {
 				this.maxLinesRendered = newLines.length;
 			} else {
@@ -874,30 +874,30 @@ export class TUI extends Container {
 			fs.appendFileSync(logPath, msg);
 		};
 
-		// First render - just output everything without clearing (assumes clean screen)
+		// 首次渲染 - 直接输出所有内容而不清除（假设屏幕是干净的）
 		if (this.previousLines.length === 0 && !widthChanged) {
 			logRedraw("first render");
 			fullRender(false);
 			return;
 		}
 
-		// Width changed - full re-render (line wrapping changes)
+		// 宽度已更改 - 完整重新渲染（行换行发生变化）
 		if (widthChanged) {
 			logRedraw(`width changed (${this.previousWidth} -> ${width})`);
 			fullRender(true);
 			return;
 		}
 
-		// Content shrunk below the working area and no overlays - re-render to clear empty rows
-		// (overlays need the padding, so only do this when no overlays are active)
-		// Configurable via setClearOnShrink() or PI_CLEAR_ON_SHRINK=0 env var
+		// 内容收缩到工作区域以下且没有叠加层 - 重新渲染以清除空行
+		// （叠加层需要填充，因此仅在没有激活的叠加层时才执行此操作）
+		// 可通过 setClearOnShrink() 或 PI_CLEAR_ON_SHRINK=0 环境变量进行配置
 		if (this.clearOnShrink && newLines.length < this.maxLinesRendered && this.overlayStack.length === 0) {
 			logRedraw(`clearOnShrink (maxLinesRendered=${this.maxLinesRendered})`);
 			fullRender(true);
 			return;
 		}
 
-		// Find first and last changed lines
+		// 查找第一行和最后一行更改的行
 		let firstChanged = -1;
 		let lastChanged = -1;
 		const maxLines = Math.max(newLines.length, this.previousLines.length);
@@ -921,24 +921,24 @@ export class TUI extends Container {
 		}
 		const appendStart = appendedLines && firstChanged === this.previousLines.length && firstChanged > 0;
 
-		// No changes - but still need to update hardware cursor position if it moved
+		// 无更改 - 但如果硬件光标移动了，仍需要更新其位置
 		if (firstChanged === -1) {
 			this.positionHardwareCursor(cursorPos, newLines.length);
 			this.previousViewportTop = Math.max(0, this.maxLinesRendered - height);
 			return;
 		}
 
-		// All changes are in deleted lines (nothing to render, just clear)
+		// 所有更改都在删除的行中（无需渲染，只需清除）
 		if (firstChanged >= newLines.length) {
 			if (this.previousLines.length > newLines.length) {
 				let buffer = "\x1b[?2026h";
-				// Move to end of new content (clamp to 0 for empty content)
+				// 移至新内容的末尾（空内容限制为 0）
 				const targetRow = Math.max(0, newLines.length - 1);
 				const lineDiff = computeLineDiff(targetRow);
 				if (lineDiff > 0) buffer += `\x1b[${lineDiff}B`;
 				else if (lineDiff < 0) buffer += `\x1b[${-lineDiff}A`;
 				buffer += "\r";
-				// Clear extra lines without scrolling
+				// 清除多余行而不滚动
 				const extraLines = this.previousLines.length - newLines.length;
 				if (extraLines > height) {
 					logRedraw(`extraLines > height (${extraLines} > ${height})`);
@@ -967,19 +967,19 @@ export class TUI extends Container {
 			return;
 		}
 
-		// Check if firstChanged is above what was previously visible
-		// Use previousLines.length (not maxLinesRendered) to avoid false positives after content shrinks
+		// 检查 firstChanged 是否在之前可见的范围之上
+		// 使用 previousLines.length（而非 maxLinesRendered）以避免内容收缩后的误报
 		const previousContentViewportTop = Math.max(0, this.previousLines.length - height);
 		if (firstChanged < previousContentViewportTop) {
-			// First change is above previous viewport - need full re-render
+			// 第一次更改在之前的视口之上 - 需要完整重新渲染
 			logRedraw(`firstChanged < viewportTop (${firstChanged} < ${previousContentViewportTop})`);
 			fullRender(true);
 			return;
 		}
 
-		// Render from first changed line to end
-		// Build buffer with all updates wrapped in synchronized output
-		let buffer = "\x1b[?2026h"; // Begin synchronized output
+		// 从第一个更改的行渲染到末尾
+		// 构建包含所有更新并包裹在同步输出中的缓冲区
+		let buffer = "\x1b[?2026h"; // 开始同步输出
 		const prevViewportBottom = prevViewportTop + height - 1;
 		const moveTargetRow = appendStart ? firstChanged - 1 : firstChanged;
 		if (moveTargetRow > prevViewportBottom) {
@@ -995,26 +995,26 @@ export class TUI extends Container {
 			hardwareCursorRow = moveTargetRow;
 		}
 
-		// Move cursor to first changed line (use hardwareCursorRow for actual position)
+		// 将光标移至第一个更改的行（使用 hardwareCursorRow 表示实际位置）
 		const lineDiff = computeLineDiff(moveTargetRow);
 		if (lineDiff > 0) {
-			buffer += `\x1b[${lineDiff}B`; // Move down
+			buffer += `\x1b[${lineDiff}B`; // 向下移动
 		} else if (lineDiff < 0) {
-			buffer += `\x1b[${-lineDiff}A`; // Move up
+			buffer += `\x1b[${-lineDiff}A`; // 向上移动
 		}
 
-		buffer += appendStart ? "\r\n" : "\r"; // Move to column 0
+		buffer += appendStart ? "\r\n" : "\r"; // 移至第 0 列
 
-		// Only render changed lines (firstChanged to lastChanged), not all lines to end
-		// This reduces flicker when only a single line changes (e.g., spinner animation)
+		// 仅渲染更改的行（firstChanged 到 lastChanged），而不是渲染到末尾的所有行
+		// 这可以减少只有单行更改时的闪烁（例如：微调器动画）
 		const renderEnd = Math.min(lastChanged, newLines.length - 1);
 		for (let i = firstChanged; i <= renderEnd; i++) {
 			if (i > firstChanged) buffer += "\r\n";
-			buffer += "\x1b[2K"; // Clear current line
+			buffer += "\x1b[2K"; // 清除当前行
 			const line = newLines[i];
 			const isImage = isImageLine(line);
 			if (!isImage && visibleWidth(line) > width) {
-				// Log all lines to crash file for debugging
+				// 将所有行记录到崩溃文件中以便调试
 				const crashLogPath = path.join(os.homedir(), ".pi", "agent", "pi-crash.log");
 				const crashData = [
 					`Crash at ${new Date().toISOString()}`,
@@ -1028,28 +1028,28 @@ export class TUI extends Container {
 				fs.mkdirSync(path.dirname(crashLogPath), { recursive: true });
 				fs.writeFileSync(crashLogPath, crashData);
 
-				// Clean up terminal state before throwing
+				// 在抛出错误前清理终端状态
 				this.stop();
 
 				const errorMsg = [
-					`Rendered line ${i} exceeds terminal width (${visibleWidth(line)} > ${width}).`,
+					`渲染行 ${i} 超过终端宽度 (${visibleWidth(line)} > ${width})。`,
 					"",
-					"This is likely caused by a custom TUI component not truncating its output.",
-					"Use visibleWidth() to measure and truncateToWidth() to truncate lines.",
+					"这可能是由于自定义 TUI 组件未截断其输出造成的。",
+					"使用 visibleWidth() 进行测量，并使用 truncateToWidth() 截断行。",
 					"",
-					`Debug log written to: ${crashLogPath}`,
+					`调试日志已写入：${crashLogPath}`,
 				].join("\n");
 				throw new Error(errorMsg);
 			}
 			buffer += line;
 		}
 
-		// Track where cursor ended up after rendering
+		// 跟踪渲染后光标所在的位置
 		let finalCursorRow = renderEnd;
 
-		// If we had more lines before, clear them and move cursor back
+		// 如果之前有更多行，清除它们并将光标移回
 		if (this.previousLines.length > newLines.length) {
-			// Move to end of new content first if we stopped before it
+			// 如果我们在新内容之前停止，先移至新内容的末尾
 			if (renderEnd < newLines.length - 1) {
 				const moveDown = newLines.length - 1 - renderEnd;
 				buffer += `\x1b[${moveDown}B`;
@@ -1059,11 +1059,11 @@ export class TUI extends Container {
 			for (let i = newLines.length; i < this.previousLines.length; i++) {
 				buffer += "\r\n\x1b[2K";
 			}
-			// Move cursor back to end of new content
+			// 将光标移回新内容的末尾
 			buffer += `\x1b[${extraLines}A`;
 		}
 
-		buffer += "\x1b[?2026l"; // End synchronized output
+		buffer += "\x1b[?2026l"; // 结束同步输出
 
 		if (process.env.PI_TUI_DEBUG === "1") {
 			const debugDir = "/tmp/tui";
@@ -1094,19 +1094,19 @@ export class TUI extends Container {
 			fs.writeFileSync(debugPath, debugData);
 		}
 
-		// Write entire buffer at once
+		// 一次性写入整个缓冲区
 		this.terminal.write(buffer);
 
-		// Track cursor position for next render
-		// cursorRow tracks end of content (for viewport calculation)
-		// hardwareCursorRow tracks actual terminal cursor position (for movement)
+		// 跟踪下次渲染的光标位置
+		// cursorRow 跟踪内容的末尾（用于视口计算）
+		// hardwareCursorRow 跟踪实际终端光标位置（用于移动）
 		this.cursorRow = Math.max(0, newLines.length - 1);
 		this.hardwareCursorRow = finalCursorRow;
-		// Track terminal's working area (grows but doesn't shrink unless cleared)
+		// 跟踪终端的工作区域（增长但不收缩，除非清除）
 		this.maxLinesRendered = Math.max(this.maxLinesRendered, newLines.length);
 		this.previousViewportTop = Math.max(0, this.maxLinesRendered - height);
 
-		// Position hardware cursor for IME
+		// 为 IME 定位硬件光标
 		this.positionHardwareCursor(cursorPos, newLines.length);
 
 		this.previousLines = newLines;
@@ -1114,9 +1114,9 @@ export class TUI extends Container {
 	}
 
 	/**
-	 * Position the hardware cursor for IME candidate window.
-	 * @param cursorPos The cursor position extracted from rendered output, or null
-	 * @param totalLines Total number of rendered lines
+	 * 为 IME 候选窗口定位硬件光标。
+	 * @param cursorPos 从渲染输出中提取的光标位置，或为 null
+	 * @param totalLines 渲染的总行数
 	 */
 	private positionHardwareCursor(cursorPos: { row: number; col: number } | null, totalLines: number): void {
 		if (!cursorPos || totalLines <= 0) {
@@ -1124,19 +1124,19 @@ export class TUI extends Container {
 			return;
 		}
 
-		// Clamp cursor position to valid range
+		// 将光标位置限制在有效范围内
 		const targetRow = Math.max(0, Math.min(cursorPos.row, totalLines - 1));
 		const targetCol = Math.max(0, cursorPos.col);
 
-		// Move cursor from current position to target
+		// 将光标从当前位置移至目标位置
 		const rowDelta = targetRow - this.hardwareCursorRow;
 		let buffer = "";
 		if (rowDelta > 0) {
-			buffer += `\x1b[${rowDelta}B`; // Move down
+			buffer += `\x1b[${rowDelta}B`; // 向下移动
 		} else if (rowDelta < 0) {
-			buffer += `\x1b[${-rowDelta}A`; // Move up
+			buffer += `\x1b[${-rowDelta}A`; // 向上移动
 		}
-		// Move to absolute column (1-indexed)
+		// 移至绝对列（从 1 开始计数）
 		buffer += `\x1b[${targetCol + 1}G`;
 
 		if (buffer) {

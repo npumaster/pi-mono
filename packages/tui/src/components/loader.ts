@@ -2,7 +2,7 @@ import type { TUI } from "../tui.js";
 import { Text } from "./text.js";
 
 /**
- * Loader component that updates every 80ms with spinning animation
+ * Loader 组件 - 每 80ms 更新一次的旋转动画加载器
  */
 export class Loader extends Text {
 	private frames = ["⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"];
